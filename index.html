@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milk Life OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F3FB; --panel:#FFFFFF; --ink:#2E2A3D; --ink-soft:#726C89; --line:#E7E3F5;
+  --purple:#8B7FD1; --purple-deep:#5F51B0; --purple-pale:#EDEAFA;
+  --teal:#5FB8AC; --teal-pale:#E4F5F2;
+  --amber:#E3A455; --amber-pale:#FBEEDD;
+  --coral:#E08A87; --coral-pale:#FAE9E8;
+  --radius:16px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:'Sarabun', system-ui, sans-serif; background:var(--bg); color:var(--ink); display:flex; min-height:100vh;}
+h1,h2,h3,.brand{font-family:'Kanit','Sarabun',sans-serif;}
+.mono{font-family:'JetBrains Mono', monospace;}
+a{color:inherit;}
+
+/* Sidebar */
+.sidebar{width:88px; background:var(--purple-deep); display:flex; flex-direction:column; align-items:center; padding:24px 0; gap:8px; flex-shrink:0; position:sticky; top:0; height:100vh;}
+.brand{color:#fff; font-size:13px; font-weight:600; margin-bottom:20px; text-align:center;}
+.brand span{display:block; font-size:20px;}
+.nav-item{width:56px; height:56px; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(255,255,255,.65); font-size:10px; gap:4px; cursor:pointer; border:none; background:none;}
+.nav-item .icon{font-size:19px;}
+.nav-item.active{background:rgba(255,255,255,.16); color:#fff;}
+.nav-item:hover{background:rgba(255,255,255,.1); color:#fff;}
+.nav-spacer{flex:1;}
+.profile-dot{width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--teal),var(--purple)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:13px; cursor:pointer;}
+
+/* Main */
+.main{flex:1; padding:28px 36px 60px; max-width:1300px;}
+.topbar{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:10px;}
+.greeting h1{font-size:24px; font-weight:600;}
+.greeting p{color:var(--ink-soft); font-size:13.5px; margin-top:4px;}
+.date-chip{background:var(--panel); border:1px solid var(--line); padding:7px 14px; border-radius:99px; font-size:12.5px; color:var(--ink-soft);}
+
+.ribbon{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px 20px; margin-bottom:22px;}
+.ribbon-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+.ribbon-head h3{font-size:13.5px; font-weight:600;}
+.ribbon-head span{font-size:11.5px; color:var(--ink-soft);}
+.timeline{position:relative; min-height:52px; display:flex; gap:22px; flex-wrap:wrap; padding-top:4px;}
+.tl-item{display:flex; flex-direction:column; align-items:center; gap:5px; width:88px;}
+.tl-dot{width:12px; height:12px; border-radius:50%;}
+.tl-label{font-size:10.5px; color:var(--ink-soft); text-align:center; line-height:1.3;}
+.tl-time{font-size:9.5px; color:#A9A3C0;}
+.tl-empty{color:var(--ink-soft); font-size:12.5px; padding:8px 0;}
+
+.grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+@media (max-width:1050px){.grid{grid-template-columns:repeat(2,1fr);}}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;}
+.card-title{display:flex; align-items:center; gap:9px;}
+.card-icon{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
+.card-title h3{font-size:14.5px; font-weight:600;}
+.card-sub{font-size:11px; color:var(--ink-soft);}
+.pill{font-size:10.5px; padding:3px 9px; border-radius:99px; font-weight:500; white-space:nowrap;}
+.icon-finance{background:var(--coral-pale); color:var(--coral);}
+.icon-run{background:var(--teal-pale); color:var(--teal);}
+.icon-work{background:var(--amber-pale); color:var(--amber);}
+.icon-health{background:var(--purple-pale); color:var(--purple);}
+.icon-trip{background:var(--teal-pale); color:var(--teal);}
+.icon-capture{background:var(--purple-pale); color:var(--purple-deep);}
+.icon-settings{background:var(--amber-pale); color:var(--amber);}
+.pill-coral{background:var(--coral-pale); color:var(--coral);}
+.pill-teal{background:var(--teal-pale); color:var(--teal);}
+.pill-amber{background:var(--amber-pale); color:var(--amber);}
+.pill-purple{background:var(--purple-pale); color:var(--purple-deep);}
+
+.big-stat{font-size:24px; font-weight:600; margin:2px 0;}
+.stat-note{font-size:11.5px; color:var(--ink-soft); margin-bottom:12px;}
+
+.bar-row{display:flex; align-items:center; gap:9px; margin-bottom:7px;}
+.bar-label{font-size:11px; color:var(--ink-soft); width:70px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.bar-track{flex:1; height:7px; background:var(--line); border-radius:99px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:99px;}
+.bar-val{font-size:10.5px; color:var(--ink-soft); width:36px; text-align:right; flex-shrink:0;}
+
+.task-list{display:flex; flex-direction:column; gap:8px;}
+.task-row{display:flex; align-items:center; gap:9px; font-size:12.5px;}
+.task-check{width:16px; height:16px; border-radius:5px; border:1.5px solid var(--line); flex-shrink:0; cursor:pointer; background:none;}
+.task-check.done{background:var(--amber); border-color:var(--amber);}
+.task-text{flex:1;}
+.task-text.done{text-decoration:line-through; color:var(--ink-soft);}
+.task-due{font-size:10px; color:var(--ink-soft); white-space:nowrap;}
+.task-del{background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:13px;}
+
+.health-row{display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
+.health-row:last-child{border-bottom:none;}
+.health-name{display:flex; align-items:center; gap:7px;}
+.avatar{width:24px; height:24px; border-radius:50%; background:var(--purple-pale); color:var(--purple-deep); font-size:10.5px; display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0;}
+
+.trip-strip{display:flex; gap:7px; margin-top:6px; flex-wrap:wrap;}
+.trip-day{flex:1; min-width:70px; background:var(--teal-pale); border-radius:10px; padding:7px 5px; text-align:center;}
+.trip-day .d{font-size:9.5px; color:var(--ink-soft);}
+.trip-day .place{font-size:10.5px; font-weight:600; color:var(--ink); margin-top:2px;}
+
+.capture-box{flex:1; display:flex; flex-direction:column; gap:8px;}
+.capture-row{display:flex; gap:8px;}
+.capture-input{flex:1; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-size:12.5px; color:var(--ink); background:var(--bg); font-family:inherit;}
+.capture-chips{display:flex; gap:6px; margin-top:2px; flex-wrap:wrap;}
+.capture-chip{font-size:10.5px; padding:4px 9px; border-radius:99px; background:var(--purple-pale); color:var(--purple-deep);}
+
+.footnote{text-align:center; color:var(--ink-soft); font-size:11.5px; margin-top:24px; line-height:1.6;}
+
+/* Forms / buttons shared across module pages */
+.section-title{font-size:19px; font-weight:600; margin-bottom:4px;}
+.section-sub{font-size:13px; color:var(--ink-soft); margin-bottom:20px;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:18px;}
+.panel h3{font-size:14.5px; font-weight:600; margin-bottom:12px;}
+.form-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+.form-row input, .form-row select{border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:12.5px; font-family:inherit; background:var(--bg); color:var(--ink);}
+.form-row input[type=text], .form-row input[type=number], .form-row input[type=date], .form-row input[type=url]{flex:1; min-width:110px;}
+.btn{background:var(--purple-deep); color:#fff; border:none; border-radius:9px; padding:8px 16px; font-size:12.5px; font-weight:500; cursor:pointer; font-family:inherit;}
+.btn:hover{opacity:.92;}
+.btn-ghost{background:var(--purple-pale); color:var(--purple-deep);}
+.btn-teal{background:var(--teal);}
+.btn-sm{padding:6px 11px; font-size:11.5px;}
+.table{width:100%; border-collapse:collapse; font-size:12.5px;}
+.table th{text-align:left; color:var(--ink-soft); font-weight:500; font-size:11px; padding:6px 8px; border-bottom:1px solid var(--line);}
+.table td{padding:8px; border-bottom:1px solid var(--line);}
+.table tr:last-child td{border-bottom:none;}
+.muted{color:var(--ink-soft); font-size:12px;}
+.msg{padding:10px 14px; border-radius:10px; font-size:12.5px; margin-bottom:12px;}
+.msg-ok{background:var(--teal-pale); color:#347468;}
+.msg-err{background:var(--coral-pale); color:#9c3f3c;}
+.tag-row{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
+.tag{font-size:10.5px; padding:4px 10px; border-radius:99px; background:var(--purple-pale); color:var(--purple-deep);}
+.two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:18px;}
+@media (max-width:900px){.two-col{grid-template-columns:1fr;}}
+.trip-card{border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px;}
+.trip-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.trip-card-head h4{font-size:14px; font-weight:600;}
+.small-list{list-style:none; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand"><span>M</span>OS</div>
+  <button class="nav-item" data-view="today" onclick="nav('today')"><div class="icon">◆</div>วันนี้</button>
+  <button class="nav-item" data-view="finance" onclick="nav('finance')"><div class="icon">฿</div>เงิน</button>
+  <button class="nav-item" data-view="running" onclick="nav('running')"><div class="icon">➤</div>วิ่ง</button>
+  <button class="nav-item" data-view="work" onclick="nav('work')"><div class="icon">▣</div>งาน</button>
+  <button class="nav-item" data-view="health" onclick="nav('health')"><div class="icon">♥</div>สุขภาพ</button>
+  <button class="nav-item" data-view="trips" onclick="nav('trips')"><div class="icon">✈</div>ทริป</button>
+  <div class="nav-spacer"></div>
+  <button class="nav-item" data-view="settings" onclick="nav('settings')" title="Settings"><div class="icon">⚙</div>ตั้งค่า</button>
+  <div class="profile-dot" title="Milk">M</div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="greeting">
+      <h1 id="greetingText">สวัสดี, Milk</h1>
+      <p>ภาพรวมทุกด้านของวันนี้ในที่เดียว</p>
+    </div>
+    <div class="date-chip" id="dateChip"></div>
+  </div>
+  <div id="viewRoot"></div>
+</div>
+
+<script>
+/* ---------- State ---------- */
+const LS_KEY = 'milkLifeOS_v1';
+const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const thaiDays = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return ''; const d = new Date(iso+'T00:00:00'); if(isNaN(d)) return iso; return thaiDays[d.getDay()]+' '+d.getDate()+' '+thaiMonths[d.getMonth()]; }
+function fmtMoney(n){ return (Number(n)||0).toLocaleString('th-TH'); }
+function daysUntil(iso){ const d=new Date(iso+'T00:00:00'); const t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
+
+/* ---------- Finance history helpers ---------- */
+function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+function ymLabel(ym){ if(!ym) return ''; const parts = ym.split('-'); const y = parseInt(parts[0],10), m = parseInt(parts[1],10); return thaiMonths[m-1] + ' ' + (y+543); }
+function shiftYM(ym, delta){ const parts = ym.split('-').map(Number); const d = new Date(parts[0], parts[1]-1+delta, 1); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+const CAT_COLORS = ['coral','purple','amber','teal'];
+function categoryColor(i){ return CAT_COLORS[i % CAT_COLORS.length]; }
+function monthSummary(ym){
+  const txns = state.finance.transactions.filter(t=>monthKey(t.date)===ym);
+  let income = 0, expense = 0; const byCat = {};
+  txns.forEach(t=>{
+    const amt = Number(t.amount)||0;
+    if(t.type === 'income'){ income += amt; }
+    else { expense += amt; const c = t.category || 'อื่นๆ'; byCat[c] = (byCat[c]||0) + amt; }
+  });
+  const sortedTxns = [...txns].sort((a,b)=> String(b.date).localeCompare(String(a.date)));
+  const catList = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  return {ym, income, expense, net: income-expense, byCat, catList, txns: sortedTxns};
+}
+function lastNMonthsSummary(n){
+  const set = new Set(state.finance.transactions.map(t=>monthKey(t.date)).filter(Boolean));
+  set.add(financeViewYM);
+  const months = [...set].sort();
+  return months.slice(-n).map(ym=>monthSummary(ym));
+}
+function upsertTxn(tx){
+  const idx = state.finance.transactions.findIndex(x=>x.id===tx.id);
+  if(idx>=0){ state.finance.transactions[idx] = tx; return false; }
+  state.finance.transactions.unshift(tx);
+  return true;
+}
+
+/* ---------- Direct same-origin read from Milk Hub ----------
+   Milk Hub (milkhub:*) and Life OS share a browser's localStorage automatically
+   IF AND ONLY IF they are served from the exact same origin (scheme+host+port) —
+   e.g. both under https://milktanawat-dot.github.io/... — because localStorage is
+   scoped per-origin, not per-path. Opened as a local file, or from any other host,
+   this simply finds nothing and the manual JSON-import panel is used instead. */
+function milkHubSameOriginAvailable(){
+  try{ return localStorage.getItem('milkhub:app:profiles') !== null; }catch(e){ return false; }
+}
+function syncFromMilkHubDirect(){
+  try{
+    const profilesRaw = localStorage.getItem('milkhub:app:profiles');
+    if(!profilesRaw) return null;
+    const profiles = JSON.parse(profilesRaw) || [];
+    let processed = 0;
+    profiles.forEach(p=>{
+      const key = p.id === 'default' ? 'milkhub:money:entries' : 'milkhub:profile:' + p.id + ':money:entries';
+      const raw = localStorage.getItem(key);
+      if(!raw) return;
+      let money; try{ money = JSON.parse(raw); }catch(e){ return; }
+      (money||[]).forEach(tx=>{
+        if(!tx.amount) return;
+        upsertTxn({
+          id: 'mh-' + (profiles.length>1?p.id+'-':'') + (tx.id || uid()),
+          date: (tx.date || todayISO()).slice(0,10),
+          type: tx.type === 'income' ? 'income' : 'expense',
+          category: tx.category || 'อื่นๆ',
+          item: tx.item || '',
+          amount: Number(tx.amount) || 0,
+          profile: profiles.length>1 ? (p.name||p.id) : undefined
+        });
+        processed++;
+      });
+    });
+    state.finance.lastImport = new Date().toISOString();
+    state.finance.lastImportMode = 'same-origin';
+    saveState();
+    return processed;
+  }catch(e){ return null; }
+}
+
+function defaultState(){
+  const t = todayISO();
+  return {
+    finance: {
+      monthlyBudget: 30000,
+      lastImport: null,
+      transactions: [
+        {id:uid(), date:t, type:'expense', category:'อาหาร', item:'มื้อเที่ยง', amount:120},
+        {id:uid(), date:t, type:'expense', category:'เดินทาง', item:'BTS', amount:65},
+        {id:uid(), date:addDays(t,-3), type:'income', category:'เงินเดือน', item:'เงินเดือน', amount:45000},
+        {id:uid(), date:addDays(t,-3), type:'expense', category:'ผ่อน/หนี้', item:'ผ่อนคอนโด', amount:12000},
+        {id:uid(), date:addDays(t,-35), type:'expense', category:'อาหาร', item:'ตัวอย่างเดือนก่อน', amount:5200},
+        {id:uid(), date:addDays(t,-35), type:'income', category:'เงินเดือน', item:'เงินเดือน', amount:45000},
+        {id:uid(), date:addDays(t,-65), type:'expense', category:'ท่องเที่ยว', item:'ตัวอย่าง 2 เดือนก่อน', amount:3400}
+      ]
+    },
+    running: {
+      weeklyGoalKm: 40,
+      weekKm: 32.4,
+      weekLabel: 'Week 6/12',
+      goalNote: 'เป้าหมาย 42K วันที่ 12 ต.ค.',
+      activities: [
+        {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, done:true},
+        {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, done:false}
+      ],
+      lastSync: null
+    },
+    work: {
+      tasks: [
+        {id:uid(), text:'รายงาน PPA เดือน ก.ค.', due:t, done:false, priority:'high'},
+        {id:uid(), text:'กรอก Rolling Plan Unit 11', due:t, done:false, priority:'normal'},
+        {id:uid(), text:'โหลด NCC เดือน ก.ค.', due:t, done:true, priority:'normal'},
+        {id:uid(), text:'สรุปมติประชุม (secretary)', due:t, done:false, priority:'low'}
+      ]
+    },
+    health: {
+      members: [
+        {id:uid(), name:'Milk', avatar:'M', logs:[{id:uid(), date:t, note:'น้ำหนักคงที่', flag:'ok'}]},
+        {id:uid(), name:'คุณพ่อ', avatar:'พ่อ', logs:[{id:uid(), date:t, note:'ความดันสูงเล็กน้อย', flag:'warn'}]},
+        {id:uid(), name:'คุณแม่', avatar:'แม่', logs:[{id:uid(), date:t, note:'ปกติ', flag:'ok'}]}
+      ]
+    },
+    trips: {
+      list: [
+        {id:uid(), name:'ทริปอีสาน — Isan in love', vehicle:'Tesla Model 3', startDate: addDays(t,18), budget:15000,
+          days:[
+            {date:addDays(t,18), place:'บึงกาฬ', notes:''},
+            {date:addDays(t,19), place:'นครพนม', notes:''},
+            {date:addDays(t,20), place:'สกลนคร', notes:''},
+            {date:addDays(t,21), place:'อุดรฯ', notes:''}
+          ],
+          expenses:[]
+        }
+      ]
+    },
+    settings: {
+      intervalsApiKey: '',
+      intervalsAthleteId: '0',
+      healthSheetCsvUrl: ''
+    }
+  };
+}
+function addDays(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+
+let state = loadState();
+function loadState(){
+  const raw = localStorage.getItem(LS_KEY);
+  if(raw){ try{ return JSON.parse(raw); }catch(e){ console.warn('bad state, resetting'); } }
+  const s = defaultState();
+  localStorage.setItem(LS_KEY, JSON.stringify(s));
+  return s;
+}
+function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* ---------- Quick capture parser ---------- */
+function parseCapture(text){
+  const segments = text.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+  const results = [];
+  segments.forEach(seg=>{
+    const numMatch = seg.match(/(\d+(?:\.\d+)?)/);
+    const num = numMatch ? parseFloat(numMatch[1]) : null;
+    if(/กม|km|วิ่ง|ว่าย|ปั่น/i.test(seg) && num !== null){
+      state.running.activities.unshift({id:uid(), date:todayISO(), name:seg, distance_km:num, moving_time_min:null, done:true});
+      results.push('→ Log วิ่ง ' + num + 'K: "' + seg + '"');
+    } else if(/บาท|฿/.test(seg) && num !== null){
+      const isIncome = /รับ:|เงินเดือน|โบนัส/.test(seg);
+      state.finance.transactions.unshift({id:uid(), date:todayISO(), type: isIncome?'income':'expense', category: isIncome?'รายรับ':'อื่นๆ', item:seg, amount:num});
+      results.push('→ ' + (isIncome?'รายรับ':'รายจ่าย') + ' ฿' + fmtMoney(num) + ': "' + seg + '"');
+    } else {
+      const timeMatch = seg.match(/(\d{1,2}):(\d{2})/);
+      state.work.tasks.unshift({id:uid(), text:seg, due: todayISO() + (timeMatch ? ' ' + timeMatch[0] : ''), done:false, priority:'normal'});
+      results.push('→ Task: "' + seg + '"' + (timeMatch ? ' เวลา ' + timeMatch[0] : ''));
+    }
+  });
+  saveState();
+  return results;
+}
+
+/* ---------- Navigation ---------- */
+let currentView = 'today';
+let lastCaptureResults = null;
+let financeViewYM = todayISO().slice(0,7);
+function nav(view){ currentView = view; render(); }
+
+function render(){
+  if(milkHubSameOriginAvailable()){ syncFromMilkHubDirect(); }
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.view === currentView);
+  });
+  document.getElementById('dateChip').textContent = fmtDate(todayISO()) + ' ' + (new Date().getFullYear()+543);
+  const h = new Date().getHours();
+  document.getElementById('greetingText').textContent = (h<12 ? 'สวัสดีตอนเช้า, Milk' : h<18 ? 'สวัสดีตอนบ่าย, Milk' : 'สวัสดีตอนเย็น, Milk');
+  const root = document.getElementById('viewRoot');
+  const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, health:renderHealth, trips:renderTrips, settings:renderSettings};
+  root.innerHTML = (renderers[currentView] || renderToday)();
+}
+
+/* ---------- Today view ---------- */
+function renderToday(){
+  const t = todayISO();
+  const items = [];
+  state.work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10) === t) items.push({time:(tk.due||'').slice(11,16) || '—', label:tk.text, color:'var(--amber)'}); });
+  state.running.activities.forEach(a=>{ if(a.date === t) items.push({time:'', label:'วิ่ง ' + a.distance_km + 'K — ' + a.name, color:'var(--teal)'}); });
+  state.trips.list.forEach(tr=> tr.days.forEach(d=>{ if(d.date === t) items.push({time:'', label:'ทริป: ' + d.place, color:'var(--purple)'}); }));
+  state.finance.transactions.forEach(tx=>{ if(tx.date === t) items.push({time:'', label:'฿' + fmtMoney(tx.amount) + ' ' + tx.note, color:'var(--coral)'}); });
+
+  const finance = state.finance, running = state.running, work = state.work, health = state.health, trips = state.trips;
+  const thisMonth = monthSummary(todayISO().slice(0,7));
+  const pendingTasks = work.tasks.filter(x=>!x.done).length;
+  const upcomingTrip = trips.list.map(tr=>({tr, nd: daysUntil(tr.days[0] ? tr.days[0].date : tr.startDate)})).filter(x=>x.nd>=0).sort((a,b)=>a.nd-b.nd)[0];
+
+  return `
+  <div class="ribbon">
+    <div class="ribbon-head"><h3>ไทม์ไลน์วันนี้ — รวมทุกด้าน</h3><span>${items.length} รายการ</span></div>
+    <div class="timeline">
+      ${items.length ? items.map(it=>`
+        <div class="tl-item">
+          <div class="tl-time">${it.time}</div>
+          <div class="tl-dot" style="background:${it.color}"></div>
+          <div class="tl-label">${escapeHtml(it.label)}</div>
+        </div>`).join('') : '<div class="tl-empty">ไม่มีรายการวันนี้ — ลองพิมพ์ใน Quick Capture ด้านล่าง</div>'}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-finance">฿</div><div><h3>การเงิน</h3><div class="card-sub">${finance.lastImport ? 'Milk Hub · sync ' + fmtDate(finance.lastImport.slice(0,10)) : 'Milk Hub'}</div></div></div>
+        <div class="pill pill-coral">-${fmtMoney(thisMonth.expense)} เดือนนี้</div>
+      </div>
+      <div class="big-stat mono">฿${fmtMoney(thisMonth.expense)}</div>
+      <div class="stat-note">งบ ฿${fmtMoney(finance.monthlyBudget)} · รายรับเดือนนี้ ฿${fmtMoney(thisMonth.income)} · คงเหลืองบ ${Math.max(0,Math.round(100-100*thisMonth.expense/(finance.monthlyBudget||1)))}%</div>
+      ${thisMonth.catList.length ? thisMonth.catList.slice(0,3).map((c,i)=>{ const pct = thisMonth.expense ? Math.round(100*c[1]/thisMonth.expense) : 0; return `<div class="bar-row"><div class="bar-label">${escapeHtml(c[0])}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:var(--${categoryColor(i)})"></div></div><div class="bar-val">฿${fmtMoney(c[1])}</div></div>`; }).join('') : '<div class="muted">ยังไม่มีรายจ่ายเดือนนี้</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-run">➤</div><div><h3>วิ่ง</h3><div class="card-sub">RunCoach / intervals.icu</div></div></div>
+        <div class="pill pill-teal">${escapeHtml(running.weekLabel||'')}</div>
+      </div>
+      <div class="big-stat mono">${running.weekKm} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม. สัปดาห์นี้</span></div>
+      <div class="stat-note">${escapeHtml(running.goalNote||'')}</div>
+      <div class="task-list">${running.activities.slice(0,3).map(a=>`<div class="task-row"><div class="task-check ${a.done?'done':''}"></div><div class="task-text ${a.done?'done':''}">${escapeHtml(a.name)} — ${a.distance_km}K</div></div>`).join('') || '<div class="muted">ยังไม่มีข้อมูล — ไป Sync ที่หน้า "วิ่ง"</div>'}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-work">▣</div><div><h3>งาน EGAT</h3><div class="card-sub">แม่เมาะ</div></div></div>
+        <div class="pill pill-amber">${pendingTasks} ค้าง</div>
+      </div>
+      <div class="task-list">${work.tasks.slice(0,4).map(taskRowHtml).join('') || '<div class="muted">ไม่มีงานค้าง</div>'}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-health">♥</div><div><h3>สุขภาพครอบครัว</h3><div class="card-sub">Family Health Bot</div></div></div>
+        <div class="pill pill-purple">${health.members.length} คน</div>
+      </div>
+      ${health.members.map(m=>{ const last = m.logs[0]; return `<div class="health-row"><div class="health-name"><div class="avatar">${escapeHtml(m.avatar)}</div>${escapeHtml(m.name)}</div><div class="mono" style="font-size:12px; ${last&&last.flag==='warn'?'color:var(--coral)':''}">${last?escapeHtml(last.note):'—'}</div></div>`; }).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-trip">✈</div><div><h3>${upcomingTrip?escapeHtml(upcomingTrip.tr.name):'ทริป'}</h3><div class="card-sub">ทริปที่ใกล้ที่สุด</div></div></div>
+        ${upcomingTrip? `<div class="pill pill-teal">อีก ${upcomingTrip.nd} วัน</div>` : ''}
+      </div>
+      ${upcomingTrip ? `
+        <div class="stat-note" style="margin-bottom:2px">แผน ${upcomingTrip.tr.days.length} วัน · งบ ฿${fmtMoney(upcomingTrip.tr.budget)}</div>
+        <div class="trip-strip">${upcomingTrip.tr.days.slice(0,4).map((d,i)=>`<div class="trip-day"><div class="d">Day ${i+1}</div><div class="place">${escapeHtml(d.place)}</div></div>`).join('')}</div>
+      ` : '<div class="muted">ยังไม่มีทริปที่วางแผนไว้</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-capture">✎</div><div><h3>Quick Capture</h3><div class="card-sub">พิมพ์ทีเดียว ระบบแยกให้เอง</div></div></div>
+      </div>
+      <div class="capture-box">
+        <div class="capture-row">
+          <input class="capture-input" id="captureInput" type="text" placeholder='เช่น "วิ่งไป 8 กม, กาแฟ 65 บาท, ประชุมบ่าย 13:00"'>
+          <button class="btn btn-sm" onclick="doCapture()">บันทึก</button>
+        </div>
+        ${lastCaptureResults ? `<div class="capture-chips">${lastCaptureResults.map(r=>`<div class="capture-chip">${escapeHtml(r)}</div>`).join('')}</div>` : `<div class="capture-chips"><div class="capture-chip">→ Log วิ่ง 8K</div><div class="capture-chip">→ รายจ่าย ฿65</div><div class="capture-chip">→ Task 13:00</div></div>`}
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">แต่ละการ์ดอ่านค่าจาก state เดียวกันที่บันทึกใน localStorage ของเบราว์เซอร์นี้ — ไปที่หน้า "ตั้งค่า" เพื่อเชื่อม intervals.icu หรือ import ข้อมูลจากแอปอื่น</div>
+  `;
+}
+function taskRowHtml(tk){
+  return `<div class="task-row">
+    <button class="task-check ${tk.done?'done':''}" onclick="toggleTask('${tk.id}')"></button>
+    <div class="task-text ${tk.done?'done':''}">${escapeHtml(tk.text)}</div>
+    <div class="task-due">${(tk.due||'').slice(0,10)===todayISO() ? 'วันนี้' : fmtDate((tk.due||'').slice(0,10))}</div>
+  </div>`;
+}
+function doCapture(){
+  const el = document.getElementById('captureInput');
+  if(!el || !el.value.trim()) return;
+  lastCaptureResults = parseCapture(el.value.trim());
+  render();
+}
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- Finance view ---------- */
+function renderFinance(){
+  const f = state.finance;
+  const m = monthSummary(financeViewYM);
+  const history = lastNMonthsSummary(6);
+  return `
+  <div class="section-title">การเงิน</div>
+  <div class="section-sub">Import ไฟล์ "ดาวน์โหลด Backup (JSON)" จาก Milk Hub (หน้าตั้งค่า → 💾 สำรอง/ย้ายข้อมูล) เพื่อดึงรายรับ-รายจ่ายทั้งหมดเข้ามา ดูย้อนหลังเป็นรายเดือนได้ด้านล่าง</div>
+
+  <div class="panel">
+    ${milkHubSameOriginAvailable() ? `
+      <h3>🟢 เชื่อมตรงกับ Milk Hub อัตโนมัติ</h3>
+      <div class="muted" style="margin-bottom:8px">หน้านี้เปิดจาก origin เดียวกับ Milk Hub เลยอ่าน localStorage ของกันได้ตรงๆ แบบ real-time ทุกครั้งที่เปิดหน้านี้ ไม่ต้อง import เอง</div>
+      <button class="btn btn-teal btn-sm" onclick="manualSyncMilkHub()">🔄 Sync ตอนนี้</button>
+      <div id="financeImportMsg"></div>
+    ` : `
+      <h3>🔄 Import จาก Milk Hub</h3>
+      <div class="muted" style="margin-bottom:8px">เปิด <span class="mono">milktanawat-dot.github.io/Milk-Hub</span> → เมนูตั้งค่า → กด "ดาวน์โหลด Backup (JSON)" → เลือกไฟล์นั้นที่นี่ ระบบอ่านโครงสร้างไฟล์ backup ของ Milk Hub โดยตรง (รองรับหลายโปรไฟล์) และ import ซ้ำได้อย่างปลอดภัย — รายการเดิมจะถูกอัปเดตแทนการซ้ำ</div>
+      <input type="file" id="financeImportFile" accept="application/json" onchange="importFinanceJson(event)">
+      <div id="financeImportMsg"></div>
+      <div class="muted" style="margin-top:10px">💡 ถ้าย้ายไฟล์นี้ไปเปิดที่ origin เดียวกับ Milk Hub (เช่น deploy ขึ้น GitHub Pages ของบัญชีเดียวกัน) จะเชื่อมอัตโนมัติแบบ real-time แทนได้ทันที ไม่ต้อง import เอง</div>
+    `}
+    ${f.lastImport ? `<div class="muted" style="margin-top:8px">Sync/Import ล่าสุด: ${fmtDate(f.lastImport.slice(0,10))} ${f.lastImport.slice(11,16)}</div>` : ''}
+  </div>
+
+  <div class="panel">
+    <div class="form-row" style="justify-content:space-between; align-items:center">
+      <div style="display:flex; align-items:center; gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="financeMonthShift(-1)">‹</button>
+        <h3 style="margin:0">${ymLabel(financeViewYM)}</h3>
+        <button class="btn btn-ghost btn-sm" onclick="financeMonthShift(1)">›</button>
+      </div>
+      <div class="form-row" style="margin:0">
+        <input type="number" id="budgetInput" placeholder="งบเดือนนี้" value="${f.monthlyBudget}" style="max-width:130px">
+        <button class="btn btn-ghost btn-sm" onclick="setBudget()">อัปเดตงบ</button>
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-top:10px">
+      <div class="card" style="padding:12px">
+        <div class="card-sub">รายรับ</div>
+        <div class="big-stat mono" style="color:var(--teal)">฿${fmtMoney(m.income)}</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">รายจ่าย</div>
+        <div class="big-stat mono" style="color:var(--coral)">฿${fmtMoney(m.expense)}</div>
+        <div class="stat-note" style="margin:0">งบ ฿${fmtMoney(f.monthlyBudget)}</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">คงเหลือสุทธิ</div>
+        <div class="big-stat mono">฿${fmtMoney(m.net)}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>รายการเดือนนี้ (${m.txns.length})</h3>
+      <table class="table">
+        <tr><th>วันที่</th><th>รายการ</th><th style="text-align:right">จำนวน</th><th></th></tr>
+        ${m.txns.map(tx=>`<tr><td>${fmtDate(tx.date)}</td><td><span class="pill ${tx.type==='income'?'pill-teal':'pill-coral'}" style="margin-right:6px">${tx.type==='income'?'รับ':'จ่าย'}</span>${escapeHtml(tx.item||tx.category||'')} <span class="muted">(${escapeHtml(tx.category||'อื่นๆ')}${tx.profile?(' · '+escapeHtml(tx.profile)):''})</span></td><td style="text-align:right" class="mono">฿${fmtMoney(tx.amount)}</td><td><button class="task-del" onclick="delTxn('${tx.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">ไม่มีรายการเดือนนี้</td></tr>`}
+      </table>
+      <div class="form-row" style="margin-top:14px">
+        <select id="txnType"><option value="expense">รายจ่าย</option><option value="income">รายรับ</option></select>
+        <input type="text" id="txnCategory" placeholder="หมวด" style="max-width:110px">
+        <input type="text" id="txnItem" placeholder="รายการ เช่น อาหารกลางวัน">
+        <input type="number" id="txnAmount" placeholder="จำนวน (บาท)" style="max-width:120px">
+        <input type="date" id="txnDate" value="${todayISO()}" style="max-width:150px">
+        <button class="btn" onclick="addTxn()">+ เพิ่มรายการ</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>หมวดรายจ่าย — ${ymLabel(financeViewYM)}</h3>
+      ${m.catList.length ? m.catList.map((c,i)=>{ const pct = m.expense ? Math.round(100*c[1]/m.expense) : 0; return `<div class="bar-row"><div class="bar-label">${escapeHtml(c[0])}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:var(--${categoryColor(i)})"></div></div><div class="bar-val">฿${fmtMoney(c[1])}</div></div>`; }).join('') : '<div class="muted">ไม่มีรายจ่ายเดือนนี้</div>'}
+      <hr style="border:none; border-top:1px solid var(--line); margin:16px 0">
+      <h3>ย้อนหลัง 6 เดือน</h3>
+      <table class="table">
+        <tr><th>เดือน</th><th style="text-align:right">รายรับ</th><th style="text-align:right">รายจ่าย</th><th style="text-align:right">คงเหลือ</th></tr>
+        ${history.map(h=>`<tr><td>${escapeHtml(ymLabel(h.ym))}</td><td style="text-align:right" class="mono">฿${fmtMoney(h.income)}</td><td style="text-align:right" class="mono">฿${fmtMoney(h.expense)}</td><td style="text-align:right" class="mono">฿${fmtMoney(h.net)}</td></tr>`).join('') || `<tr><td colspan="4" class="muted">ไม่มีข้อมูล</td></tr>`}
+      </table>
+    </div>
+  </div>
+  `;
+}
+function financeMonthShift(delta){ financeViewYM = shiftYM(financeViewYM, delta); render(); }
+function manualSyncMilkHub(){
+  const n = syncFromMilkHubDirect();
+  const msgEl = document.getElementById('financeImportMsg');
+  if(n === null){ if(msgEl) msgEl.innerHTML = `<div class="msg msg-err">อ่าน localStorage ของ Milk Hub ไม่ได้ตอนนี้</div>`; }
+  else { if(msgEl) msgEl.innerHTML = `<div class="msg msg-ok">Sync สำเร็จ — ประมวลผล ${n} รายการ</div>`; }
+  render();
+}
+function addTxn(){
+  const type = document.getElementById('txnType').value;
+  const category = document.getElementById('txnCategory').value.trim() || 'อื่นๆ';
+  const item = document.getElementById('txnItem').value.trim();
+  const amount = parseFloat(document.getElementById('txnAmount').value);
+  const date = document.getElementById('txnDate').value || todayISO();
+  if(!amount) return;
+  state.finance.transactions.unshift({id:uid(), date, type, category, item, amount});
+  saveState(); render();
+}
+function delTxn(id){
+  state.finance.transactions = state.finance.transactions.filter(t=>t.id!==id);
+  saveState(); render();
+}
+function setBudget(){
+  const v = parseFloat(document.getElementById('budgetInput').value);
+  if(v>0){ state.finance.monthlyBudget = v; saveState(); render(); }
+}
+function importFinanceJson(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const data = JSON.parse(reader.result);
+      let processed = 0;
+      const profiles = data.profiles || [];
+      const allData = data.allProfileData || null;
+      const profileName = (id)=>{ const p = profiles.find(x=>x.id===id); return p ? (p.name||p.id) : null; };
+      const mapTxn = (tx, pid)=>({
+        id: 'mh-' + (pid?pid+'-':'') + (tx.id || uid()),
+        date: (tx.date || todayISO()).slice(0,10),
+        type: tx.type === 'income' ? 'income' : 'expense',
+        category: tx.category || 'อื่นๆ',
+        item: tx.item || '',
+        amount: Number(tx.amount) || 0,
+        profile: pid ? (profileName(pid) || undefined) : undefined
+      });
+      if(allData && Object.keys(allData).length){
+        Object.keys(allData).forEach(pid=>{
+          const money = (allData[pid] && allData[pid].money) || [];
+          money.forEach(tx=>{ if(!tx.amount) return; upsertTxn(mapTxn(tx, profiles.length>1 ? pid : null)); processed++; });
+        });
+      } else {
+        const list = data.money || (Array.isArray(data) ? data : []);
+        list.forEach(tx=>{ if(!tx.amount) return; upsertTxn(mapTxn(tx, null)); processed++; });
+      }
+      state.finance.lastImport = new Date().toISOString();
+      document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-ok">Import สำเร็จ — ประมวลผล ${processed} รายการ${profiles.length>1 ? (' จาก ' + profiles.length + ' โปรไฟล์') : ''}</div>`;
+      saveState(); render();
+    }catch(e){
+      document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-err">อ่านไฟล์ไม่ได้ — ตรวจสอบว่าเป็นไฟล์ backup JSON จาก Milk Hub (ปุ่ม "ดาวน์โหลด Backup (JSON)" ในหน้าตั้งค่าของ Milk Hub) ข้อผิดพลาด: ${escapeHtml(e.message)}</div>`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Running view ---------- */
+function renderRunning(){
+  const r = state.running;
+  const totalKm = r.activities.reduce((s,a)=>s+(a.distance_km||0),0);
+  return `
+  <div class="section-title">วิ่ง</div>
+  <div class="section-sub">Sync อัตโนมัติจาก intervals.icu (เชื่อม Suunto ไว้แล้วในบัญชี intervals.icu ของพี่) หรือบันทึกเอง</div>
+  <div class="two-col">
+    <div class="panel">
+      <h3>กิจกรรมล่าสุด</h3>
+      <table class="table">
+        <tr><th>วันที่</th><th>ชื่อ</th><th style="text-align:right">ระยะ</th><th></th></tr>
+        ${r.activities.map(a=>`<tr><td>${fmtDate(a.date)}</td><td>${escapeHtml(a.name)}</td><td style="text-align:right" class="mono">${a.distance_km} กม.</td><td><button class="task-del" onclick="delRun('${a.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">ยังไม่มีข้อมูล</td></tr>`}
+      </table>
+      <div class="form-row" style="margin-top:14px">
+        <input type="text" id="runName" placeholder="ชื่อกิจกรรม">
+        <input type="number" id="runKm" placeholder="ระยะ (กม.)" style="max-width:120px">
+        <button class="btn" onclick="addRun()">+ บันทึกเอง</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>สรุปสัปดาห์</h3>
+      <div class="big-stat mono">${totalKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม.</span></div>
+      <div class="stat-note">เป้าหมาย ${r.weeklyGoalKm} กม./สัปดาห์</div>
+      <div class="bar-row"><div class="bar-label">ความคืบหน้า</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.round(100*totalKm/r.weeklyGoalKm))}%; background:var(--teal)"></div></div><div class="bar-val">${Math.min(100,Math.round(100*totalKm/r.weeklyGoalKm))}%</div></div>
+      <hr style="border:none; border-top:1px solid var(--line); margin:14px 0">
+      <h3>Sync จาก intervals.icu</h3>
+      <div class="muted" style="margin-bottom:8px">ต้องตั้งค่า API key ที่หน้า "ตั้งค่า" ก่อน (บัญชี intervals.icu เดียวกับที่เชื่อม Suunto อยู่แล้ว)</div>
+      <button class="btn btn-teal" onclick="syncIntervals()">🔄 Sync ตอนนี้</button>
+      <div id="runSyncMsg"></div>
+      <div class="muted" style="margin-top:10px">Sync ล่าสุด: ${r.lastSync ? fmtDate(r.lastSync.slice(0,10)) + ' ' + r.lastSync.slice(11,16) : 'ยังไม่เคย sync'}</div>
+    </div>
+  </div>
+  `;
+}
+function addRun(){
+  const name = document.getElementById('runName').value.trim() || 'วิ่ง';
+  const km = parseFloat(document.getElementById('runKm').value);
+  if(!km) return;
+  state.running.activities.unshift({id:uid(), date:todayISO(), name, distance_km:km, moving_time_min:null, done:true});
+  saveState(); render();
+}
+function delRun(id){ state.running.activities = state.running.activities.filter(a=>a.id!==id); saveState(); render(); }
+
+async function syncIntervals(){
+  const msgEl = document.getElementById('runSyncMsg');
+  const key = state.settings.intervalsApiKey;
+  const athlete = state.settings.intervalsAthleteId || '0';
+  if(!key){ msgEl.innerHTML = `<div class="msg msg-err">ยังไม่ได้ใส่ API key — ไปที่หน้า "ตั้งค่า" ก่อน</div>`; return; }
+  msgEl.innerHTML = `<div class="muted">กำลัง sync...</div>`;
+  const newest = todayISO();
+  const oldest = addDays(newest, -13);
+  const url = `https://intervals.icu/api/v1/athlete/${athlete}/activities?oldest=${oldest}&newest=${newest}`;
+  try{
+    const res = await fetch(url, { headers: { 'Authorization': 'Basic ' + btoa('API_KEY:' + key) } });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    let added = 0;
+    (data||[]).forEach(act=>{
+      const km = (act.distance || 0) / 1000;
+      if(!km) return;
+      state.running.activities.unshift({
+        id: 'intervals-' + act.id,
+        date: (act.start_date_local||act.start_date||todayISO()).slice(0,10),
+        name: act.name || act.type || 'Activity',
+        distance_km: Math.round(km*10)/10,
+        moving_time_min: act.moving_time ? Math.round(act.moving_time/60) : null,
+        done:true
+      });
+      added++;
+    });
+    state.running.lastSync = new Date().toISOString();
+    saveState();
+    msgEl.innerHTML = `<div class="msg msg-ok">Sync สำเร็จ — ดึงมา ${added} กิจกรรม</div>`;
+    render();
+  }catch(err){
+    msgEl.innerHTML = `<div class="msg msg-err">Sync ไม่สำเร็จ (${escapeHtml(err.message)}). สาเหตุที่พบบ่อย: เบราว์เซอร์บล็อกด้วย CORS เพราะไฟล์นี้เปิดแบบ local file, หรือ API key/athlete id ไม่ถูกต้อง — ลองเปิดไฟล์นี้ผ่าน local web server (เช่น "npx serve") แทนการดับเบิลคลิกเปิดตรงๆ ถ้ายังไม่ได้ ให้ใช้ปุ่ม "บันทึกเอง" แทนไปก่อน</div>`;
+  }
+}
+
+/* ---------- Work view ---------- */
+function renderWork(){
+  const w = state.work;
+  const sorted = [...w.tasks].sort((a,b)=> (a.done - b.done) || String(a.due).localeCompare(String(b.due)));
+  return `
+  <div class="section-title">งาน EGAT</div>
+  <div class="section-sub">แม่เมาะ · Efficiency Dept. — โมดูลนี้เป็น manual quick-entry เพราะ ECM/MS365 ภายในองค์กรไม่มี API เปิดให้แอปส่วนตัวเชื่อมได้ (org policy บล็อก Azure tenant)</div>
+  <div class="panel">
+    <div class="form-row">
+      <input type="text" id="taskText" placeholder="งานใหม่ เช่น รายงาน PPA เดือน ส.ค.">
+      <input type="date" id="taskDue" value="${todayISO()}">
+      <select id="taskPriority">
+        <option value="high">สำคัญมาก</option>
+        <option value="normal" selected>ปกติ</option>
+        <option value="low">ไม่เร่งด่วน</option>
+      </select>
+      <button class="btn" onclick="addTask()">+ เพิ่มงาน</button>
+    </div>
+    <div class="task-list" style="margin-top:8px">
+      ${sorted.map(tk=>`<div class="task-row">
+        <button class="task-check ${tk.done?'done':''}" onclick="toggleTask('${tk.id}')"></button>
+        <div class="task-text ${tk.done?'done':''}">${escapeHtml(tk.text)} ${tk.priority==='high'?'<span class="tag" style="background:var(--coral-pale); color:var(--coral)">สำคัญมาก</span>':''}</div>
+        <div class="task-due">${fmtDate((tk.due||'').slice(0,10))}</div>
+        <button class="task-del" onclick="delTask('${tk.id}')">✕</button>
+      </div>`).join('') || '<div class="muted">ยังไม่มีงาน</div>'}
+    </div>
+  </div>
+  `;
+}
+function addTask(){
+  const text = document.getElementById('taskText').value.trim();
+  const due = document.getElementById('taskDue').value || todayISO();
+  const priority = document.getElementById('taskPriority').value;
+  if(!text) return;
+  state.work.tasks.unshift({id:uid(), text, due, done:false, priority});
+  saveState(); render();
+}
+function toggleTask(id){ const tk = state.work.tasks.find(t=>t.id===id); if(tk){ tk.done = !tk.done; saveState(); render(); } }
+function delTask(id){ state.work.tasks = state.work.tasks.filter(t=>t.id!==id); saveState(); render(); }
+
+/* ---------- Health view ---------- */
+function renderHealth(){
+  const h = state.health;
+  return `
+  <div class="section-title">สุขภาพครอบครัว</div>
+  <div class="section-sub">อ่านค่าจาก Family Health Bot (Google Sheets) — วางลิงก์ Google Sheet ที่ "เผยแพร่สู่เว็บ" เป็น CSV ที่หน้าตั้งค่า แล้วกด Import ด้านล่าง</div>
+  <div class="form-row" style="margin-bottom:16px">
+    <button class="btn btn-teal" onclick="importHealthSheet()">🔄 Import จาก Google Sheet (CSV)</button>
+    <div id="healthImportMsg" class="muted"></div>
+  </div>
+  <div class="grid">
+    ${h.members.map(m=>`
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><div class="avatar">${escapeHtml(m.avatar)}</div><div><h3>${escapeHtml(m.name)}</h3><div class="card-sub">${m.logs.length} รายการบันทึก</div></div></div>
+        </div>
+        ${m.logs.slice(0,4).map(l=>`<div class="health-row"><div>${fmtDate(l.date)}</div><div class="mono" style="${l.flag==='warn'?'color:var(--coral)':''}">${escapeHtml(l.note)}</div></div>`).join('') || '<div class="muted">ไม่มีบันทึก</div>'}
+        <div class="form-row" style="margin-top:10px">
+          <input type="text" id="healthNote-${m.id}" placeholder="บันทึกใหม่">
+          <select id="healthFlag-${m.id}"><option value="ok">ปกติ</option><option value="warn">ต้องระวัง</option></select>
+          <button class="btn btn-sm" onclick="addHealthLog('${m.id}')">+ เพิ่ม</button>
+        </div>
+      </div>
+    `).join('')}
+  </div>
+  `;
+}
+function addHealthLog(memberId){
+  const note = document.getElementById('healthNote-'+memberId).value.trim();
+  const flag = document.getElementById('healthFlag-'+memberId).value;
+  if(!note) return;
+  const m = state.health.members.find(x=>x.id===memberId);
+  if(m){ m.logs.unshift({id:uid(), date:todayISO(), note, flag}); saveState(); render(); }
+}
+async function importHealthSheet(){
+  const msgEl = document.getElementById('healthImportMsg');
+  const url = state.settings.healthSheetCsvUrl;
+  if(!url){ msgEl.innerHTML = `<span style="color:var(--coral)">ยังไม่ได้ตั้งค่าลิงก์ CSV — ไปที่หน้า "ตั้งค่า"</span>`; return; }
+  msgEl.textContent = 'กำลังโหลด...';
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = text.trim().split('\n').map(r=>r.split(','));
+    const header = rows.shift().map(h=>h.trim().toLowerCase());
+    const nameIdx = header.indexOf('name'); const dateIdx = header.indexOf('date'); const noteIdx = header.indexOf('note'); const flagIdx = header.indexOf('flag');
+    let added = 0;
+    rows.forEach(cols=>{
+      if(!cols.length || !cols[0]) return;
+      const name = nameIdx>=0 ? cols[nameIdx] : cols[0];
+      let m = state.health.members.find(x=>x.name.trim()===name.trim());
+      if(!m){ m = {id:uid(), name:name.trim(), avatar:name.trim().slice(0,2), logs:[]}; state.health.members.push(m); }
+      m.logs.unshift({id:uid(), date: dateIdx>=0?cols[dateIdx]:todayISO(), note: noteIdx>=0?cols[noteIdx]:'', flag: flagIdx>=0?cols[flagIdx]:'ok'});
+      added++;
+    });
+    saveState();
+    msgEl.innerHTML = `<span style="color:var(--teal)">Import สำเร็จ ${added} แถว</span>`;
+    render();
+  }catch(err){
+    msgEl.innerHTML = `<span style="color:var(--coral)">Import ไม่สำเร็จ: ${escapeHtml(err.message)} — ตรวจว่า Sheet เผยแพร่เป็น CSV แบบสาธารณะแล้ว (File → Share → Publish to web → CSV)</span>`;
+  }
+}
+
+/* ---------- Trips view ---------- */
+function renderTrips(){
+  const trips = state.trips.list;
+  return `
+  <div class="section-title">ทริป</div>
+  <div class="section-sub">วางแผนหลายทริป ใส่ค่าใช้จ่ายต่อทริป และ export เข้า Google Calendar ได้โดยไม่ต้องตั้งค่า OAuth (ใช้ .ics import หรือปุ่ม "เพิ่มลง Calendar" ต่อวัน)</div>
+  <div class="panel">
+    <h3>สร้างทริปใหม่</h3>
+    <div class="form-row">
+      <input type="text" id="tripName" placeholder="ชื่อทริป">
+      <input type="text" id="tripVehicle" placeholder="พาหนะ (ไม่บังคับ)">
+      <input type="number" id="tripBudget" placeholder="งบ (บาท)" style="max-width:120px">
+      <button class="btn" onclick="addTrip()">+ สร้างทริป</button>
+    </div>
+  </div>
+  ${trips.map(tr=>renderTripCard(tr)).join('') || '<div class="muted">ยังไม่มีทริป</div>'}
+  `;
+}
+function renderTripCard(tr){
+  const totalExpense = tr.expenses.reduce((s,e)=>s+(e.amount||0),0);
+  return `
+  <div class="panel trip-card">
+    <div class="trip-card-head">
+      <h4>✈ ${escapeHtml(tr.name)} <span class="muted">${tr.vehicle?('· '+escapeHtml(tr.vehicle)):''}</span></h4>
+      <div style="display:flex; gap:8px; align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="exportTripIcs('${tr.id}')">⬇ Export .ics</button>
+        <button class="task-del" onclick="delTrip('${tr.id}')">✕</button>
+      </div>
+    </div>
+    <div class="two-col">
+      <div>
+        <h3 style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px">แผนแต่ละวัน</h3>
+        ${tr.days.map((d,i)=>`
+          <div class="form-row" style="align-items:center">
+            <span class="tag">Day ${i+1}</span>
+            <input type="date" value="${d.date}" onchange="updateTripDay('${tr.id}',${i},'date',this.value)" style="max-width:150px">
+            <input type="text" value="${escapeHtml(d.place)}" placeholder="สถานที่" onchange="updateTripDay('${tr.id}',${i},'place',this.value)">
+            <a href="${gcalLink(d)}" target="_blank" class="btn btn-ghost btn-sm">+ Calendar</a>
+            <button class="task-del" onclick="delTripDay('${tr.id}',${i})">✕</button>
+          </div>
+        `).join('')}
+        <button class="btn btn-ghost btn-sm" onclick="addTripDay('${tr.id}')">+ เพิ่มวัน</button>
+      </div>
+      <div>
+        <h3 style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px">ค่าใช้จ่าย (รวม ฿${fmtMoney(totalExpense)} / งบ ฿${fmtMoney(tr.budget)})</h3>
+        <ul class="small-list">${tr.expenses.map(e=>`<li>${fmtDate(e.date)} — ${escapeHtml(e.item)}: ฿${fmtMoney(e.amount)} <button class="task-del" onclick="delTripExpense('${tr.id}','${e.id}')">✕</button></li>`).join('') || '<li>ยังไม่มีค่าใช้จ่าย</li>'}</ul>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="expItem-${tr.id}" placeholder="รายการ">
+          <input type="number" id="expAmount-${tr.id}" placeholder="บาท" style="max-width:100px">
+          <button class="btn btn-sm" onclick="addTripExpense('${tr.id}')">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+function gcalLink(day){
+  const start = day.date.replace(/-/g,'');
+  const d = new Date(day.date+'T00:00:00'); d.setDate(d.getDate()+1);
+  const end = d.toISOString().slice(0,10).replace(/-/g,'');
+  const text = encodeURIComponent(day.place || 'ทริป');
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}`;
+}
+function addTrip(){
+  const name = document.getElementById('tripName').value.trim();
+  const vehicle = document.getElementById('tripVehicle').value.trim();
+  const budget = parseFloat(document.getElementById('tripBudget').value) || 0;
+  if(!name) return;
+  state.trips.list.push({id:uid(), name, vehicle, startDate:todayISO(), budget, days:[{date:todayISO(), place:'', notes:''}], expenses:[]});
+  saveState(); render();
+}
+function delTrip(id){ state.trips.list = state.trips.list.filter(t=>t.id!==id); saveState(); render(); }
+function addTripDay(tripId){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ const last = tr.days[tr.days.length-1]; tr.days.push({date: last?addDays(last.date,1):todayISO(), place:'', notes:''}); saveState(); render(); } }
+function delTripDay(tripId, idx){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ tr.days.splice(idx,1); saveState(); render(); } }
+function updateTripDay(tripId, idx, field, value){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr && tr.days[idx]){ tr.days[idx][field] = value; saveState(); } }
+function addTripExpense(tripId){
+  const item = document.getElementById('expItem-'+tripId).value.trim();
+  const amount = parseFloat(document.getElementById('expAmount-'+tripId).value);
+  if(!item || !amount) return;
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(tr){ tr.expenses.unshift({id:uid(), item, amount, date:todayISO()}); saveState(); render(); }
+}
+function delTripExpense(tripId, expId){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ tr.expenses = tr.expenses.filter(e=>e.id!==expId); saveState(); render(); } }
+function exportTripIcs(tripId){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Milk Life OS//TH\r\n';
+  tr.days.forEach((d,i)=>{
+    const dt = d.date.replace(/-/g,'');
+    const nd = new Date(d.date+'T00:00:00'); nd.setDate(nd.getDate()+1);
+    const dtEnd = nd.toISOString().slice(0,10).replace(/-/g,'');
+    ics += `BEGIN:VEVENT\r\nUID:${tr.id}-day${i}@milklifeos\r\nDTSTART;VALUE=DATE:${dt}\r\nDTEND;VALUE=DATE:${dtEnd}\r\nSUMMARY:${(tr.name+' — '+d.place).replace(/\r?\n/g,' ')}\r\nEND:VEVENT\r\n`;
+  });
+  ics += 'END:VCALENDAR\r\n';
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = tr.name.replace(/[^a-zA-Z0-9ก-๙ ]/g,'') + '.ics';
+  a.click();
+}
+
+/* ---------- Settings view ---------- */
+function renderSettings(){
+  const s = state.settings;
+  return `
+  <div class="section-title">ตั้งค่า</div>
+  <div class="section-sub">API key และลิงก์เชื่อมต่อทั้งหมดเก็บไว้ใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ส่งไปที่ไหน</div>
+
+  <div class="panel">
+    <h3>🏃 intervals.icu (วิ่ง — เชื่อม Suunto อยู่แล้ว)</h3>
+    <div class="muted" style="margin-bottom:10px">สร้าง API key ได้ที่ intervals.icu → Settings → Developer Settings (ด้านล่างสุด) ส่วน Athlete ID ใส่ "0" ได้เลยถ้าต้องการดึงข้อมูลของบัญชีตัวเอง</div>
+    <div class="form-row">
+      <input type="text" id="intervalsKey" placeholder="API key" value="${escapeHtml(s.intervalsApiKey)}">
+      <input type="text" id="intervalsAthlete" placeholder="Athlete ID (ค่าเริ่มต้น 0)" value="${escapeHtml(s.intervalsAthleteId)}" style="max-width:180px">
+      <button class="btn" onclick="saveIntervalsSettings()">บันทึก</button>
+    </div>
+    <div class="muted">หมายเหตุ: ถ้า sync แล้วเจอ error เกี่ยวกับ CORS ให้เปิดไฟล์นี้ผ่าน local server แทนการดับเบิลคลิก (เช่นรันคำสั่ง <span class="mono">npx serve</span> ในโฟลเดอร์นี้แล้วเปิดผ่าน http://localhost แทน)</div>
+  </div>
+
+  <div class="panel">
+    <h3>❤️ Family Health Bot (Google Sheet CSV)</h3>
+    <div class="muted" style="margin-bottom:10px">เปิด Google Sheet ที่ Family Health Bot ใช้เป็น backend → File → Share → Publish to web → เลือกแผ่นงานที่ต้องการ → format CSV → คัดลอกลิงก์มาวางด้านล่าง (คอลัมน์ที่รองรับ: name, date, note, flag)</div>
+    <div class="form-row">
+      <input type="url" id="healthCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" value="${escapeHtml(s.healthSheetCsvUrl)}">
+      <button class="btn" onclick="saveHealthSettings()">บันทึก</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>✈ ทริป / Google Calendar</h3>
+    <div class="muted">ไม่ต้องตั้งค่าอะไร — ใช้ปุ่ม "+ Calendar" ต่อวันในหน้าทริป (เปิดหน้าสร้างอีเวนต์ของ Google Calendar ให้ทันที) หรือปุ่ม "Export .ics" เพื่อ import ทั้งทริปเข้า Calendar ทีเดียว การเชื่อมแบบเต็มรูปแบบผ่าน OAuth ทำได้ แต่ต้องสร้าง Google Cloud OAuth client ก่อน ซึ่งเป็นขั้นตอนที่พี่ต้องทำเองผ่านบัญชี Google — บอกได้ถ้าอยากให้ทำส่วนนี้ต่อ</div>
+  </div>
+
+  <div class="panel">
+    <h3>💾 ข้อมูล</h3>
+    <div class="form-row">
+      <button class="btn btn-ghost" onclick="exportAllJson()">⬇ Export ข้อมูลทั้งหมด (JSON)</button>
+      <button class="btn btn-ghost" style="background:var(--coral-pale); color:var(--coral)" onclick="resetAll()">⚠ รีเซ็ตข้อมูลทั้งหมด</button>
+    </div>
+  </div>
+  `;
+}
+function saveIntervalsSettings(){
+  state.settings.intervalsApiKey = document.getElementById('intervalsKey').value.trim();
+  state.settings.intervalsAthleteId = document.getElementById('intervalsAthlete').value.trim() || '0';
+  saveState(); render();
+}
+function saveHealthSettings(){
+  state.settings.healthSheetCsvUrl = document.getElementById('healthCsvUrl').value.trim();
+  saveState(); render();
+}
+function exportAllJson(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'milk-life-os-export-' + todayISO() + '.json';
+  a.click();
+}
+function resetAll(){
+  if(!confirm('ลบข้อมูลทั้งหมดในเครื่องนี้และเริ่มใหม่ด้วยข้อมูลตัวอย่าง?')) return;
+  state = defaultState();
+  saveState(); render();
+}
+
+/* ---------- Init ---------- */
+render();
+</script>
+</body>
+</html>
