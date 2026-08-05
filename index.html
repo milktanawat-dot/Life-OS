@@ -221,9 +221,16 @@ function syncFromMilkHubDirect(){
     const profilesRaw = localStorage.getItem('milkhub:app:profiles');
     if(!profilesRaw) return null;
     const profiles = JSON.parse(profilesRaw) || [];
-    // Real same-origin connection confirmed — drop the built-in sample/demo
-    // transactions so they don't sit mixed in with real Milk Hub data.
-    state.finance.transactions = state.finance.transactions.filter(t=>!t.demo);
+    // Real same-origin connection confirmed. Drop the built-in sample/demo
+    // transactions so they don't sit mixed in with real Milk Hub data. This also
+    // covers browsers that already saved a demo-seeded state before this fix
+    // shipped (those old rows predate the `demo` flag) — if nothing in the
+    // current ledger has ever come from a real Milk Hub sync (no 'mh-' ids yet),
+    // treat the whole ledger as leftover demo data and clear it before merging.
+    const hasRealSyncedRows = state.finance.transactions.some(t=>t.id && String(t.id).indexOf('mh-')===0);
+    state.finance.transactions = hasRealSyncedRows
+      ? state.finance.transactions.filter(t=>!t.demo)
+      : [];
     let processed = 0;
     profiles.forEach(p=>{
       const key = p.id === 'default' ? 'milkhub:money:entries' : 'milkhub:profile:' + p.id + ':money:entries';
