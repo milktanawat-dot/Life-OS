@@ -798,6 +798,7 @@ function toggleTask(id){ const tk = state.work.tasks.find(t=>t.id===id); if(tk){
 function delTask(id){ state.work.tasks = state.work.tasks.filter(t=>t.id!==id); saveState(); render(); }
 
 /* ---------- Health view ---------- */
+let healthStatusHtml = ''; // transient status line for the connect box; renderHealth() reads this so a full re-render doesn't wipe it out
 function renderHealth(){
   const h = state.health;
   return `
@@ -807,7 +808,7 @@ function renderHealth(){
     <input type="url" id="healthConnectUrl" placeholder="วางลิงก์ตรงนี้ช่องเดียว" value="${escapeHtml(state.settings.healthConnectUrl||'')}" style="flex:1">
     <button class="btn btn-teal" onclick="connectHealth()">🔄 เชื่อมข้อมูล</button>
   </div>
-  <div id="healthImportMsg" class="muted" style="margin-bottom:16px"></div>
+  <div id="healthImportMsg" class="muted" style="margin-bottom:16px">${healthStatusHtml}</div>
 
   <div class="panel" style="margin-bottom:16px">
     <h3>เพิ่มคนใหม่</h3>
@@ -863,9 +864,8 @@ function addHealthLog(memberId){
 // URL and routes to the right method automatically, so it's impossible to
 // paste a Sheets link into the "Apps Script" flow (or vice versa) by mistake.
 async function connectHealth(){
-  const msgEl = document.getElementById('healthImportMsg');
   const url = document.getElementById('healthConnectUrl').value.trim();
-  if(!url){ msgEl.innerHTML = `<span style="color:var(--coral)">ยังไม่ได้วางลิงก์</span>`; return; }
+  if(!url){ healthStatusHtml = `<span style="color:var(--coral)">ยังไม่ได้วางลิงก์</span>`; render(); return; }
   state.settings.healthConnectUrl = url;
   saveState();
   if(/script\.google\.com/.test(url)){
@@ -873,7 +873,8 @@ async function connectHealth(){
   }else if(/docs\.google\.com\/spreadsheets/.test(url) || /output=csv|\/gviz\/tq/.test(url)){
     await importHealthSheet(url);
   }else{
-    msgEl.innerHTML = `<span style="color:var(--coral)">ไม่รู้จักลิงก์นี้ — ต้องเป็นลิงก์ script.google.com (Apps Script) หรือลิงก์ docs.google.com/spreadsheets (Google Sheet)</span>`;
+    healthStatusHtml = `<span style="color:var(--coral)">ไม่รู้จักลิงก์นี้ — ต้องเป็นลิงก์ script.google.com (Apps Script) หรือลิงก์ docs.google.com/spreadsheets (Google Sheet)</span>`;
+    render();
   }
 }
 // Sync directly from the Family Health Bot Apps Script web app.
@@ -885,10 +886,9 @@ async function connectHealth(){
 // "ตั้งค่า" page for the exact snippet to paste in. Until that's added,
 // this will fail gracefully and the CSV import path above still works.
 async function syncFamilyHealthJson(base){
-  const msgEl = document.getElementById('healthImportMsg');
   base = base || state.settings.familyHealthScriptUrl;
-  if(!base){ msgEl.innerHTML = `<span style="color:var(--coral)">ยังไม่ได้ตั้งค่าลิงก์ Family Health Bot</span>`; return; }
-  msgEl.textContent = 'กำลัง sync...';
+  if(!base){ healthStatusHtml = `<span style="color:var(--coral)">ยังไม่ได้ตั้งค่าลิงก์ Family Health Bot</span>`; render(); return; }
+  healthStatusHtml = 'กำลัง sync...'; render();
   try{
     const sep = base.includes('?') ? '&' : '?';
     const url = base + sep + 'format=json&section=api';
@@ -913,10 +913,11 @@ async function syncFamilyHealthJson(base){
     });
     state.health.lastSync = new Date().toISOString();
     saveState();
-    msgEl.innerHTML = `<span style="color:var(--teal)">Sync สำเร็จ — เพิ่มใหม่ ${added} รายการ${skipped?` (ข้าม ${skipped} ที่มีอยู่แล้ว)`:''}</span>`;
+    healthStatusHtml = `<span style="color:var(--teal)">Sync สำเร็จ — เพิ่มใหม่ ${added} รายการ${skipped?` (ข้าม ${skipped} ที่มีอยู่แล้ว)`:''}</span>`;
     render();
   }catch(err){
-    msgEl.innerHTML = `<span style="color:var(--coral)">ลิงก์ Apps Script นี้ยังเชื่อมตรงไม่ได้ (${escapeHtml(err.message)}) — ต้องเพิ่มโค้ดเล็กๆ ใน Code.gs ก่อน (ดูคำแนะนำที่หน้า "ตั้งค่า") ระหว่างนี้ลองวางลิงก์ Google Sheet แทนในช่องเดียวกันนี้ได้เลย จะ import ให้อัตโนมัติ</span>`;
+    healthStatusHtml = `<span style="color:var(--coral)">ลิงก์ Apps Script นี้ยังเชื่อมตรงไม่ได้ (${escapeHtml(err.message)}) — ต้องเพิ่มโค้ดเล็กๆ ใน Code.gs ก่อน (ดูคำแนะนำที่หน้า "ตั้งค่า") ระหว่างนี้ลองวางลิงก์ Google Sheet แทนในช่องเดียวกันนี้ได้เลย จะ import ให้อัตโนมัติ</span>`;
+    render();
   }
 }
 // Accepts pretty much any Google Sheets link (normal share/edit link, view
@@ -933,12 +934,28 @@ function normalizeSheetCsvUrl(input){
   const gid = gidMatch ? gidMatch[1] : '0';
   return `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv&gid=${gid}`;
 }
+// Very small CSV line parser that respects double-quoted fields (so commas
+// inside a quoted note, e.g. "ปวดหัว, เวียนหัว", don't break column counts).
+function parseCsvLine(line){
+  const out = []; let cur = ''; let inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQuotes){
+      if(c === '"'){ if(line[i+1] === '"'){ cur += '"'; i++; } else { inQuotes = false; } }
+      else cur += c;
+    }else{
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ out.push(cur); cur=''; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
 async function importHealthSheet(rawUrl){
-  const msgEl = document.getElementById('healthImportMsg');
   const url = normalizeSheetCsvUrl(rawUrl || state.settings.healthSheetCsvUrl);
-
-  if(!url){ msgEl.innerHTML = `<span style="color:var(--coral)">ยังไม่ได้ตั้งค่าลิงก์ Sheet — ไปที่หน้า "ตั้งค่า"</span>`; return; }
-  msgEl.textContent = 'กำลังโหลด...';
+  if(!url){ healthStatusHtml = `<span style="color:var(--coral)">ยังไม่ได้ตั้งค่าลิงก์ Sheet — ไปที่หน้า "ตั้งค่า"</span>`; render(); return; }
+  healthStatusHtml = 'กำลังโหลด...'; render();
   try{
     const res = await fetch(url);
     if(!res.ok) throw new Error('HTTP ' + res.status);
@@ -946,23 +963,38 @@ async function importHealthSheet(rawUrl){
     if(/^\s*<(!DOCTYPE|html)/i.test(text)){
       throw new Error('ลิงก์นี้ตอบกลับเป็นหน้าเว็บ ไม่ใช่ CSV — ปกติแปลว่า Sheet ยังไม่ได้แชร์แบบ "Anyone with the link" (ดูวิธีที่หน้าตั้งค่า)');
     }
-    const rows = text.trim().split('\n').map(r=>r.split(','));
+    const lines = text.trim().split('\n').filter(l=>l.length);
+    if(lines.length < 1){ throw new Error('ไฟล์ CSV ว่างเปล่า'); }
+    const rows = lines.map(parseCsvLine);
     const header = rows.shift().map(h=>h.trim().toLowerCase());
     const nameIdx = header.indexOf('name'); const dateIdx = header.indexOf('date'); const noteIdx = header.indexOf('note'); const flagIdx = header.indexOf('flag');
+    const noColumnsMatched = nameIdx<0 && dateIdx<0 && noteIdx<0 && flagIdx<0;
     let added = 0;
     rows.forEach(cols=>{
       if(!cols.length || !cols[0]) return;
       const name = nameIdx>=0 ? cols[nameIdx] : cols[0];
+      if(!name) return;
       let m = state.health.members.find(x=>x.name.trim()===name.trim());
       if(!m){ m = {id:uid(), name:name.trim(), avatar:name.trim().slice(0,2), logs:[]}; state.health.members.push(m); }
       m.logs.unshift({id:uid(), date: dateIdx>=0?cols[dateIdx]:todayISO(), note: noteIdx>=0?cols[noteIdx]:'', flag: flagIdx>=0?cols[flagIdx]:'ok'});
       added++;
     });
     saveState();
-    msgEl.innerHTML = `<span style="color:var(--teal)">Import สำเร็จ ${added} แถว</span>`;
+    if(noColumnsMatched){
+      // We couldn't find columns named name/date/note/flag — data still got
+      // imported (using column 1 as the name, guessing on the rest), but the
+      // shape is probably wrong. Surface exactly what we saw so this is
+      // fixable instead of a silent no-op.
+      healthStatusHtml = `<span style="color:var(--amber)">Import แล้ว ${added} แถว แต่ไม่เจอคอลัมน์ชื่อ name/date/note/flag ในชีตนี้ — หัวคอลัมน์ที่เจอจริงคือ: <b>${escapeHtml(header.join(', '))}</b> (ใช้คอลัมน์แรกเป็นชื่อคนไปก่อน อาจไม่ตรง) ส่งหัวคอลัมน์นี้มาบอกได้ จะแก้ให้ mapping ตรงกับชีตจริง</span>`;
+    }else if(added === 0){
+      healthStatusHtml = `<span style="color:var(--coral)">อ่านชีตได้ แต่ไม่มีแถวข้อมูล (มีแค่หัวตาราง ${rows.length===0?'หรือว่างเปล่า':''}) — เช็คว่าวางลิงก์ของแผ่นงาน (tab) ที่มีข้อมูลจริงหรือเปล่า ถ้า Sheet มีหลายแผ่นงาน ต้องเป็นลิงก์ของแผ่นที่ถูกต้อง (ดู gid ท้ายลิงก์)</span>`;
+    }else{
+      healthStatusHtml = `<span style="color:var(--teal)">Import สำเร็จ ${added} แถว</span>`;
+    }
     render();
   }catch(err){
-    msgEl.innerHTML = `<span style="color:var(--coral)">Import ไม่สำเร็จ: ${escapeHtml(err.message)}${/ตอบกลับเป็นหน้าเว็บ/.test(err.message) ? '' : ' — ตรวจว่า Sheet ตั้ง Share เป็น "Anyone with the link → Viewer" แล้ว'}</span>`;
+    healthStatusHtml = `<span style="color:var(--coral)">Import ไม่สำเร็จ: ${escapeHtml(err.message)}${/ตอบกลับเป็นหน้าเว็บ/.test(err.message) ? '' : ' — ตรวจว่า Sheet ตั้ง Share เป็น "Anyone with the link → Viewer" แล้ว'}</span>`;
+    render();
   }
 }
 
