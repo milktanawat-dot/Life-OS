@@ -106,6 +106,18 @@ a{color:inherit;}
 .capture-chip{font-size:10.5px; padding:4px 9px; border-radius:99px; background:var(--purple-pale); color:var(--purple-deep);}
 
 .footnote{text-align:center; color:var(--ink-soft); font-size:11.5px; margin-top:24px; line-height:1.6;}
+.cal-grid{display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;}
+.cal-dow{text-align:center; font-size:11px; color:var(--ink-soft); padding-bottom:6px;}
+.cal-day{aspect-ratio:1; border-radius:8px; padding:6px 4px; display:flex; flex-direction:column; align-items:center; gap:3px; background:var(--bg); border:none; font-family:inherit; cursor:pointer; width:100%;}
+.cal-day:hover{background:var(--purple-pale);}
+.cal-day-out{opacity:0.35;}
+.cal-day-today{background:var(--purple-pale); outline:1.5px solid var(--purple);}
+.cal-day-sel{outline:1.5px solid var(--purple-deep); outline-offset:-1.5px;}
+.cal-day-num{font-size:12px; color:var(--ink);}
+.cal-dots{display:flex; gap:2px; min-height:6px;}
+.cal-dot{width:5px; height:5px; border-radius:50%;}
+.health-alert{display:flex; align-items:center; gap:8px; background:var(--amber-pale); color:var(--amber); padding:10px 14px; border-radius:12px; font-size:13px; margin-bottom:16px;}
+.health-row-warn{background:var(--coral-pale); border-radius:8px; padding:6px 8px; margin:2px -8px;}
 
 /* Forms / buttons shared across module pages */
 .section-title{font-size:19px; font-weight:600; margin-bottom:4px;}
@@ -179,6 +191,16 @@ function daysUntil(iso){ const d=new Date(iso+'T00:00:00'); const t=new Date(tod
 /* ---------- Finance history helpers ---------- */
 function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
 function ymLabel(ym){ if(!ym) return ''; const parts = ym.split('-'); const y = parseInt(parts[0],10), m = parseInt(parts[1],10); return thaiMonths[m-1] + ' ' + (y+543); }
+// Returns 42 ISO dates (6 Monday-start weeks) covering the given YYYY-MM month, for a standard month-grid calendar.
+function buildMonthGrid(ym){
+  const firstOfMonth = ym+'-01';
+  const startDow = new Date(firstOfMonth+'T00:00:00').getDay();
+  const diffToMonday = startDow === 0 ? -6 : 1 - startDow;
+  const gridStart = addDays(firstOfMonth, diffToMonday);
+  const days = [];
+  for(let i=0;i<42;i++) days.push(addDays(gridStart, i));
+  return days;
+}
 function shiftYM(ym, delta){ const parts = ym.split('-').map(Number); const d = new Date(parts[0], parts[1]-1+delta, 1); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
 const CAT_COLORS = ['coral','purple','amber','teal'];
 function categoryColor(i){ return CAT_COLORS[i % CAT_COLORS.length]; }
@@ -291,7 +313,9 @@ function defaultState(){
         {id:uid(), text:'กรอก Rolling Plan Unit 11', due:t, done:false, priority:'normal'},
         {id:uid(), text:'โหลด NCC เดือน ก.ค.', due:t, done:true, priority:'normal'},
         {id:uid(), text:'สรุปมติประชุม (secretary)', due:t, done:false, priority:'low'}
-      ]
+      ],
+      routines: [],
+      routineCompletions: {} // { 'YYYY-MM': { routineId: true } }
     },
     health: {
       lastSync: null,
@@ -328,7 +352,16 @@ function addDays(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDa
 let state = loadState();
 function loadState(){
   const raw = localStorage.getItem(LS_KEY);
-  if(raw){ try{ return JSON.parse(raw); }catch(e){ console.warn('bad state, resetting'); } }
+  if(raw){
+    try{
+      const s = JSON.parse(raw);
+      // Backfill fields added in later versions so people with an older saved
+      // state (from before this update) don't hit "undefined" errors.
+      if(s.work && !s.work.routines) s.work.routines = [];
+      if(s.work && !s.work.routineCompletions) s.work.routineCompletions = {};
+      return s;
+    }catch(e){ console.warn('bad state, resetting'); }
+  }
   const s = defaultState();
   localStorage.setItem(LS_KEY, JSON.stringify(s));
   return s;
@@ -364,6 +397,7 @@ let currentView = 'today';
 let lastCaptureResults = null;
 let financeViewYM = todayISO().slice(0,7);
 function nav(view){ currentView = view; render(); }
+function selectCalDay(d){ selectedCalDay = d; render(); }
 
 function render(){
   if(milkHubSameOriginAvailable()){ syncFromMilkHubDirect(); }
@@ -379,6 +413,7 @@ function render(){
 }
 
 /* ---------- Today view ---------- */
+let selectedCalDay = null; // transient — which calendar day is expanded below the grid
 function renderToday(){
   const t = todayISO();
   const items = [];
@@ -392,6 +427,16 @@ function renderToday(){
   const pendingTasks = work.tasks.filter(x=>!x.done).length;
   const upcomingTrip = trips.list.map(tr=>({tr, nd: daysUntil(tr.days[0] ? tr.days[0].date : tr.startDate)})).filter(x=>x.nd>=0).sort((a,b)=>a.nd-b.nd)[0];
 
+  const dayEvents = (d)=>{
+    const out = [];
+    work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10)===d) out.push({label:(tk.done?'✓ ':'')+tk.text, color:'var(--amber)', gcalTitle:tk.text}); });
+    trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
+    health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') out.push({label:m.name+': '+l.note, color:'var(--coral)', gcalTitle:null}); }));
+    return out;
+  };
+  const selDay = selectedCalDay || t;
+  const selEvents = dayEvents(selDay);
+
   return `
   <div class="ribbon">
     <div class="ribbon-head"><h3>ไทม์ไลน์วันนี้ — รวมทุกด้าน</h3><span>${items.length} รายการ</span></div>
@@ -402,6 +447,41 @@ function renderToday(){
           <div class="tl-dot" style="background:${it.color}"></div>
           <div class="tl-label">${escapeHtml(it.label)}</div>
         </div>`).join('') : '<div class="tl-empty">ไม่มีรายการวันนี้ — ลองพิมพ์ใน Quick Capture ด้านล่าง</div>'}
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px">
+    <div class="ribbon-head" style="margin-bottom:12px">
+      <h3>ปฏิทินเดือนนี้ — ${ymLabel(t.slice(0,7))}</h3>
+      <a href="https://calendar.google.com/calendar/r" target="_blank" class="btn btn-ghost btn-sm">เปิด Google Calendar</a>
+    </div>
+    <div class="cal-grid">
+      ${weekdayShort.map(w=>`<div class="cal-dow">${w}</div>`).join('')}
+      ${buildMonthGrid(t.slice(0,7)).map(d=>{
+        const inMonth = d.slice(0,7) === t.slice(0,7);
+        const isToday = d === t;
+        const isSel = d === selDay;
+        const dots = [];
+        const dayTasks = work.tasks.filter(tk=>!tk.done && (tk.due||'').slice(0,10)===d);
+        const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
+        const dayWarns = []; health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') dayWarns.push(m.name); }));
+        if(dayTasks.length) dots.push({color:'var(--amber)'});
+        if(dayTrips.length) dots.push({color:'var(--purple)'});
+        if(dayWarns.length) dots.push({color:'var(--coral)'});
+        return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
+          <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
+          <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
+        </button>`;
+      }).join('')}
+    </div>
+    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป · จุดแดง = สุขภาพต้องระวัง — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div style="border-top:1px solid var(--line); padding-top:12px">
+      <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
+      ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:${e.color}; flex-shrink:0"></span>
+        <span style="flex:1">${escapeHtml(e.label)}</span>
+        ${e.gcalTitle ? `<a href="${gcalLink(selDay, e.gcalTitle)}" target="_blank" class="btn btn-ghost btn-sm">+ Cal</a>` : ''}
+      </div>`).join('') : '<div class="muted">ไม่มีรายการวันนี้</div>'}
     </div>
   </div>
 
@@ -761,10 +841,35 @@ async function syncIntervals(){
 function renderWork(){
   const w = state.work;
   const sorted = [...w.tasks].sort((a,b)=> (a.done - b.done) || String(a.due).localeCompare(String(b.due)));
+  const ym = todayISO().slice(0,7);
+  const monthDone = w.routineCompletions[ym] || {};
   return `
   <div class="section-title">งาน EGAT</div>
   <div class="section-sub">แม่เมาะ · Efficiency Dept. — โมดูลนี้เป็น manual quick-entry เพราะ ECM/MS365 ภายในองค์กรไม่มี API เปิดให้แอปส่วนตัวเชื่อมได้ (org policy บล็อก Azure tenant)</div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h3>งาน Routine ประจำเดือน (${ymLabel(ym)})</h3>
+    <div class="muted" style="margin-bottom:10px">งานที่ต้องทำซ้ำทุกเดือน เช่น รายงาน PPA, Rolling Plan — ขึ้นให้ติ๊กใหม่ทุกเดือนอัตโนมัติ ไม่ต้องเพิ่มเอง</div>
+    <div class="form-row">
+      <input type="text" id="routineText" placeholder="งาน routine ใหม่ เช่น ส่งรายงาน PPA">
+      <select id="routinePriority">
+        <option value="high">สำคัญมาก</option>
+        <option value="normal" selected>ปกติ</option>
+        <option value="low">ไม่เร่งด่วน</option>
+      </select>
+      <button class="btn" onclick="addRoutine()">+ เพิ่ม Routine</button>
+    </div>
+    <div class="task-list" style="margin-top:8px">
+      ${w.routines.map(r=>{ const done = !!monthDone[r.id]; return `<div class="task-row">
+        <button class="task-check ${done?'done':''}" onclick="toggleRoutine('${r.id}')"></button>
+        <div class="task-text ${done?'done':''}">${escapeHtml(r.text)} ${r.priority==='high'?'<span class="tag" style="background:var(--coral-pale); color:var(--coral)">สำคัญมาก</span>':''}<span class="tag" style="background:var(--purple-pale); color:var(--purple-deep)">ทุกเดือน</span></div>
+        <button class="task-del" onclick="delRoutine('${r.id}')">✕</button>
+      </div>`; }).join('') || '<div class="muted">ยังไม่มีงาน routine</div>'}
+    </div>
+  </div>
+
   <div class="panel">
+    <h3>งานครั้งเดียว</h3>
     <div class="form-row">
       <input type="text" id="taskText" placeholder="งานใหม่ เช่น รายงาน PPA เดือน ส.ค.">
       <input type="date" id="taskDue" value="${todayISO()}">
@@ -780,11 +885,31 @@ function renderWork(){
         <button class="task-check ${tk.done?'done':''}" onclick="toggleTask('${tk.id}')"></button>
         <div class="task-text ${tk.done?'done':''}">${escapeHtml(tk.text)} ${tk.priority==='high'?'<span class="tag" style="background:var(--coral-pale); color:var(--coral)">สำคัญมาก</span>':''}</div>
         <div class="task-due">${fmtDate((tk.due||'').slice(0,10))}</div>
+        <a href="${gcalLink((tk.due||todayISO()).slice(0,10), tk.text)}" target="_blank" class="btn btn-ghost btn-sm">+ Cal</a>
         <button class="task-del" onclick="delTask('${tk.id}')">✕</button>
       </div>`).join('') || '<div class="muted">ยังไม่มีงาน</div>'}
     </div>
   </div>
   `;
+}
+function addRoutine(){
+  const text = document.getElementById('routineText').value.trim();
+  const priority = document.getElementById('routinePriority').value;
+  if(!text) return;
+  state.work.routines.push({id:uid(), text, priority});
+  saveState(); render();
+}
+function toggleRoutine(id){
+  const ym = todayISO().slice(0,7);
+  if(!state.work.routineCompletions[ym]) state.work.routineCompletions[ym] = {};
+  state.work.routineCompletions[ym][id] = !state.work.routineCompletions[ym][id];
+  saveState(); render();
+}
+function delRoutine(id){
+  if(!confirm('ลบงาน routine นี้ถาวร (ประวัติที่ติ๊กไว้แต่ละเดือนจะหายไปด้วย)?')) return;
+  state.work.routines = state.work.routines.filter(r=>r.id!==id);
+  Object.keys(state.work.routineCompletions).forEach(ym=>{ delete state.work.routineCompletions[ym][id]; });
+  saveState(); render();
 }
 function addTask(){
   const text = document.getElementById('taskText').value.trim();
@@ -801,9 +926,11 @@ function delTask(id){ state.work.tasks = state.work.tasks.filter(t=>t.id!==id); 
 let healthStatusHtml = ''; // transient status line for the connect box; renderHealth() reads this so a full re-render doesn't wipe it out
 function renderHealth(){
   const h = state.health;
+  const warnMembers = h.members.filter(m=>m.logs[0] && m.logs[0].flag==='warn');
   return `
   <div class="section-title">สุขภาพครอบครัว</div>
   <div class="section-sub">วางลิงก์ Family Health Bot ของพี่ (จะเป็นลิงก์ script.google.com หรือลิงก์ Google Sheet ก็ได้ ระบบดูออกเองว่าเป็นแบบไหน)</div>
+  ${warnMembers.length ? `<div class="health-alert">⚠ ต้องติดตามวันนี้ — ${warnMembers.map(m=>`${escapeHtml(m.name)} (${escapeHtml(m.logs[0].note)})`).join(', ')}</div>` : ''}
   <div class="form-row" style="margin-bottom:10px">
     <input type="url" id="healthConnectUrl" placeholder="วางลิงก์ตรงนี้ช่องเดียว" value="${escapeHtml(state.settings.healthConnectUrl||'')}" style="flex:1">
     <button class="btn btn-teal" onclick="connectHealth()">🔄 เชื่อมข้อมูล</button>
@@ -820,20 +947,23 @@ function renderHealth(){
   </div>
 
   <div class="grid">
-    ${h.members.map(m=>`
+    ${h.members.map(m=>{ const last = m.logs[0]; const warn = last && last.flag==='warn'; return `
       <div class="card">
         <div class="card-head">
           <div class="card-title"><div class="avatar">${escapeHtml(m.avatar)}</div><div><h3>${escapeHtml(m.name)}</h3><div class="card-sub">${m.logs.length} รายการบันทึก</div></div></div>
-          <button class="task-del" title="ลบคนนี้" onclick="delHealthMember('${m.id}')">✕</button>
+          <div style="display:flex; align-items:center; gap:8px">
+            <span class="pill ${warn?'pill-coral':'pill-teal'}">${warn?'ต้องระวัง':'ปกติ'}</span>
+            <button class="task-del" title="ลบคนนี้" onclick="delHealthMember('${m.id}')">✕</button>
+          </div>
         </div>
-        ${m.logs.slice(0,4).map(l=>`<div class="health-row"><div>${fmtDate(l.date)}</div><div class="mono" style="${l.flag==='warn'?'color:var(--coral)':''}">${escapeHtml(l.note)}</div></div>`).join('') || '<div class="muted">ไม่มีบันทึก</div>'}
+        ${m.logs.slice(0,4).map(l=>`<div class="health-row ${l.flag==='warn'?'health-row-warn':''}"><div>${fmtDate(l.date)}</div><div class="mono" style="${l.flag==='warn'?'color:var(--coral)':''}">${escapeHtml(l.note)}</div></div>`).join('') || '<div class="muted">ไม่มีบันทึก</div>'}
         <div class="form-row" style="margin-top:10px">
           <input type="text" id="healthNote-${m.id}" placeholder="บันทึกใหม่">
           <select id="healthFlag-${m.id}"><option value="ok">ปกติ</option><option value="warn">ต้องระวัง</option></select>
           <button class="btn btn-sm" onclick="addHealthLog('${m.id}')">+ เพิ่ม</button>
         </div>
       </div>
-    `).join('')}
+    `; }).join('')}
   </div>
   `;
 }
@@ -964,7 +1094,7 @@ async function importHealthSheet(rawUrl){
       throw new Error('ลิงก์นี้ตอบกลับเป็นหน้าเว็บ ไม่ใช่ CSV — ปกติแปลว่า Sheet ยังไม่ได้แชร์แบบ "Anyone with the link" (ดูวิธีที่หน้าตั้งค่า)');
     }
     const lines = text.trim().split('\n').filter(l=>l.length);
-    if(lines.length < 1){ throw new Error('ไฟล์ CSV ว่างเปล่า'); }
+    if(lines.length < 1){ throw new Error('ได้คำตอบกลับมาแต่เนื้อไฟล์ว่างเปล่า 0 ไบต์ — สาเหตุที่พบบ่อยสุดคือ (1) Sheet ยังไม่ได้แชร์แบบ "Anyone with the link" จริง (ลองเปิดลิงก์นี้ในหน้าต่าง Incognito ดูว่าต้อง sign in มั้ย) หรือ (2) ลิงก์ชี้ไปแผ่นงาน (tab) ที่ไม่มีข้อมูล — ถ้า Sheet มีหลายแท็บ ให้เปิดแท็บที่มีข้อมูลจริงก่อน แล้วดู #gid=... ท้าย URL ให้ตรงกับแท็บนั้น ค่อยคัดลอกมาวางใหม่'); }
     const rows = lines.map(parseCsvLine);
     const header = rows.shift().map(h=>h.trim().toLowerCase());
     const nameIdx = header.indexOf('name'); const dateIdx = header.indexOf('date'); const noteIdx = header.indexOf('note'); const flagIdx = header.indexOf('flag');
@@ -993,7 +1123,7 @@ async function importHealthSheet(rawUrl){
     }
     render();
   }catch(err){
-    healthStatusHtml = `<span style="color:var(--coral)">Import ไม่สำเร็จ: ${escapeHtml(err.message)}${/ตอบกลับเป็นหน้าเว็บ/.test(err.message) ? '' : ' — ตรวจว่า Sheet ตั้ง Share เป็น "Anyone with the link → Viewer" แล้ว'}</span>`;
+    healthStatusHtml = `<span style="color:var(--coral)">Import ไม่สำเร็จ: ${escapeHtml(err.message)}${/ตอบกลับเป็นหน้าเว็บ|Anyone with the link/.test(err.message) ? '' : ' — ตรวจว่า Sheet ตั้ง Share เป็น "Anyone with the link → Viewer" แล้ว'}</span>`;
     render();
   }
 }
@@ -1035,7 +1165,7 @@ function renderTripCard(tr){
             <span class="tag">Day ${i+1}</span>
             <input type="date" value="${d.date}" onchange="updateTripDay('${tr.id}',${i},'date',this.value)" style="max-width:150px">
             <input type="text" value="${escapeHtml(d.place)}" placeholder="สถานที่" onchange="updateTripDay('${tr.id}',${i},'place',this.value)">
-            <a href="${gcalLink(d)}" target="_blank" class="btn btn-ghost btn-sm">+ Calendar</a>
+            <a href="${gcalLink(d.date, d.place || 'ทริป')}" target="_blank" class="btn btn-ghost btn-sm">+ Calendar</a>
             <button class="task-del" onclick="delTripDay('${tr.id}',${i})">✕</button>
           </div>
         `).join('')}
@@ -1054,11 +1184,11 @@ function renderTripCard(tr){
   </div>
   `;
 }
-function gcalLink(day){
-  const start = day.date.replace(/-/g,'');
-  const d = new Date(day.date+'T00:00:00'); d.setDate(d.getDate()+1);
+function gcalLink(date, title){
+  const start = date.replace(/-/g,'');
+  const d = new Date(date+'T00:00:00'); d.setDate(d.getDate()+1);
   const end = d.toISOString().slice(0,10).replace(/-/g,'');
-  const text = encodeURIComponent(day.place || 'ทริป');
+  const text = encodeURIComponent(title || 'กิจกรรม');
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}`;
 }
 function addTrip(){
