@@ -13,6 +13,7 @@
   --teal:#5FB8AC; --teal-pale:#E4F5F2;
   --amber:#E3A455; --amber-pale:#FBEEDD;
   --coral:#E08A87; --coral-pale:#FAE9E8;
+  --blue:#5B8DEF; --blue-pale:#E8EFFD;
   --radius:16px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -346,6 +347,11 @@ function defaultState(){
         }
       ]
     },
+    calendar: {
+      events: [
+        {id:uid(), date:t, time:'14:00', title:'ประชุมทีมออกแบบ', demo:true}
+      ]
+    },
     settings: {
       intervalsApiKey: '',
       intervalsAthleteId: '0',
@@ -367,6 +373,8 @@ function loadState(){
       // state (from before this update) don't hit "undefined" errors.
       if(s.work && !s.work.routines) s.work.routines = [];
       if(s.work && !s.work.routineCompletions) s.work.routineCompletions = {};
+      if(!s.calendar) s.calendar = {events:[]};
+      if(!s.calendar.events) s.calendar.events = [];
       return s;
     }catch(e){ console.warn('bad state, resetting'); }
   }
@@ -404,8 +412,31 @@ function parseCapture(text){
 let currentView = 'today';
 let lastCaptureResults = null;
 let financeViewYM = todayISO().slice(0,7);
+let calViewYM = todayISO().slice(0,7); // which month the "Today" overview calendar is showing
 function nav(view){ currentView = view; render(); }
 function selectCalDay(d){ selectedCalDay = d; render(); }
+function calMonthShift(delta){ calViewYM = shiftYM(calViewYM, delta); selectedCalDay = null; render(); }
+function calGoToday(){ calViewYM = todayISO().slice(0,7); selectedCalDay = todayISO(); render(); }
+
+/* ---------- Custom calendar events (นัด/กิจกรรม คีย์เองในหน้าปฏิทิน) ---------- */
+function addCalEvent(){
+  const dateEl = document.getElementById('calEvDate');
+  const timeEl = document.getElementById('calEvTime');
+  const titleEl = document.getElementById('calEvTitle');
+  const date = (dateEl && dateEl.value) || selectedCalDay || todayISO();
+  const time = timeEl ? timeEl.value : '';
+  const title = titleEl ? titleEl.value.trim() : '';
+  if(!title) return;
+  state.calendar.events.push({id:uid(), date, time, title});
+  if(titleEl) titleEl.value = '';
+  selectedCalDay = date;
+  calViewYM = date.slice(0,7);
+  saveState(); render();
+}
+function delCalEvent(id){
+  state.calendar.events = state.calendar.events.filter(e=>e.id!==id);
+  saveState(); render();
+}
 
 function render(){
   if(milkHubSameOriginAvailable()){ syncFromMilkHubDirect(); }
@@ -437,12 +468,16 @@ function renderToday(){
 
   const dayEvents = (d)=>{
     const out = [];
+    state.calendar.events.forEach(ev=>{ if(ev.date===d) out.push({label:(ev.time?ev.time+' ':'')+ev.title, color:'var(--blue)', gcalTitle:ev.title, custom:true, id:ev.id}); });
     work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10)===d) out.push({label:(tk.done?'✓ ':'')+tk.text, color:'var(--amber)', gcalTitle:tk.text}); });
     trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
     health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') out.push({label:m.name+': '+l.note, color:'var(--coral)', gcalTitle:null}); }));
     return out;
   };
-  const selDay = selectedCalDay || t;
+  // Which month the calendar grid shows — defaults to the current month, but calMonthShift() lets
+  // the person browse other months without touching selectedCalDay's meaning for "today".
+  const calYM = calViewYM || t.slice(0,7);
+  const selDay = selectedCalDay || (calYM === t.slice(0,7) ? t : calYM+'-01');
   const selEvents = dayEvents(selDay);
 
   return `
@@ -522,19 +557,26 @@ function renderToday(){
 
   <div class="panel cal-panel-compact" style="margin-top:20px">
     <div class="ribbon-head" style="margin-bottom:12px">
-      <h3>ปฏิทินเดือนนี้ — ${ymLabel(t.slice(0,7))}</h3>
+      <div style="display:flex; align-items:center; gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="calMonthShift(-1)" title="เดือนก่อนหน้า">‹</button>
+        <h3 style="min-width:120px; text-align:center; margin:0">${ymLabel(calYM)}</h3>
+        <button class="btn btn-ghost btn-sm" onclick="calMonthShift(1)" title="เดือนถัดไป">›</button>
+        ${calYM !== t.slice(0,7) ? `<button class="btn btn-ghost btn-sm" onclick="calGoToday()">วันนี้</button>` : ''}
+      </div>
       <a href="https://calendar.google.com/calendar/r" target="_blank" class="btn btn-ghost btn-sm">เปิด Google Calendar</a>
     </div>
     <div class="cal-grid">
       ${weekdayShort.map(w=>`<div class="cal-dow">${w}</div>`).join('')}
-      ${buildMonthGrid(t.slice(0,7)).map(d=>{
-        const inMonth = d.slice(0,7) === t.slice(0,7);
+      ${buildMonthGrid(calYM).map(d=>{
+        const inMonth = d.slice(0,7) === calYM;
         const isToday = d === t;
         const isSel = d === selDay;
         const dots = [];
         const dayTasks = work.tasks.filter(tk=>!tk.done && (tk.due||'').slice(0,10)===d);
         const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
         const dayWarns = []; health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') dayWarns.push(m.name); }));
+        const dayEv = state.calendar.events.filter(ev=>ev.date===d);
+        if(dayEv.length) dots.push({color:'var(--blue)'});
         if(dayTasks.length) dots.push({color:'var(--amber)'});
         if(dayTrips.length) dots.push({color:'var(--purple)'});
         if(dayWarns.length) dots.push({color:'var(--coral)'});
@@ -544,14 +586,25 @@ function renderToday(){
         </button>`;
       }).join('')}
     </div>
-    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป · จุดแดง = สุขภาพต้องระวัง — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div class="muted" style="margin:10px 0">จุดฟ้า = นัด/กิจกรรมที่คีย์เอง · จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป · จุดแดง = สุขภาพต้องระวัง — คลิกวันที่เพื่อดูรายละเอียด</div>
     <div style="border-top:1px solid var(--line); padding-top:12px">
       <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
       ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
         <span style="width:7px; height:7px; border-radius:50%; background:${e.color}; flex-shrink:0"></span>
         <span style="flex:1">${escapeHtml(e.label)}</span>
         ${e.gcalTitle ? `<a href="${gcalLink(selDay, e.gcalTitle)}" target="_blank" class="btn btn-ghost btn-sm">+ Cal</a>` : ''}
+        ${e.custom ? `<button class="task-del" onclick="delCalEvent('${e.id}')">✕</button>` : ''}
       </div>`).join('') : '<div class="muted">ไม่มีรายการวันนี้</div>'}
+    </div>
+    <div style="border-top:1px solid var(--line); padding-top:12px; margin-top:4px">
+      <div style="font-size:13px; font-weight:600; margin-bottom:8px">+ เพิ่มนัด/กิจกรรมลงวันที่เลือก</div>
+      <div class="form-row">
+        <input type="date" id="calEvDate" value="${selDay}" style="max-width:150px">
+        <input type="time" id="calEvTime" style="max-width:110px">
+        <input type="text" id="calEvTitle" placeholder='เช่น "นัดหมอฟัน" หรือ "ประชุมลูกค้า"' style="flex:1">
+        <button class="btn btn-sm" onclick="addCalEvent()">+ เพิ่ม</button>
+      </div>
+      <div class="muted" style="margin-top:6px">รายการที่เพิ่มตรงนี้จะโชว์บนปฏิทินนี้เท่านั้น (เก็บใน localStorage ของเบราว์เซอร์) — ถ้าอยากให้ไปโผล่ใน Google Calendar/มือถือด้วย ให้กดปุ่ม "+ Cal" ข้างรายการแล้วกดบันทึกอีกทีในหน้า Google Calendar ที่เปิดขึ้นมา</div>
     </div>
   </div>
 
