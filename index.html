@@ -177,7 +177,7 @@ a{color:inherit;}
   <div class="brand"><span>M</span>Life OS</div>
   <button class="nav-item" data-view="today" onclick="nav('today')"><div class="icon">◆</div>วันนี้</button>
   <button class="nav-item" data-view="finance" onclick="nav('finance')"><div class="icon">฿</div>เงิน</button>
-  <button class="nav-item" data-view="running" onclick="nav('running')"><div class="icon">➤</div>วิ่ง</button>
+  <button class="nav-item" data-view="running" onclick="nav('running')"><div class="icon">➤</div>กิจกรรม</button>
   <button class="nav-item" data-view="work" onclick="nav('work')"><div class="icon">▣</div>งาน</button>
   <button class="nav-item" data-view="trips" onclick="nav('trips')"><div class="icon">✈</div>ทริป</button>
   <button class="nav-item" data-view="assets" onclick="nav('assets')"><div class="icon">◎</div>ทรัพย์สิน</button>
@@ -250,7 +250,7 @@ function upsertTxn(tx){
   return true;
 }
 
-/* ---------- Running summary (always derived from activities, never synced/stored) ---------- */
+/* ---------- Activities summary (always derived from activities, never synced/stored) ---------- */
 function runningWeekSummary(){
   const days = currentWeekMondayToSunday();
   const set = new Set(days);
@@ -259,6 +259,104 @@ function runningWeekSummary(){
   const goal = state.running.weeklyGoalKm || 0;
   const pct = goal ? Math.min(100, Math.round(100*weekKm/goal)) : 0;
   return { weekKm, goal, pct, weekActivities };
+}
+
+/* ---------- Activity types (used to color the bar/donut charts) ---------- */
+const ACTIVITY_TYPES = [
+  {key:'run', label:'วิ่ง', color:'var(--teal)'},
+  {key:'ride', label:'ปั่นจักรยาน', color:'var(--blue)'},
+  {key:'weights', label:'เวทเทรนนิ่ง', color:'var(--amber)'},
+  {key:'other', label:'อื่นๆ', color:'var(--coral)'}
+];
+function activityTypeMeta(key){ return ACTIVITY_TYPES.find(t=>t.key===key) || ACTIVITY_TYPES[3]; }
+// A single "how much did this session count for" number used only to size chart
+// bars — real distance (km) for distance-based activities, otherwise minutes/10
+// as a rough stand-in so a gym session still shows up as a visible bar.
+function activityScore(a){
+  const km = Number(a.distance_km)||0;
+  if(km>0) return km;
+  const min = Number(a.moving_time_min)||0;
+  if(min>0) return min/10;
+  return 1;
+}
+function activitiesOn(dateIso){ return state.running.activities.filter(a=>a.date===dateIso); }
+// One bucket per day of the given Monday-start week, each broken down by activity type.
+function buildWeeklyActivityBuckets(weekDays){
+  return weekDays.map((d,i)=>{
+    const acts = activitiesOn(d);
+    const byType = {}; ACTIVITY_TYPES.forEach(t=>byType[t.key]=0);
+    acts.forEach(a=>{ byType[a.type||'other'] += activityScore(a); });
+    const total = Object.values(byType).reduce((s,v)=>s+v,0);
+    return { label: weekdayShort[i], date: d, byType, total, count: acts.length };
+  });
+}
+// One bucket per calendar month, most recent n months (oldest first).
+function buildMonthlyActivityBuckets(n){
+  const months = [];
+  let ym = todayISO().slice(0,7);
+  for(let i=0;i<n;i++){ months.unshift(ym); ym = shiftYM(ym,-1); }
+  return months.map(ym=>{
+    const acts = state.running.activities.filter(a=>monthKey(a.date)===ym);
+    const byType = {}; ACTIVITY_TYPES.forEach(t=>byType[t.key]=0);
+    acts.forEach(a=>{ byType[a.type||'other'] += activityScore(a); });
+    const total = Object.values(byType).reduce((s,v)=>s+v,0);
+    return { label: ymLabel(ym).split(' ')[0], date: ym, byType, total, count: acts.length };
+  });
+}
+function activityTypeCounts(activities){
+  return ACTIVITY_TYPES.map(t=>({ ...t, count: activities.filter(a=>(a.type||'other')===t.key).length }));
+}
+// Stacked vertical bar chart — plain flex/div bars (no chart lib), colored by activity type.
+function renderActivityBarChart(buckets){
+  const maxTotal = Math.max(1, ...buckets.map(b=>b.total));
+  return `
+  <div style="display:flex; align-items:flex-end; gap:10px; height:150px; padding-top:6px">
+    ${buckets.map(b=>{
+      const h = b.total>0 ? Math.max(6, Math.round(b.total/maxTotal*140)) : 4;
+      const segs = ACTIVITY_TYPES.map(t=>{
+        const v = b.byType[t.key];
+        if(!v) return '';
+        const segH = Math.max(2, Math.round(v/b.total*h));
+        return `<div style="height:${segH}px; background:${t.color}" title="${t.label}: ${v.toFixed(1)}"></div>`;
+      }).join('');
+      return `
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0">
+        <div style="width:100%; max-width:30px; height:${h}px; border-radius:8px 8px 3px 3px; overflow:hidden; display:flex; flex-direction:column-reverse; background:${b.total>0?'transparent':'var(--line)'}">
+          ${segs}
+        </div>
+        <div style="font-size:10px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%">${b.label}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  `;
+}
+// Donut chart via conic-gradient — no SVG/canvas needed.
+function renderActivityDonut(activities){
+  const counts = activityTypeCounts(activities);
+  const total = counts.reduce((s,c)=>s+c.count,0);
+  if(!total) return '<div class="muted">ยังไม่มีข้อมูลกิจกรรมช่วงนี้</div>';
+  let acc = 0;
+  const stops = counts.filter(c=>c.count>0).map(c=>{
+    const start = acc/total*360; acc += c.count; const end = acc/total*360;
+    return `${c.color} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
+  }).join(', ');
+  return `
+  <div style="display:flex; align-items:center; gap:22px; flex-wrap:wrap">
+    <div style="width:118px; height:118px; border-radius:50%; background:conic-gradient(${stops}); position:relative; flex-shrink:0">
+      <div style="position:absolute; inset:15px; background:var(--panel); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column">
+        <div style="font-size:17px; font-weight:700">${total}</div>
+        <div style="font-size:9px; color:var(--ink-soft)">กิจกรรม</div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px">
+      ${counts.filter(c=>c.count>0).map(c=>`<div style="display:flex; align-items:center; gap:8px; font-size:12px">
+        <span style="width:9px; height:9px; border-radius:3px; background:${c.color}; flex-shrink:0"></span>
+        <span style="min-width:88px">${c.label}</span>
+        <span class="mono" style="color:var(--ink-soft)">${c.count} (${Math.round(100*c.count/total)}%)</span>
+      </div>`).join('')}
+    </div>
+  </div>
+  `;
 }
 
 /* ---------- Assets / net worth (manual items + Dime portfolio snapshots) ---------- */
@@ -343,13 +441,17 @@ function defaultState(){
       ]
     },
     running: {
-      // weeklyGoalKm is the ONLY thing set by hand (via the "วิ่ง" page) — everything
+      // weeklyGoalKm is the ONLY thing set by hand (via the "กิจกรรม" page) — everything
       // else (weekly total, activity list) is always computed live from `activities`,
       // never pulled/synced, so intervals.icu sync only ever touches raw activities.
+      // "running" is the internal state key from when this only tracked runs — it now
+      // holds every activity type (run/ride/weights/other), each tagged with `type`.
       weeklyGoalKm: 40,
       activities: [
-        {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, done:true, demo:true},
-        {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, done:false, demo:true}
+        {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, done:true, type:'run', demo:true},
+        {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, done:false, type:'run', demo:true},
+        {id:uid(), date:addDays(t,-1), name:'ปั่นจักรยานเช้า', distance_km:15, moving_time_min:40, done:true, type:'ride', demo:true},
+        {id:uid(), date:addDays(t,-2), name:'เวทเทรนนิ่ง', distance_km:0, moving_time_min:45, done:true, type:'weights', demo:true}
       ],
       lastSync: null
     },
@@ -425,6 +527,8 @@ function loadState(){
         // meant to be hand-set).
         delete s.running.weekKm; delete s.running.weekLabel; delete s.running.goalNote;
         if(s.running.weeklyGoalKm == null) s.running.weeklyGoalKm = 40;
+        // Older saves predate activity types — guess run vs. other from whether it has a distance.
+        (s.running.activities||[]).forEach(a=>{ if(!a.type) a.type = (Number(a.distance_km)>0) ? 'run' : 'other'; });
       }
       delete s.health; // module removed — family health tracking is gone from this build
       return s;
@@ -444,8 +548,9 @@ function parseCapture(text){
     const numMatch = seg.match(/(\d+(?:\.\d+)?)/);
     const num = numMatch ? parseFloat(numMatch[1]) : null;
     if(/กม|km|วิ่ง|ว่าย|ปั่น/i.test(seg) && num !== null){
-      state.running.activities.unshift({id:uid(), date:todayISO(), name:seg, distance_km:num, moving_time_min:null, done:true});
-      results.push('→ Log วิ่ง ' + num + 'K: "' + seg + '"');
+      const type = /ปั่น|ride|bike/i.test(seg) ? 'ride' : 'run';
+      state.running.activities.unshift({id:uid(), date:todayISO(), name:seg, distance_km:num, moving_time_min:null, done:true, type});
+      results.push('→ Log กิจกรรม ' + num + 'K: "' + seg + '"');
     } else if(/บาท|฿/.test(seg) && num !== null){
       const isIncome = /รับ:|เงินเดือน|โบนัส/.test(seg);
       state.finance.transactions.unshift({id:uid(), date:todayISO(), type: isIncome?'income':'expense', category: isIncome?'รายรับ':'อื่นๆ', item:seg, amount:num});
@@ -509,7 +614,7 @@ function renderToday(){
   const t = todayISO();
   const items = [];
   state.work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10) === t) items.push({time:(tk.due||'').slice(11,16) || '—', label:tk.text, color:'var(--amber)'}); });
-  state.running.activities.forEach(a=>{ if(a.date === t) items.push({time:'', label:'วิ่ง ' + a.distance_km + 'K — ' + a.name, color:'var(--teal)'}); });
+  state.running.activities.forEach(a=>{ if(a.date === t) items.push({time:'', label:activityTypeMeta(a.type).label + ' — ' + a.name + (a.distance_km?' ('+a.distance_km+'K)':''), color:activityTypeMeta(a.type).color}); });
   state.trips.list.forEach(tr=> tr.days.forEach(d=>{ if(d.date === t) items.push({time:'', label:'ทริป: ' + d.place, color:'var(--purple)'}); }));
   state.finance.transactions.forEach(tx=>{ if(tx.date === t) items.push({time:'', label:'฿' + fmtMoney(tx.amount) + ' ' + tx.note, color:'var(--coral)'}); });
 
@@ -560,12 +665,11 @@ function renderToday(){
 
     <div class="card">
       <div class="card-head">
-        <div class="card-title"><div class="card-icon icon-run">➤</div><div><h3>วิ่ง</h3><div class="card-sub">กิจกรรมล่าสุด</div></div></div>
+        <div class="card-title"><div class="card-icon icon-run">➤</div><div><h3>กิจกรรม</h3><div class="card-sub">สัปดาห์นี้ (จ.–อา.)</div></div></div>
         <div class="pill pill-teal">${runWeek.pct}% ของเป้าหมาย</div>
       </div>
       <div class="big-stat mono">${runWeek.weekKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม. สัปดาห์นี้</span></div>
-      <div class="bar-row" style="margin-bottom:10px"><div class="bar-track"><div class="bar-fill" style="width:${runWeek.pct}%; background:var(--teal)"></div></div><div class="bar-val">${runWeek.goal}K</div></div>
-      <div class="task-list">${running.activities.slice(0,3).map(a=>`<div class="task-row"><div class="task-check ${a.done?'done':''}"></div><div class="task-text ${a.done?'done':''}">${escapeHtml(a.name)} — ${a.distance_km}K</div></div>`).join('') || '<div class="muted">ยังไม่มีข้อมูล — ไป Sync ที่หน้า "วิ่ง"</div>'}</div>
+      ${running.activities.length ? renderActivityBarChart(buildWeeklyActivityBuckets(currentWeekMondayToSunday())) : '<div class="muted">ยังไม่มีข้อมูล — ไป Sync ที่หน้า "กิจกรรม"</div>'}
     </div>
 
     <div class="card">
@@ -845,38 +949,75 @@ function currentWeekMondayToSunday(baseIso){
 }
 const weekdayShort = ['จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.']; // Monday-first order
 
+let activityChartMode = 'week'; // 'week' | 'month' — toggled on the "กิจกรรม" page, chart-only state
+function setActivityChartMode(mode){ activityChartMode = mode; render(); }
+
 function renderRunning(){
   const r = state.running;
   const weekDays = currentWeekMondayToSunday();
   const weekSet = new Set(weekDays);
   const weekActivities = r.activities.filter(a=>weekSet.has(a.date));
   const weekKm = weekActivities.reduce((s,a)=>s+(a.distance_km||0),0);
-  const perDayKm = weekDays.map(day=>weekActivities.reduce((s,a)=>a.date===day ? s+(a.distance_km||0) : s, 0));
-  const maxDayKm = Math.max(1, ...perDayKm);
+
+  const isWeek = activityChartMode === 'week';
+  const buckets = isWeek ? buildWeeklyActivityBuckets(weekDays) : buildMonthlyActivityBuckets(9);
+  const chartPeriodActivities = isWeek ? weekActivities : r.activities.filter(a=>monthKey(a.date)===todayISO().slice(0,7));
+  const sortedActivities = [...r.activities].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+
   return `
-  <div class="section-title">วิ่ง</div>
-  <div class="section-sub">Sync อัตโนมัติจาก intervals.icu (เชื่อม Suunto ไว้แล้วในบัญชี intervals.icu ของพี่) หรือบันทึกเอง</div>
+  <div class="section-title">กิจกรรม</div>
+  <div class="section-sub">รวมทุกประเภท — วิ่ง ปั่นจักรยาน เวทเทรนนิ่ง และอื่นๆ · sync อัตโนมัติจาก intervals.icu หรือบันทึกเอง</div>
+
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:14px">
+      <h3>ภาพรวมกิจกรรม</h3>
+      <div style="display:flex; gap:6px">
+        <button class="btn ${isWeek?'':'btn-ghost'} btn-sm" onclick="setActivityChartMode('week')">รายสัปดาห์</button>
+        <button class="btn ${!isWeek?'':'btn-ghost'} btn-sm" onclick="setActivityChartMode('month')">รายเดือน</button>
+      </div>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="muted" style="margin-bottom:4px">${isWeek ? 'สัปดาห์นี้ (จ.–อา.) แยกสีตามประเภทกิจกรรม' : '9 เดือนล่าสุด แยกสีตามประเภทกิจกรรม'}</div>
+        ${renderActivityBarChart(buckets)}
+      </div>
+      <div>
+        <div class="muted" style="margin-bottom:10px">สัดส่วนประเภทกิจกรรม — ${isWeek ? 'สัปดาห์นี้' : 'เดือนนี้'}</div>
+        ${renderActivityDonut(chartPeriodActivities)}
+      </div>
+    </div>
+    <div class="tag-row" style="margin-top:16px">
+      ${ACTIVITY_TYPES.map(t=>`<span class="tag" style="background:${t.color}; color:#fff">${t.label}</span>`).join('')}
+    </div>
+  </div>
+
   <div class="two-col">
     <div class="panel">
       <h3>กิจกรรมล่าสุด</h3>
       <table class="table">
-        <tr><th>วันที่</th><th>ชื่อ</th><th style="text-align:right">ระยะ</th><th></th></tr>
-        ${r.activities.map(a=>`<tr><td>${fmtDate(a.date)}</td><td>${escapeHtml(a.name)}</td><td style="text-align:right" class="mono">${a.distance_km} กม.</td><td><button class="task-del" onclick="delRun('${a.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">ยังไม่มีข้อมูล</td></tr>`}
+        <tr><th>วันที่</th><th>ชื่อ</th><th>ประเภท</th><th style="text-align:right">ระยะ/เวลา</th><th></th></tr>
+        ${sortedActivities.map(a=>{ const meta = activityTypeMeta(a.type); return `<tr>
+          <td>${fmtDate(a.date)}</td>
+          <td>${escapeHtml(a.name)}</td>
+          <td><span class="tag" style="background:${meta.color}; color:#fff">${meta.label}</span></td>
+          <td style="text-align:right" class="mono">${a.distance_km ? a.distance_km+' กม.' : (a.moving_time_min ? a.moving_time_min+' นาที' : '—')}</td>
+          <td><button class="task-del" onclick="delRun('${a.id}')">✕</button></td>
+        </tr>`; }).join('') || `<tr><td colspan="5" class="muted">ยังไม่มีข้อมูล</td></tr>`}
       </table>
       <div class="form-row" style="margin-top:14px">
         <input type="text" id="runName" placeholder="ชื่อกิจกรรม">
-        <input type="number" id="runKm" placeholder="ระยะ (กม.)" style="max-width:120px">
+        <select id="runType">${ACTIVITY_TYPES.map(t=>`<option value="${t.key}">${t.label}</option>`).join('')}</select>
+        <input type="number" id="runKm" placeholder="ระยะ (กม.) ไม่บังคับ" style="max-width:150px">
+        <input type="number" id="runMin" placeholder="เวลา (นาที) ไม่บังคับ" style="max-width:150px">
         <button class="btn" onclick="addRun()">+ บันทึกเอง</button>
       </div>
+      <div class="muted">กรอกอย่างน้อยระยะทางหรือเวลาอย่างใดอย่างหนึ่ง (เวทเทรนนิ่ง/อื่นๆ มักใช้แค่เวลา)</div>
     </div>
     <div class="panel">
       <h3>สรุปสัปดาห์นี้ (จ.–อา.)</h3>
       <div class="big-stat mono">${weekKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม.</span></div>
       <div class="stat-note">เป้าหมาย ${r.weeklyGoalKm} กม./สัปดาห์ — ตั้งเองด้านล่าง (ไม่ได้ดึงมาจาก intervals.icu)</div>
       <div class="bar-row"><div class="bar-label">ความคืบหน้า</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.round(100*weekKm/(r.weeklyGoalKm||1)))}%; background:var(--teal)"></div></div><div class="bar-val">${Math.min(100,Math.round(100*weekKm/(r.weeklyGoalKm||1)))}%</div></div>
-      <div style="margin-top:10px">
-        ${weekDays.map((day,i)=>`<div class="bar-row"><div class="bar-label">${weekdayShort[i]}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(100*perDayKm[i]/maxDayKm)}%; background:var(--teal)"></div></div><div class="bar-val">${perDayKm[i] ? perDayKm[i].toFixed(1)+'K' : '—'}</div></div>`).join('')}
-      </div>
       <div class="form-row" style="margin-top:12px">
         <input type="number" id="weeklyGoalInput" value="${r.weeklyGoalKm}" style="max-width:110px" placeholder="กม./สัปดาห์">
         <button class="btn btn-ghost btn-sm" onclick="setWeeklyGoal()">ตั้งเป้าหมาย</button>
@@ -896,14 +1037,26 @@ function setWeeklyGoal(){
   if(v>0){ state.running.weeklyGoalKm = v; saveState(); render(); }
 }
 function addRun(){
-  const name = document.getElementById('runName').value.trim() || 'วิ่ง';
-  const km = parseFloat(document.getElementById('runKm').value);
-  if(!km) return;
-  state.running.activities.unshift({id:uid(), date:todayISO(), name, distance_km:km, moving_time_min:null, done:true});
+  const name = document.getElementById('runName').value.trim() || 'กิจกรรม';
+  const type = document.getElementById('runType').value;
+  const km = parseFloat(document.getElementById('runKm').value) || 0;
+  const min = parseFloat(document.getElementById('runMin').value) || 0;
+  if(!km && !min) return;
+  state.running.activities.unshift({id:uid(), date:todayISO(), name, distance_km:km||0, moving_time_min:min||null, done:true, type});
   saveState(); render();
 }
 function delRun(id){ state.running.activities = state.running.activities.filter(a=>a.id!==id); saveState(); render(); }
 
+// intervals.icu (and Strava, which it mirrors) use type strings like "Run",
+// "Ride", "VirtualRide", "WeightTraining", "Workout" — map those down to our
+// four chart categories.
+function mapIntervalsType(t){
+  t = String(t||'').toLowerCase();
+  if(t.includes('ride') || t.includes('bike') || t.includes('cycl')) return 'ride';
+  if(t.includes('weight') || t.includes('strength')) return 'weights';
+  if(t.includes('run')) return 'run';
+  return 'other';
+}
 async function syncIntervals(){
   const msgEl = document.getElementById('runSyncMsg');
   const key = state.settings.intervalsApiKey;
@@ -936,15 +1089,17 @@ async function syncIntervals(){
     let added = 0, skipped = 0;
     (data||[]).forEach(act=>{
       const km = (act.distance || 0) / 1000;
-      if(!km) return;
+      const minutes = act.moving_time ? Math.round(act.moving_time/60) : 0;
+      if(!km && !minutes) return; // nothing usable to chart — skip
       const id = 'intervals-' + act.id;
       if(existingIds.has(id)){ skipped++; return; }
       state.running.activities.unshift({
         id,
         date: (act.start_date_local||act.start_date||todayISO()).slice(0,10),
         name: act.name || act.type || 'Activity',
-        distance_km: Math.round(km*10)/10,
-        moving_time_min: act.moving_time ? Math.round(act.moving_time/60) : null,
+        distance_km: km ? Math.round(km*10)/10 : 0,
+        moving_time_min: minutes || null,
+        type: mapIntervalsType(act.type),
         done:true
       });
       existingIds.add(id);
@@ -1354,7 +1509,7 @@ function renderSettings(){
   <div class="section-sub">API key และลิงก์เชื่อมต่อทั้งหมดเก็บไว้ใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ส่งไปที่ไหน</div>
 
   <div class="panel">
-    <h3>🏃 intervals.icu (วิ่ง — เชื่อม Suunto อยู่แล้ว)</h3>
+    <h3>🏃 intervals.icu (กิจกรรม — เชื่อม Suunto อยู่แล้ว)</h3>
     <div class="muted" style="margin-bottom:10px">สร้าง API key ได้ที่ intervals.icu → Settings → Developer Settings (ด้านล่างสุด) ส่วน Athlete ID ใส่ "0" ได้เลยถ้าต้องการดึงข้อมูลของบัญชีตัวเอง</div>
     <div class="form-row">
       <input type="text" id="intervalsKey" placeholder="API key" value="${escapeHtml(s.intervalsApiKey)}">
