@@ -8,62 +8,70 @@
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#F5F3FB; --panel:#FFFFFF; --ink:#2E2A3D; --ink-soft:#726C89; --line:#E7E3F5;
-  --purple:#8B7FD1; --purple-deep:#5F51B0; --purple-pale:#EDEAFA;
-  --teal:#5FB8AC; --teal-pale:#E4F5F2;
-  --amber:#E3A455; --amber-pale:#FBEEDD;
-  --coral:#E08A87; --coral-pale:#FAE9E8;
+  --bg:#F4F3FA; --panel:#FFFFFF; --ink:#211D2E; --ink-soft:#6D6884; --line:#E9E6F4;
+  --purple:#8B7FD1; --purple-deep:#5A4CC4; --purple-pale:#EEEBFB;
+  --teal:#4FB6A6; --teal-pale:#E2F5F1;
+  --amber:#E3A24C; --amber-pale:#FCEEDA;
+  --coral:#E1817D; --coral-pale:#FBE7E5;
   --blue:#5B8DEF; --blue-pale:#E8EFFD;
-  --radius:16px;
+  --radius:18px; --radius-sm:12px;
+  --shadow-card:0 1px 2px rgba(33,22,74,.05), 0 10px 28px -18px rgba(33,22,74,.28);
+  --shadow-card-hover:0 1px 2px rgba(33,22,74,.06), 0 16px 34px -16px rgba(33,22,74,.30);
+  --shadow-sm:0 1px 2px rgba(33,22,74,.06);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
-body{font-family:'Sarabun', system-ui, sans-serif; background:var(--bg); color:var(--ink); display:flex; min-height:100vh;}
+body{font-family:'Sarabun', system-ui, sans-serif; background:
+    radial-gradient(1200px 500px at 100% -10%, #EFE9FC 0%, transparent 60%),
+    var(--bg);
+  color:var(--ink); display:flex; min-height:100vh; -webkit-font-smoothing:antialiased;}
 h1,h2,h3,.brand{font-family:'Kanit','Sarabun',sans-serif;}
 .mono{font-family:'JetBrains Mono', monospace;}
 a{color:inherit;}
 
 /* Sidebar */
-.sidebar{width:88px; background:var(--purple-deep); display:flex; flex-direction:column; align-items:center; padding:24px 0; gap:8px; flex-shrink:0; position:sticky; top:0; height:100vh;}
-.brand{color:#fff; font-size:13px; font-weight:600; margin-bottom:20px; text-align:center;}
-.brand span{display:block; font-size:20px;}
-.nav-item{width:56px; height:56px; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(255,255,255,.65); font-size:10px; gap:4px; cursor:pointer; border:none; background:none;}
-.nav-item .icon{font-size:19px;}
-.nav-item.active{background:rgba(255,255,255,.16); color:#fff;}
-.nav-item:hover{background:rgba(255,255,255,.1); color:#fff;}
+.sidebar{width:92px; background:linear-gradient(190deg,#5A4CC4 0%, #4A3D9E 100%); display:flex; flex-direction:column; align-items:center; padding:26px 0; gap:7px; flex-shrink:0; position:sticky; top:0; height:100vh; box-shadow:6px 0 24px -14px rgba(20,12,60,.45); z-index:2;}
+.brand{color:#fff; font-size:12.5px; font-weight:600; margin-bottom:22px; text-align:center; letter-spacing:.04em; opacity:.92;}
+.brand span{display:block; font-size:21px; font-weight:700;}
+.nav-item{width:60px; height:56px; border-radius:15px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(255,255,255,.62); font-size:10px; gap:5px; cursor:pointer; border:none; background:none; transition:background .16s ease, color .16s ease, transform .16s ease;}
+.nav-item .icon{font-size:18px; transition:transform .16s ease;}
+.nav-item.active{background:rgba(255,255,255,.15); color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), 0 6px 16px -6px rgba(0,0,0,.35);}
+.nav-item.active .icon{transform:translateY(-1px);}
+.nav-item:hover{background:rgba(255,255,255,.1); color:#fff; transform:translateY(-1px);}
 .nav-spacer{flex:1;}
-.profile-dot{width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--teal),var(--purple)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:13px; cursor:pointer;}
+.profile-dot{width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,var(--teal),var(--purple)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:13px; cursor:pointer; box-shadow:0 4px 12px -4px rgba(0,0,0,.4); border:2px solid rgba(255,255,255,.25);}
 
 /* Main */
-.main{flex:1; padding:28px 36px 60px; max-width:1300px;}
-.topbar{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:10px;}
-.greeting h1{font-size:24px; font-weight:600;}
+.main{flex:1; padding:30px 38px 64px; max-width:1320px;}
+.topbar{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; flex-wrap:wrap; gap:10px;}
+.greeting h1{font-size:25px; font-weight:700; letter-spacing:-0.01em;}
 .greeting p{color:var(--ink-soft); font-size:13.5px; margin-top:4px;}
-.date-chip{background:var(--panel); border:1px solid var(--line); padding:7px 14px; border-radius:99px; font-size:12.5px; color:var(--ink-soft);}
+.date-chip{background:var(--panel); border:1px solid var(--line); padding:8px 16px; border-radius:99px; font-size:12.5px; color:var(--ink-soft); box-shadow:var(--shadow-sm);}
 
-.ribbon{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px 20px; margin-bottom:22px;}
+.ribbon{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px 22px; margin-bottom:22px; box-shadow:var(--shadow-card);}
 .ribbon-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
 .ribbon-head h3{font-size:13.5px; font-weight:600;}
 .ribbon-head span{font-size:11.5px; color:var(--ink-soft);}
-.timeline{position:relative; min-height:52px; display:flex; gap:22px; flex-wrap:wrap; padding-top:4px;}
-.tl-item{display:flex; flex-direction:column; align-items:center; gap:5px; width:88px;}
-.tl-dot{width:12px; height:12px; border-radius:50%;}
+.timeline{position:relative; min-height:52px; display:flex; gap:24px; flex-wrap:wrap; padding-top:4px;}
+.tl-item{display:flex; flex-direction:column; align-items:center; gap:6px; width:90px;}
+.tl-dot{width:12px; height:12px; border-radius:50%; box-shadow:0 0 0 4px rgba(90,76,196,.08);}
 .tl-label{font-size:10.5px; color:var(--ink-soft); text-align:center; line-height:1.3;}
-.tl-time{font-size:9.5px; color:#A9A3C0;}
+.tl-time{font-size:9.5px; color:#A9A3C0; font-weight:600;}
 .tl-empty{color:var(--ink-soft); font-size:12.5px; padding:8px 0;}
 
 .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
 @media (max-width:1050px){.grid{grid-template-columns:repeat(2,1fr);}}
-.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:19px; display:flex; flex-direction:column; box-shadow:var(--shadow-card); transition:box-shadow .18s ease, transform .18s ease;}
+.card:hover{box-shadow:var(--shadow-card-hover); transform:translateY(-2px);}
 .card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;}
-.card-title{display:flex; align-items:center; gap:9px;}
-.card-icon{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
+.card-title{display:flex; align-items:center; gap:10px;}
+.card-icon{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
 .card-title h3{font-size:14.5px; font-weight:600;}
 .card-sub{font-size:11px; color:var(--ink-soft);}
-.pill{font-size:10.5px; padding:3px 9px; border-radius:99px; font-weight:500; white-space:nowrap;}
+.pill{font-size:10.5px; padding:3.5px 10px; border-radius:99px; font-weight:600; white-space:nowrap;}
 .icon-finance{background:var(--coral-pale); color:var(--coral);}
 .icon-run{background:var(--teal-pale); color:var(--teal);}
 .icon-work{background:var(--amber-pale); color:var(--amber);}
-.icon-health{background:var(--purple-pale); color:var(--purple);}
+.icon-assets{background:var(--purple-pale); color:var(--purple-deep);}
 .icon-trip{background:var(--teal-pale); color:var(--teal);}
 .icon-capture{background:var(--purple-pale); color:var(--purple-deep);}
 .icon-settings{background:var(--amber-pale); color:var(--amber);}
@@ -72,46 +80,43 @@ a{color:inherit;}
 .pill-amber{background:var(--amber-pale); color:var(--amber);}
 .pill-purple{background:var(--purple-pale); color:var(--purple-deep);}
 
-.big-stat{font-size:24px; font-weight:600; margin:2px 0;}
+.big-stat{font-size:25px; font-weight:700; margin:2px 0; letter-spacing:-0.01em;}
 .stat-note{font-size:11.5px; color:var(--ink-soft); margin-bottom:12px;}
 
-.bar-row{display:flex; align-items:center; gap:9px; margin-bottom:7px;}
+.bar-row{display:flex; align-items:center; gap:9px; margin-bottom:8px;}
 .bar-label{font-size:11px; color:var(--ink-soft); width:70px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .bar-track{flex:1; height:7px; background:var(--line); border-radius:99px; overflow:hidden;}
-.bar-fill{height:100%; border-radius:99px;}
-.bar-val{font-size:10.5px; color:var(--ink-soft); width:36px; text-align:right; flex-shrink:0;}
+.bar-fill{height:100%; border-radius:99px; transition:width .3s ease;}
+.bar-val{font-size:10.5px; color:var(--ink-soft); width:38px; text-align:right; flex-shrink:0;}
 
-.task-list{display:flex; flex-direction:column; gap:8px;}
+.task-list{display:flex; flex-direction:column; gap:9px;}
 .task-row{display:flex; align-items:center; gap:9px; font-size:12.5px;}
-.task-check{width:16px; height:16px; border-radius:5px; border:1.5px solid var(--line); flex-shrink:0; cursor:pointer; background:none;}
+.task-check{width:17px; height:17px; border-radius:6px; border:1.5px solid var(--line); flex-shrink:0; cursor:pointer; background:none; transition:background .15s ease, border-color .15s ease;}
 .task-check.done{background:var(--amber); border-color:var(--amber);}
 .task-text{flex:1;}
 .task-text.done{text-decoration:line-through; color:var(--ink-soft);}
 .task-due{font-size:10px; color:var(--ink-soft); white-space:nowrap;}
-.task-del{background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:13px;}
-
-.health-row{display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
-.health-row:last-child{border-bottom:none;}
-.health-name{display:flex; align-items:center; gap:7px;}
-.avatar{width:24px; height:24px; border-radius:50%; background:var(--purple-pale); color:var(--purple-deep); font-size:10.5px; display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0;}
+.task-del{background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:13px; transition:color .15s ease;}
+.task-del:hover{color:var(--coral);}
 
 .trip-strip{display:flex; gap:7px; margin-top:6px; flex-wrap:wrap;}
-.trip-day{flex:1; min-width:70px; background:var(--teal-pale); border-radius:10px; padding:7px 5px; text-align:center;}
+.trip-day{flex:1; min-width:70px; background:var(--teal-pale); border-radius:12px; padding:8px 5px; text-align:center;}
 .trip-day .d{font-size:9.5px; color:var(--ink-soft);}
 .trip-day .place{font-size:10.5px; font-weight:600; color:var(--ink); margin-top:2px;}
 
 .capture-box{flex:1; display:flex; flex-direction:column; gap:8px;}
 .capture-row{display:flex; gap:8px;}
-.capture-input{flex:1; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-size:12.5px; color:var(--ink); background:var(--bg); font-family:inherit;}
+.capture-input{flex:1; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-size:12.5px; color:var(--ink); background:var(--bg); font-family:inherit; transition:box-shadow .15s ease, border-color .15s ease;}
+.capture-input:focus{outline:none; border-color:var(--purple); box-shadow:0 0 0 3px var(--purple-pale);}
 .capture-chips{display:flex; gap:6px; margin-top:2px; flex-wrap:wrap;}
 .capture-chip{font-size:10.5px; padding:4px 9px; border-radius:99px; background:var(--purple-pale); color:var(--purple-deep);}
 
 .footnote{text-align:center; color:var(--ink-soft); font-size:11.5px; margin-top:24px; line-height:1.6;}
 .cal-grid{display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;}
-.cal-dow{text-align:center; font-size:11px; color:var(--ink-soft); padding-bottom:6px;}
-.cal-day{aspect-ratio:1; border-radius:8px; padding:6px 4px; display:flex; flex-direction:column; align-items:center; gap:3px; background:var(--bg); border:none; font-family:inherit; cursor:pointer; width:100%;}
-.cal-day:hover{background:var(--purple-pale);}
-.cal-day-out{opacity:0.35;}
+.cal-dow{text-align:center; font-size:11px; color:var(--ink-soft); padding-bottom:6px; font-weight:600;}
+.cal-day{aspect-ratio:1; border-radius:10px; padding:6px 4px; display:flex; flex-direction:column; align-items:center; gap:3px; background:var(--bg); border:none; font-family:inherit; cursor:pointer; width:100%; transition:background .15s ease, transform .1s ease;}
+.cal-day:hover{background:var(--purple-pale); transform:translateY(-1px);}
+.cal-day-out{opacity:0.32;}
 .cal-day-today{background:var(--purple-pale); outline:1.5px solid var(--purple);}
 .cal-day-sel{outline:1.5px solid var(--purple-deep); outline-offset:-1.5px;}
 .cal-day-num{font-size:12px; color:var(--ink);}
@@ -121,42 +126,49 @@ a{color:inherit;}
 /* Compact calendar — used in the "Today" overview once it's moved below the info cards */
 .cal-panel-compact{max-width:620px; margin-left:auto; margin-right:auto;}
 .cal-panel-compact .cal-grid{gap:3px;}
-.cal-panel-compact .cal-day{padding:4px 3px; border-radius:6px; gap:2px;}
+.cal-panel-compact .cal-day{padding:4px 3px; border-radius:7px; gap:2px;}
 .cal-panel-compact .cal-day-num{font-size:11px;}
 .cal-panel-compact .cal-dow{font-size:10px; padding-bottom:4px;}
 .cal-panel-compact .cal-dot{width:4px; height:4px;}
-.health-alert{display:flex; align-items:center; gap:8px; background:var(--amber-pale); color:var(--amber); padding:10px 14px; border-radius:12px; font-size:13px; margin-bottom:16px;}
-.health-row-warn{background:var(--coral-pale); border-radius:8px; padding:6px 8px; margin:2px -8px;}
 
 /* Forms / buttons shared across module pages */
-.section-title{font-size:19px; font-weight:600; margin-bottom:4px;}
+.section-title{font-size:20px; font-weight:700; margin-bottom:4px; letter-spacing:-0.01em;}
 .section-sub{font-size:13px; color:var(--ink-soft); margin-bottom:20px;}
-.panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:18px;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:18px; box-shadow:var(--shadow-card);}
 .panel h3{font-size:14.5px; font-weight:600; margin-bottom:12px;}
-.form-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
-.form-row input, .form-row select{border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:12.5px; font-family:inherit; background:var(--bg); color:var(--ink);}
-.form-row input[type=text], .form-row input[type=number], .form-row input[type=date], .form-row input[type=url]{flex:1; min-width:110px;}
-.btn{background:var(--purple-deep); color:#fff; border:none; border-radius:9px; padding:8px 16px; font-size:12.5px; font-weight:500; cursor:pointer; font-family:inherit;}
-.btn:hover{opacity:.92;}
-.btn-ghost{background:var(--purple-pale); color:var(--purple-deep);}
-.btn-teal{background:var(--teal);}
-.btn-sm{padding:6px 11px; font-size:11.5px;}
+.form-row{display:flex; gap:9px; flex-wrap:wrap; margin-bottom:10px; align-items:center;}
+.form-row input, .form-row select{border:1px solid var(--line); border-radius:10px; padding:9px 11px; font-size:12.5px; font-family:inherit; background:var(--bg); color:var(--ink); transition:box-shadow .15s ease, border-color .15s ease;}
+.form-row input:focus, .form-row select:focus{outline:none; border-color:var(--purple); box-shadow:0 0 0 3px var(--purple-pale);}
+.form-row input[type=text], .form-row input[type=number], .form-row input[type=date], .form-row input[type=url], .form-row input[type=month], .form-row input[type=time]{flex:1; min-width:110px;}
+.btn{background:linear-gradient(135deg,var(--purple-deep),#7568D9); color:#fff; border:none; border-radius:10px; padding:9px 18px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; box-shadow:0 4px 12px -6px rgba(90,76,196,.55); transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;}
+.btn:hover{transform:translateY(-1px); box-shadow:0 6px 16px -6px rgba(90,76,196,.6);}
+.btn:active{transform:translateY(0);}
+.btn-ghost{background:var(--purple-pale); color:var(--purple-deep); box-shadow:none;}
+.btn-ghost:hover{box-shadow:0 2px 8px -4px rgba(90,76,196,.3);}
+.btn-teal{background:linear-gradient(135deg,var(--teal),#3FA294); box-shadow:0 4px 12px -6px rgba(79,182,166,.55);}
+.btn-sm{padding:6.5px 12px; font-size:11.5px;}
 .table{width:100%; border-collapse:collapse; font-size:12.5px;}
-.table th{text-align:left; color:var(--ink-soft); font-weight:500; font-size:11px; padding:6px 8px; border-bottom:1px solid var(--line);}
-.table td{padding:8px; border-bottom:1px solid var(--line);}
+.table th{text-align:left; color:var(--ink-soft); font-weight:600; font-size:11px; padding:7px 8px; border-bottom:1px solid var(--line);}
+.table td{padding:9px 8px; border-bottom:1px solid var(--line);}
 .table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:var(--bg);}
 .muted{color:var(--ink-soft); font-size:12px;}
-.msg{padding:10px 14px; border-radius:10px; font-size:12.5px; margin-bottom:12px;}
-.msg-ok{background:var(--teal-pale); color:#347468;}
-.msg-err{background:var(--coral-pale); color:#9c3f3c;}
+.msg{padding:11px 14px; border-radius:11px; font-size:12.5px; margin-bottom:12px;}
+.msg-ok{background:var(--teal-pale); color:#2E6459;}
+.msg-err{background:var(--coral-pale); color:#8C3532;}
 .tag-row{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
-.tag{font-size:10.5px; padding:4px 10px; border-radius:99px; background:var(--purple-pale); color:var(--purple-deep);}
+.tag{font-size:10.5px; padding:4px 10px; border-radius:99px; background:var(--purple-pale); color:var(--purple-deep); font-weight:600;}
 .two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:18px;}
 @media (max-width:900px){.two-col{grid-template-columns:1fr;}}
-.trip-card{border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px;}
+.trip-card{border:1px solid var(--line); border-radius:14px; padding:15px; margin-bottom:14px; transition:box-shadow .15s ease;}
+.trip-card:hover{box-shadow:var(--shadow-sm);}
 .trip-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
 .trip-card-head h4{font-size:14px; font-weight:600;}
 .small-list{list-style:none; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px;}
+
+/* Assets / portfolio chart */
+.portfolio-chart{width:100%; height:170px; overflow:visible;}
+.portfolio-chart-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-soft); margin-top:4px;}
 </style>
 </head>
 <body>
@@ -167,8 +179,8 @@ a{color:inherit;}
   <button class="nav-item" data-view="finance" onclick="nav('finance')"><div class="icon">฿</div>เงิน</button>
   <button class="nav-item" data-view="running" onclick="nav('running')"><div class="icon">➤</div>วิ่ง</button>
   <button class="nav-item" data-view="work" onclick="nav('work')"><div class="icon">▣</div>งาน</button>
-  <button class="nav-item" data-view="health" onclick="nav('health')"><div class="icon">♥</div>สุขภาพ</button>
   <button class="nav-item" data-view="trips" onclick="nav('trips')"><div class="icon">✈</div>ทริป</button>
+  <button class="nav-item" data-view="assets" onclick="nav('assets')"><div class="icon">◎</div>ทรัพย์สิน</button>
   <div class="nav-spacer"></div>
   <button class="nav-item" data-view="settings" onclick="nav('settings')" title="Settings"><div class="icon">⚙</div>ตั้งค่า</button>
   <div class="profile-dot" title="Milk">M</div>
@@ -236,6 +248,31 @@ function upsertTxn(tx){
   if(idx>=0){ state.finance.transactions[idx] = tx; return false; }
   state.finance.transactions.unshift(tx);
   return true;
+}
+
+/* ---------- Running summary (always derived from activities, never synced/stored) ---------- */
+function runningWeekSummary(){
+  const days = currentWeekMondayToSunday();
+  const set = new Set(days);
+  const weekActivities = state.running.activities.filter(a=>set.has(a.date));
+  const weekKm = weekActivities.reduce((s,a)=>s+(a.distance_km||0),0);
+  const goal = state.running.weeklyGoalKm || 0;
+  const pct = goal ? Math.min(100, Math.round(100*weekKm/goal)) : 0;
+  return { weekKm, goal, pct, weekActivities };
+}
+
+/* ---------- Assets / net worth (manual items + Dime portfolio snapshots) ---------- */
+function assetsItemsTotal(){ return state.assets.items.reduce((s,a)=>s+(Number(a.value)||0),0); }
+function assetsSortedReports(){ return [...state.assets.reports].sort((a,b)=>String(a.month).localeCompare(String(b.month))); }
+function assetsLatestReport(){ const r = assetsSortedReports(); return r.length ? r[r.length-1] : null; }
+function assetsNetWorth(){ const latest = assetsLatestReport(); return assetsItemsTotal() + (latest ? latest.totalValue : 0); }
+function assetsMoM(){
+  const r = assetsSortedReports();
+  if(r.length < 2) return null;
+  const cur = r[r.length-1], prev = r[r.length-2];
+  const diff = cur.totalValue - prev.totalValue;
+  const pct = prev.totalValue ? Math.round(1000*diff/prev.totalValue)/10 : null;
+  return { diff, pct };
 }
 
 /* ---------- Direct same-origin read from Milk Hub ----------
@@ -306,10 +343,10 @@ function defaultState(){
       ]
     },
     running: {
+      // weeklyGoalKm is the ONLY thing set by hand (via the "วิ่ง" page) — everything
+      // else (weekly total, activity list) is always computed live from `activities`,
+      // never pulled/synced, so intervals.icu sync only ever touches raw activities.
       weeklyGoalKm: 40,
-      weekKm: 32.4,
-      weekLabel: 'Week 6/12',
-      goalNote: 'เป้าหมาย 42K วันที่ 12 ต.ค.',
       activities: [
         {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, done:true, demo:true},
         {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, done:false, demo:true}
@@ -326,12 +363,18 @@ function defaultState(){
       routines: [],
       routineCompletions: {} // { 'YYYY-MM': { routineId: true } }
     },
-    health: {
-      lastSync: null,
-      members: [
-        {id:uid(), name:'Milk', avatar:'M', logs:[{id:uid(), date:t, note:'น้ำหนักคงที่', flag:'ok'}]},
-        {id:uid(), name:'คุณพ่อ', avatar:'พ่อ', logs:[{id:uid(), date:t, note:'ความดันสูงเล็กน้อย', flag:'warn'}]},
-        {id:uid(), name:'คุณแม่', avatar:'แม่', logs:[{id:uid(), date:t, note:'ปกติ', flag:'ok'}]}
+    assets: {
+      // Manually-tracked assets (property, cash, stocks, crypto, ฯลฯ) — anything not covered by a Dime import.
+      items: [
+        {id:uid(), name:'เงินฝากออมทรัพย์', category:'เงินสด', value:150000, note:'', updated:t, demo:true},
+        {id:uid(), name:'คอนโด (ราคาประเมิน)', category:'อสังหาริมทรัพย์', value:2800000, note:'', updated:t, demo:true}
+      ],
+      // Monthly portfolio snapshots — added by importing a Dime PDF statement (parsed client-side)
+      // or typed in by hand. Charted as a line over time in the "ทรัพย์สิน" page.
+      reports: [
+        {id:uid(), month: addDays(t,-60).slice(0,7), totalValue: 812000, source:'manual', importedAt: addDays(t,-60), breakdown:[], demo:true},
+        {id:uid(), month: addDays(t,-30).slice(0,7), totalValue: 845000, source:'manual', importedAt: addDays(t,-30), breakdown:[], demo:true},
+        {id:uid(), month: t.slice(0,7), totalValue: 869000, source:'manual', importedAt: t, breakdown:[], demo:true}
       ]
     },
     trips: {
@@ -354,10 +397,7 @@ function defaultState(){
     },
     settings: {
       intervalsApiKey: '',
-      intervalsAthleteId: '0',
-      healthSheetCsvUrl: '',
-      familyHealthScriptUrl: '',
-      healthConnectUrl: ''
+      intervalsAthleteId: '0'
     }
   };
 }
@@ -375,6 +415,18 @@ function loadState(){
       if(s.work && !s.work.routineCompletions) s.work.routineCompletions = {};
       if(!s.calendar) s.calendar = {events:[]};
       if(!s.calendar.events) s.calendar.events = [];
+      if(!s.assets) s.assets = {items:[], reports:[]};
+      if(!s.assets.items) s.assets.items = [];
+      if(!s.assets.reports) s.assets.reports = [];
+      if(s.running){
+        // Older saves had static weekKm/weekLabel/goalNote fields that were never
+        // recomputed — the "Today" card now always derives these from activities,
+        // so the stale fields are just dropped (weeklyGoalKm is kept — that one's
+        // meant to be hand-set).
+        delete s.running.weekKm; delete s.running.weekLabel; delete s.running.goalNote;
+        if(s.running.weeklyGoalKm == null) s.running.weeklyGoalKm = 40;
+      }
+      delete s.health; // module removed — family health tracking is gone from this build
       return s;
     }catch(e){ console.warn('bad state, resetting'); }
   }
@@ -447,7 +499,7 @@ function render(){
   const h = new Date().getHours();
   document.getElementById('greetingText').textContent = (h<12 ? 'สวัสดีตอนเช้า, Milk' : h<18 ? 'สวัสดีตอนบ่าย, Milk' : 'สวัสดีตอนเย็น, Milk');
   const root = document.getElementById('viewRoot');
-  const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, health:renderHealth, trips:renderTrips, settings:renderSettings};
+  const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, trips:renderTrips, assets:renderAssets, settings:renderSettings};
   root.innerHTML = (renderers[currentView] || renderToday)();
 }
 
@@ -461,17 +513,19 @@ function renderToday(){
   state.trips.list.forEach(tr=> tr.days.forEach(d=>{ if(d.date === t) items.push({time:'', label:'ทริป: ' + d.place, color:'var(--purple)'}); }));
   state.finance.transactions.forEach(tx=>{ if(tx.date === t) items.push({time:'', label:'฿' + fmtMoney(tx.amount) + ' ' + tx.note, color:'var(--coral)'}); });
 
-  const finance = state.finance, running = state.running, work = state.work, health = state.health, trips = state.trips;
+  const finance = state.finance, running = state.running, work = state.work, trips = state.trips;
   const thisMonth = monthSummary(todayISO().slice(0,7));
   const pendingTasks = work.tasks.filter(x=>!x.done).length;
   const upcomingTrip = trips.list.map(tr=>({tr, nd: daysUntil(tr.days[0] ? tr.days[0].date : tr.startDate)})).filter(x=>x.nd>=0).sort((a,b)=>a.nd-b.nd)[0];
+  const runWeek = runningWeekSummary();
+  const netWorth = assetsNetWorth();
+  const mom = assetsMoM();
 
   const dayEvents = (d)=>{
     const out = [];
     state.calendar.events.forEach(ev=>{ if(ev.date===d) out.push({label:(ev.time?ev.time+' ':'')+ev.title, color:'var(--blue)', gcalTitle:ev.title, custom:true, id:ev.id}); });
     work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10)===d) out.push({label:(tk.done?'✓ ':'')+tk.text, color:'var(--amber)', gcalTitle:tk.text}); });
     trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
-    health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') out.push({label:m.name+': '+l.note, color:'var(--coral)', gcalTitle:null}); }));
     return out;
   };
   // Which month the calendar grid shows — defaults to the current month, but calMonthShift() lets
@@ -506,11 +560,11 @@ function renderToday(){
 
     <div class="card">
       <div class="card-head">
-        <div class="card-title"><div class="card-icon icon-run">➤</div><div><h3>วิ่ง</h3><div class="card-sub">RunCoach / intervals.icu</div></div></div>
-        <div class="pill pill-teal">${escapeHtml(running.weekLabel||'')}</div>
+        <div class="card-title"><div class="card-icon icon-run">➤</div><div><h3>วิ่ง</h3><div class="card-sub">กิจกรรมล่าสุด</div></div></div>
+        <div class="pill pill-teal">${runWeek.pct}% ของเป้าหมาย</div>
       </div>
-      <div class="big-stat mono">${running.weekKm} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม. สัปดาห์นี้</span></div>
-      <div class="stat-note">${escapeHtml(running.goalNote||'')}</div>
+      <div class="big-stat mono">${runWeek.weekKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม. สัปดาห์นี้</span></div>
+      <div class="bar-row" style="margin-bottom:10px"><div class="bar-track"><div class="bar-fill" style="width:${runWeek.pct}%; background:var(--teal)"></div></div><div class="bar-val">${runWeek.goal}K</div></div>
       <div class="task-list">${running.activities.slice(0,3).map(a=>`<div class="task-row"><div class="task-check ${a.done?'done':''}"></div><div class="task-text ${a.done?'done':''}">${escapeHtml(a.name)} — ${a.distance_km}K</div></div>`).join('') || '<div class="muted">ยังไม่มีข้อมูล — ไป Sync ที่หน้า "วิ่ง"</div>'}</div>
     </div>
 
@@ -524,10 +578,11 @@ function renderToday(){
 
     <div class="card">
       <div class="card-head">
-        <div class="card-title"><div class="card-icon icon-health">♥</div><div><h3>สุขภาพครอบครัว</h3><div class="card-sub">Family Health Bot</div></div></div>
-        <div class="pill pill-purple">${health.members.length} คน</div>
+        <div class="card-title"><div class="card-icon icon-assets">◎</div><div><h3>ทรัพย์สิน</h3><div class="card-sub">${state.assets.reports.length ? 'อัปเดตล่าสุด ' + fmtDate(assetsLatestReport().importedAt) : 'ยังไม่มีข้อมูล'}</div></div></div>
+        ${mom ? `<div class="pill ${mom.diff>=0?'pill-teal':'pill-coral'}">${mom.diff>=0?'+':''}${mom.pct!=null?mom.pct+'%':''} MoM</div>` : ''}
       </div>
-      ${health.members.map(m=>{ const last = m.logs[0]; return `<div class="health-row"><div class="health-name"><div class="avatar">${escapeHtml(m.avatar)}</div>${escapeHtml(m.name)}</div><div class="mono" style="font-size:12px; ${last&&last.flag==='warn'?'color:var(--coral)':''}">${last?escapeHtml(last.note):'—'}</div></div>`; }).join('')}
+      <div class="big-stat mono">฿${fmtMoney(netWorth)}</div>
+      <div class="stat-note">สินทรัพย์อื่นๆ ฿${fmtMoney(assetsItemsTotal())} · พอร์ต Dime ฿${fmtMoney(assetsLatestReport()?assetsLatestReport().totalValue:0)}</div>
     </div>
 
     <div class="card">
@@ -574,19 +629,17 @@ function renderToday(){
         const dots = [];
         const dayTasks = work.tasks.filter(tk=>!tk.done && (tk.due||'').slice(0,10)===d);
         const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
-        const dayWarns = []; health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') dayWarns.push(m.name); }));
         const dayEv = state.calendar.events.filter(ev=>ev.date===d);
         if(dayEv.length) dots.push({color:'var(--blue)'});
         if(dayTasks.length) dots.push({color:'var(--amber)'});
         if(dayTrips.length) dots.push({color:'var(--purple)'});
-        if(dayWarns.length) dots.push({color:'var(--coral)'});
         return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
           <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
           <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
         </button>`;
       }).join('')}
     </div>
-    <div class="muted" style="margin:10px 0">จุดฟ้า = นัด/กิจกรรมที่คีย์เอง · จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป · จุดแดง = สุขภาพต้องระวัง — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div class="muted" style="margin:10px 0">จุดฟ้า = นัด/กิจกรรมที่คีย์เอง · จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป — คลิกวันที่เพื่อดูรายละเอียด</div>
     <div style="border-top:1px solid var(--line); padding-top:12px">
       <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
       ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
@@ -819,20 +872,28 @@ function renderRunning(){
     <div class="panel">
       <h3>สรุปสัปดาห์นี้ (จ.–อา.)</h3>
       <div class="big-stat mono">${weekKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม.</span></div>
-      <div class="stat-note">เป้าหมาย ${r.weeklyGoalKm} กม./สัปดาห์</div>
-      <div class="bar-row"><div class="bar-label">ความคืบหน้า</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.round(100*weekKm/r.weeklyGoalKm))}%; background:var(--teal)"></div></div><div class="bar-val">${Math.min(100,Math.round(100*weekKm/r.weeklyGoalKm))}%</div></div>
+      <div class="stat-note">เป้าหมาย ${r.weeklyGoalKm} กม./สัปดาห์ — ตั้งเองด้านล่าง (ไม่ได้ดึงมาจาก intervals.icu)</div>
+      <div class="bar-row"><div class="bar-label">ความคืบหน้า</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.round(100*weekKm/(r.weeklyGoalKm||1)))}%; background:var(--teal)"></div></div><div class="bar-val">${Math.min(100,Math.round(100*weekKm/(r.weeklyGoalKm||1)))}%</div></div>
       <div style="margin-top:10px">
         ${weekDays.map((day,i)=>`<div class="bar-row"><div class="bar-label">${weekdayShort[i]}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(100*perDayKm[i]/maxDayKm)}%; background:var(--teal)"></div></div><div class="bar-val">${perDayKm[i] ? perDayKm[i].toFixed(1)+'K' : '—'}</div></div>`).join('')}
       </div>
+      <div class="form-row" style="margin-top:12px">
+        <input type="number" id="weeklyGoalInput" value="${r.weeklyGoalKm}" style="max-width:110px" placeholder="กม./สัปดาห์">
+        <button class="btn btn-ghost btn-sm" onclick="setWeeklyGoal()">ตั้งเป้าหมาย</button>
+      </div>
       <hr style="border:none; border-top:1px solid var(--line); margin:14px 0">
       <h3>Sync จาก intervals.icu</h3>
-      <div class="muted" style="margin-bottom:8px">ต้องตั้งค่า API key ที่หน้า "ตั้งค่า" ก่อน (บัญชี intervals.icu เดียวกับที่เชื่อม Suunto อยู่แล้ว)</div>
+      <div class="muted" style="margin-bottom:8px">ต้องตั้งค่า API key ที่หน้า "ตั้งค่า" ก่อน (บัญชี intervals.icu เดียวกับที่เชื่อม Suunto อยู่แล้ว) — sync ดึงมาแค่ "กิจกรรม" เท่านั้น ไม่แตะเป้าหมายที่ตั้งไว้เอง</div>
       <button class="btn btn-teal" onclick="syncIntervals()">🔄 Sync ตอนนี้</button>
       <div id="runSyncMsg"></div>
       <div class="muted" style="margin-top:10px">Sync ล่าสุด: ${r.lastSync ? fmtDate(r.lastSync.slice(0,10)) + ' ' + r.lastSync.slice(11,16) : 'ยังไม่เคย sync'}</div>
     </div>
   </div>
   `;
+}
+function setWeeklyGoal(){
+  const v = parseFloat(document.getElementById('weeklyGoalInput').value);
+  if(v>0){ state.running.weeklyGoalKm = v; saveState(); render(); }
 }
 function addRun(){
   const name = document.getElementById('runName').value.trim() || 'วิ่ง';
@@ -983,212 +1044,6 @@ function addTask(){
 function toggleTask(id){ const tk = state.work.tasks.find(t=>t.id===id); if(tk){ tk.done = !tk.done; saveState(); render(); } }
 function delTask(id){ state.work.tasks = state.work.tasks.filter(t=>t.id!==id); saveState(); render(); }
 
-/* ---------- Health view ---------- */
-let healthStatusHtml = ''; // transient status line for the connect box; renderHealth() reads this so a full re-render doesn't wipe it out
-function renderHealth(){
-  const h = state.health;
-  const warnMembers = h.members.filter(m=>m.logs[0] && m.logs[0].flag==='warn');
-  return `
-  <div class="section-title">สุขภาพครอบครัว</div>
-  <div class="section-sub">วางลิงก์ Family Health Bot ของพี่ (จะเป็นลิงก์ script.google.com หรือลิงก์ Google Sheet ก็ได้ ระบบดูออกเองว่าเป็นแบบไหน)</div>
-  ${warnMembers.length ? `<div class="health-alert">⚠ ต้องติดตามวันนี้ — ${warnMembers.map(m=>`${escapeHtml(m.name)} (${escapeHtml(m.logs[0].note)})`).join(', ')}</div>` : ''}
-  <div class="form-row" style="margin-bottom:10px">
-    <input type="url" id="healthConnectUrl" placeholder="วางลิงก์ตรงนี้ช่องเดียว" value="${escapeHtml(state.settings.healthConnectUrl||'')}" style="flex:1">
-    <button class="btn btn-teal" onclick="connectHealth()">🔄 เชื่อมข้อมูล</button>
-  </div>
-  <div id="healthImportMsg" class="muted" style="margin-bottom:16px">${healthStatusHtml}</div>
-
-  <div class="panel" style="margin-bottom:16px">
-    <h3>เพิ่มคนใหม่</h3>
-    <div class="form-row">
-      <input type="text" id="newMemberName" placeholder="ชื่อ (เช่น น้องมิ้ม)">
-      <input type="text" id="newMemberAvatar" placeholder="ตัวย่อ (เช่น มิ้ม)" style="max-width:120px">
-      <button class="btn btn-sm" onclick="addHealthMember()">+ เพิ่มคน</button>
-    </div>
-  </div>
-
-  <div class="grid">
-    ${h.members.map(m=>{ const last = m.logs[0]; const warn = last && last.flag==='warn'; return `
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title"><div class="avatar">${escapeHtml(m.avatar)}</div><div><h3>${escapeHtml(m.name)}</h3><div class="card-sub">${m.logs.length} รายการบันทึก</div></div></div>
-          <div style="display:flex; align-items:center; gap:8px">
-            <span class="pill ${warn?'pill-coral':'pill-teal'}">${warn?'ต้องระวัง':'ปกติ'}</span>
-            <button class="task-del" title="ลบคนนี้" onclick="delHealthMember('${m.id}')">✕</button>
-          </div>
-        </div>
-        ${m.logs.slice(0,4).map(l=>`<div class="health-row ${l.flag==='warn'?'health-row-warn':''}"><div>${fmtDate(l.date)}</div><div class="mono" style="${l.flag==='warn'?'color:var(--coral)':''}">${escapeHtml(l.note)}</div></div>`).join('') || '<div class="muted">ไม่มีบันทึก</div>'}
-        <div class="form-row" style="margin-top:10px">
-          <input type="text" id="healthNote-${m.id}" placeholder="บันทึกใหม่">
-          <select id="healthFlag-${m.id}"><option value="ok">ปกติ</option><option value="warn">ต้องระวัง</option></select>
-          <button class="btn btn-sm" onclick="addHealthLog('${m.id}')">+ เพิ่ม</button>
-        </div>
-      </div>
-    `; }).join('')}
-  </div>
-  `;
-}
-function addHealthMember(){
-  const name = document.getElementById('newMemberName').value.trim();
-  let avatar = document.getElementById('newMemberAvatar').value.trim();
-  if(!name) return;
-  if(!avatar) avatar = name.slice(0,2);
-  state.health.members.push({id:uid(), name, avatar, logs:[]});
-  document.getElementById('newMemberName').value = '';
-  document.getElementById('newMemberAvatar').value = '';
-  saveState(); render();
-}
-function delHealthMember(memberId){
-  const m = state.health.members.find(x=>x.id===memberId);
-  if(m && !confirm(`ลบ "${m.name}" และประวัติทั้งหมด (${m.logs.length} รายการ)?`)) return;
-  state.health.members = state.health.members.filter(x=>x.id!==memberId);
-  saveState(); render();
-}
-function addHealthLog(memberId){
-  const note = document.getElementById('healthNote-'+memberId).value.trim();
-  const flag = document.getElementById('healthFlag-'+memberId).value;
-  if(!note) return;
-  const m = state.health.members.find(x=>x.id===memberId);
-  if(m){ m.logs.unshift({id:uid(), date:todayISO(), note, flag}); saveState(); render(); }
-}
-// Single entry point for the health "เชื่อมข้อมูล" box: looks at the pasted
-// URL and routes to the right method automatically, so it's impossible to
-// paste a Sheets link into the "Apps Script" flow (or vice versa) by mistake.
-async function connectHealth(){
-  const url = document.getElementById('healthConnectUrl').value.trim();
-  if(!url){ healthStatusHtml = `<span style="color:var(--coral)">ยังไม่ได้วางลิงก์</span>`; render(); return; }
-  state.settings.healthConnectUrl = url;
-  saveState();
-  if(/script\.google\.com/.test(url)){
-    await syncFamilyHealthJson(url);
-  }else if(/docs\.google\.com\/spreadsheets/.test(url) || /output=csv|\/gviz\/tq/.test(url)){
-    await importHealthSheet(url);
-  }else{
-    healthStatusHtml = `<span style="color:var(--coral)">ไม่รู้จักลิงก์นี้ — ต้องเป็นลิงก์ script.google.com (Apps Script) หรือลิงก์ docs.google.com/spreadsheets (Google Sheet)</span>`;
-    render();
-  }
-}
-// Sync directly from the Family Health Bot Apps Script web app.
-// NOTE: the URL given (?section=graph&token=...) serves the human dashboard
-// page (rendered client-side inside Google's script.google.com sandbox) —
-// fetching it from another page returns that same HTML shell, not usable
-// data. This function calls the SAME script URL with &format=json&section=api
-// instead, which requires one small addition to Code.gs's doGet(e) — see the
-// "ตั้งค่า" page for the exact snippet to paste in. Until that's added,
-// this will fail gracefully and the CSV import path above still works.
-async function syncFamilyHealthJson(base){
-  base = base || state.settings.familyHealthScriptUrl;
-  if(!base){ healthStatusHtml = `<span style="color:var(--coral)">ยังไม่ได้ตั้งค่าลิงก์ Family Health Bot</span>`; render(); return; }
-  healthStatusHtml = 'กำลัง sync...'; render();
-  try{
-    const sep = base.includes('?') ? '&' : '?';
-    const url = base + sep + 'format=json&section=api';
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json(); // expects [{name, date, note, flag}, ...] or {members:[{name, avatar, logs:[...]}]}
-    let rows = Array.isArray(data) ? data : (data.rows || data.members || []);
-    let added = 0, skipped = 0;
-    const flatten = [];
-    rows.forEach(r=>{
-      if(r.logs){ r.logs.forEach(l=>flatten.push({name:r.name, avatar:r.avatar, date:l.date, note:l.note, flag:l.flag, id:l.id})); }
-      else flatten.push(r);
-    });
-    flatten.forEach(row=>{
-      if(!row.name) return;
-      let m = state.health.members.find(x=>x.name.trim()===String(row.name).trim());
-      if(!m){ m = {id:uid(), name:String(row.name).trim(), avatar:(row.avatar||String(row.name)).trim().slice(0,2), logs:[]}; state.health.members.push(m); }
-      const logId = row.id ? 'fhb-'+row.id : null;
-      if(logId && m.logs.some(l=>l.id===logId)){ skipped++; return; }
-      m.logs.unshift({id: logId || uid(), date: row.date || todayISO(), note: row.note || '', flag: row.flag || 'ok'});
-      added++;
-    });
-    state.health.lastSync = new Date().toISOString();
-    saveState();
-    healthStatusHtml = `<span style="color:var(--teal)">Sync สำเร็จ — เพิ่มใหม่ ${added} รายการ${skipped?` (ข้าม ${skipped} ที่มีอยู่แล้ว)`:''}</span>`;
-    render();
-  }catch(err){
-    healthStatusHtml = `<span style="color:var(--coral)">ลิงก์ Apps Script นี้ยังเชื่อมตรงไม่ได้ (${escapeHtml(err.message)}) — ต้องเพิ่มโค้ดเล็กๆ ใน Code.gs ก่อน (ดูคำแนะนำที่หน้า "ตั้งค่า") ระหว่างนี้ลองวางลิงก์ Google Sheet แทนในช่องเดียวกันนี้ได้เลย จะ import ให้อัตโนมัติ</span>`;
-    render();
-  }
-}
-// Accepts pretty much any Google Sheets link (normal share/edit link, view
-// link, or an already-correct "publish to web" CSV link) and converts it to
-// a working CSV export URL. This is what makes pasting "just the link you
-// copied" actually work, instead of requiring the manual Publish-to-web step.
-function normalizeSheetCsvUrl(input){
-  const url = (input||'').trim();
-  if(!url) return '';
-  if(/output=csv|\/gviz\/tq/.test(url)) return url; // already a CSV export link
-  const idMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-  if(!idMatch) return url; // not a recognizable Sheets link — leave as-is, let fetch fail with a clear error
-  const gidMatch = url.match(/[?&#]gid=([0-9]+)/);
-  const gid = gidMatch ? gidMatch[1] : '0';
-  return `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv&gid=${gid}`;
-}
-// Very small CSV line parser that respects double-quoted fields (so commas
-// inside a quoted note, e.g. "ปวดหัว, เวียนหัว", don't break column counts).
-function parseCsvLine(line){
-  const out = []; let cur = ''; let inQuotes = false;
-  for(let i=0;i<line.length;i++){
-    const c = line[i];
-    if(inQuotes){
-      if(c === '"'){ if(line[i+1] === '"'){ cur += '"'; i++; } else { inQuotes = false; } }
-      else cur += c;
-    }else{
-      if(c === '"') inQuotes = true;
-      else if(c === ','){ out.push(cur); cur=''; }
-      else cur += c;
-    }
-  }
-  out.push(cur);
-  return out.map(s=>s.trim());
-}
-async function importHealthSheet(rawUrl){
-  const url = normalizeSheetCsvUrl(rawUrl || state.settings.healthSheetCsvUrl);
-  if(!url){ healthStatusHtml = `<span style="color:var(--coral)">ยังไม่ได้ตั้งค่าลิงก์ Sheet — ไปที่หน้า "ตั้งค่า"</span>`; render(); return; }
-  healthStatusHtml = 'กำลังโหลด...'; render();
-  try{
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    if(/^\s*<(!DOCTYPE|html)/i.test(text)){
-      throw new Error('ลิงก์นี้ตอบกลับเป็นหน้าเว็บ ไม่ใช่ CSV — ปกติแปลว่า Sheet ยังไม่ได้แชร์แบบ "Anyone with the link" (ดูวิธีที่หน้าตั้งค่า)');
-    }
-    const lines = text.trim().split('\n').filter(l=>l.length);
-    if(lines.length < 1){ throw new Error('ได้คำตอบกลับมาแต่เนื้อไฟล์ว่างเปล่า 0 ไบต์ — สาเหตุที่พบบ่อยสุดคือ (1) Sheet ยังไม่ได้แชร์แบบ "Anyone with the link" จริง (ลองเปิดลิงก์นี้ในหน้าต่าง Incognito ดูว่าต้อง sign in มั้ย) หรือ (2) ลิงก์ชี้ไปแผ่นงาน (tab) ที่ไม่มีข้อมูล — ถ้า Sheet มีหลายแท็บ ให้เปิดแท็บที่มีข้อมูลจริงก่อน แล้วดู #gid=... ท้าย URL ให้ตรงกับแท็บนั้น ค่อยคัดลอกมาวางใหม่'); }
-    const rows = lines.map(parseCsvLine);
-    const header = rows.shift().map(h=>h.trim().toLowerCase());
-    const nameIdx = header.indexOf('name'); const dateIdx = header.indexOf('date'); const noteIdx = header.indexOf('note'); const flagIdx = header.indexOf('flag');
-    const noColumnsMatched = nameIdx<0 && dateIdx<0 && noteIdx<0 && flagIdx<0;
-    let added = 0;
-    rows.forEach(cols=>{
-      if(!cols.length || !cols[0]) return;
-      const name = nameIdx>=0 ? cols[nameIdx] : cols[0];
-      if(!name) return;
-      let m = state.health.members.find(x=>x.name.trim()===name.trim());
-      if(!m){ m = {id:uid(), name:name.trim(), avatar:name.trim().slice(0,2), logs:[]}; state.health.members.push(m); }
-      m.logs.unshift({id:uid(), date: dateIdx>=0?cols[dateIdx]:todayISO(), note: noteIdx>=0?cols[noteIdx]:'', flag: flagIdx>=0?cols[flagIdx]:'ok'});
-      added++;
-    });
-    saveState();
-    if(noColumnsMatched){
-      // We couldn't find columns named name/date/note/flag — data still got
-      // imported (using column 1 as the name, guessing on the rest), but the
-      // shape is probably wrong. Surface exactly what we saw so this is
-      // fixable instead of a silent no-op.
-      healthStatusHtml = `<span style="color:var(--amber)">Import แล้ว ${added} แถว แต่ไม่เจอคอลัมน์ชื่อ name/date/note/flag ในชีตนี้ — หัวคอลัมน์ที่เจอจริงคือ: <b>${escapeHtml(header.join(', '))}</b> (ใช้คอลัมน์แรกเป็นชื่อคนไปก่อน อาจไม่ตรง) ส่งหัวคอลัมน์นี้มาบอกได้ จะแก้ให้ mapping ตรงกับชีตจริง</span>`;
-    }else if(added === 0){
-      healthStatusHtml = `<span style="color:var(--coral)">อ่านชีตได้ แต่ไม่มีแถวข้อมูล (มีแค่หัวตาราง ${rows.length===0?'หรือว่างเปล่า':''}) — เช็คว่าวางลิงก์ของแผ่นงาน (tab) ที่มีข้อมูลจริงหรือเปล่า ถ้า Sheet มีหลายแผ่นงาน ต้องเป็นลิงก์ของแผ่นที่ถูกต้อง (ดู gid ท้ายลิงก์)</span>`;
-    }else{
-      healthStatusHtml = `<span style="color:var(--teal)">Import สำเร็จ ${added} แถว</span>`;
-    }
-    render();
-  }catch(err){
-    healthStatusHtml = `<span style="color:var(--coral)">Import ไม่สำเร็จ: ${escapeHtml(err.message)}${/ตอบกลับเป็นหน้าเว็บ|Anyone with the link/.test(err.message) ? '' : ' — ตรวจว่า Sheet ตั้ง Share เป็น "Anyone with the link → Viewer" แล้ว'}</span>`;
-    render();
-  }
-}
-
 /* ---------- Trips view ---------- */
 function renderTrips(){
   const trips = state.trips.list;
@@ -1290,6 +1145,207 @@ function exportTripIcs(tripId){
   a.click();
 }
 
+/* ---------- Assets / net worth view ---------- */
+// Small inline SVG line+area chart for the Dime portfolio history — no chart
+// library, just plots the sorted report list on a 0..1 normalized Y axis.
+function renderPortfolioChart(reports){
+  if(!reports.length) return '';
+  const W = 640, H = 150, pad = 22;
+  const values = reports.map(r=>r.totalValue);
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || Math.max(1, max*0.1) || 1;
+  const stepX = reports.length > 1 ? (W - 2*pad) / (reports.length - 1) : 0;
+  const pts = reports.map((r,i)=>{
+    const x = pad + i*stepX;
+    const y = reports.length > 1 ? (H - pad - ((r.totalValue - min)/range)*(H - 2*pad)) : H/2;
+    return {x, y, r};
+  });
+  const path = pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const areaPath = pts.length > 1
+    ? path + ` L${pts[pts.length-1].x.toFixed(1)},${H-pad} L${pts[0].x.toFixed(1)},${H-pad} Z`
+    : '';
+  return `
+  <svg class="portfolio-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="portGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" style="stop-color:var(--purple); stop-opacity:0.30"/>
+        <stop offset="100%" style="stop-color:var(--purple); stop-opacity:0"/>
+      </linearGradient>
+    </defs>
+    ${areaPath ? `<path d="${areaPath}" fill="url(#portGrad)" stroke="none"></path>` : ''}
+    ${pts.length > 1 ? `<path d="${path}" fill="none" stroke="var(--purple-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>` : ''}
+    ${pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="var(--purple-deep)" stroke="#fff" stroke-width="1.5"></circle>`).join('')}
+  </svg>
+  <div class="portfolio-chart-labels">${reports.map(r=>`<span>${ymLabel(r.month).split(' ')[0]} '${String((parseInt(r.month.slice(0,4),10)+543)).slice(-2)}</span>`).join('')}</div>
+  `;
+}
+
+function renderAssets(){
+  const a = state.assets;
+  const reports = assetsSortedReports();
+  const netWorth = assetsNetWorth();
+  const mom = assetsMoM();
+  const latest = assetsLatestReport();
+  return `
+  <div class="section-title">ทรัพย์สิน</div>
+  <div class="section-sub">มูลค่าสุทธิรวม — พอร์ต Dime (นำเข้าจาก PDF รายเดือน) บวกกับสินทรัพย์อื่นๆ ที่เพิ่มเอง</div>
+
+  <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:18px">
+    <div class="card">
+      <div class="card-sub">มูลค่าสุทธิรวม</div>
+      <div class="big-stat mono">฿${fmtMoney(netWorth)}</div>
+      ${mom ? `<div class="stat-note" style="color:${mom.diff>=0?'var(--teal)':'var(--coral)'}">${mom.diff>=0?'+':''}฿${fmtMoney(mom.diff)} (${mom.pct!=null?mom.pct+'%':''}) จากเดือนก่อน</div>` : '<div class="stat-note">ยังไม่มีข้อมูลเทียบเดือนก่อน</div>'}
+    </div>
+    <div class="card">
+      <div class="card-sub">พอร์ต Dime ล่าสุด</div>
+      <div class="big-stat mono">฿${fmtMoney(latest?latest.totalValue:0)}</div>
+      <div class="stat-note">${latest ? ymLabel(latest.month) + ' · นำเข้า ' + fmtDate(latest.importedAt) : 'ยังไม่เคยนำเข้า'}</div>
+    </div>
+    <div class="card">
+      <div class="card-sub">สินทรัพย์อื่นๆ</div>
+      <div class="big-stat mono">฿${fmtMoney(assetsItemsTotal())}</div>
+      <div class="stat-note">${a.items.length} รายการ</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>พอร์ต Dime ย้อนหลัง</h3>
+    ${reports.length ? renderPortfolioChart(reports) : '<div class="muted">ยังไม่มีข้อมูล — นำเข้ารายงานเดือนแรกด้านล่าง</div>'}
+    <table class="table" style="margin-top:14px">
+      <tr><th>เดือน</th><th style="text-align:right">มูลค่า</th><th>ที่มา</th><th></th></tr>
+      ${[...reports].reverse().map(r=>`<tr><td>${ymLabel(r.month)}</td><td style="text-align:right" class="mono">฿${fmtMoney(r.totalValue)}</td><td><span class="tag">${r.source==='dime-pdf'?'Dime PDF':'กรอกเอง'}</span></td><td><button class="task-del" onclick="delAssetReport('${r.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">ไม่มีข้อมูล</td></tr>`}
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>นำเข้ารายงาน Dime (PDF)</h3>
+    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF รายงานที่ Dime ส่งมาทางอีเมลทุกเดือน ระบบจะลองอ่านมูลค่ารวมให้อัตโนมัติ — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน (โหลดเฉพาะตัวอ่าน PDF จาก cdnjs ตอนใช้ครั้งแรก) เพราะรูปแบบรายงานของ Dime อาจไม่เหมือนที่ระบบเดาไว้ทุกครั้ง <b>ให้ตรวจตัวเลขในช่อง "มูลค่ารวม" ก่อนกดบันทึกเสมอ</b></div>
+    <input type="file" id="dimePdfFile" accept="application/pdf" onchange="handleDimePdf(event)">
+    <div id="dimeImportMsg" class="muted" style="margin-top:8px"></div>
+    <div class="form-row" style="margin-top:14px">
+      <input type="month" id="dimeMonth" value="${todayISO().slice(0,7)}" style="max-width:150px">
+      <input type="number" id="dimeValue" placeholder="มูลค่ารวม (บาท)" style="max-width:170px">
+      <button class="btn" onclick="confirmDimeImport()">+ บันทึกลงพอร์ต</button>
+    </div>
+    <div class="muted">ไม่มี PDF ก็กรอกมูลค่ารวมของเดือนนั้นด้วยมือในช่องนี้ได้เลย</div>
+  </div>
+
+  <div class="panel">
+    <h3>สินทรัพย์อื่นๆ</h3>
+    <table class="table">
+      <tr><th>ชื่อ</th><th>ประเภท</th><th style="text-align:right">มูลค่า</th><th>อัปเดต</th><th></th></tr>
+      ${a.items.map(it=>`<tr><td>${escapeHtml(it.name)}</td><td><span class="tag">${escapeHtml(it.category)}</span></td><td style="text-align:right" class="mono">฿${fmtMoney(it.value)}</td><td>${fmtDate(it.updated)}</td><td><button class="task-del" onclick="delAssetItem('${it.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="5" class="muted">ยังไม่มีสินทรัพย์อื่น</td></tr>`}
+    </table>
+    <div class="form-row" style="margin-top:14px">
+      <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
+      <select id="assetCategory">
+        <option>เงินสด</option><option>หุ้น/กองทุน</option><option>คริปโต</option><option>อสังหาริมทรัพย์</option><option>ทองคำ</option><option>อื่นๆ</option>
+      </select>
+      <input type="number" id="assetValue" placeholder="มูลค่า (บาท)" style="max-width:150px">
+      <button class="btn" onclick="addAssetItem()">+ เพิ่มสินทรัพย์</button>
+    </div>
+  </div>
+  `;
+}
+
+// Lazily loads pdf.js from cdnjs the first time a PDF is imported, so the base
+// app stays dependency-free until this feature is actually used.
+let pdfjsLoadPromise = null;
+function ensurePdfJs(){
+  if(window.pdfjsLib) return Promise.resolve();
+  if(pdfjsLoadPromise) return pdfjsLoadPromise;
+  pdfjsLoadPromise = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = ()=>{
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve();
+    };
+    s.onerror = ()=>reject(new Error('โหลดตัวอ่าน PDF จาก cdnjs ไม่สำเร็จ — เช็คอินเทอร์เน็ต'));
+    document.head.appendChild(s);
+  });
+  return pdfjsLoadPromise;
+}
+let dimeParseSucceeded = false;
+async function handleDimePdf(evt){
+  const file = evt.target.files[0];
+  const msgEl = document.getElementById('dimeImportMsg');
+  dimeParseSucceeded = false;
+  if(!file) return;
+  msgEl.innerHTML = '<span class="muted">กำลังอ่านไฟล์...</span>';
+  try{
+    await ensurePdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({data:buf}).promise;
+    let text = '';
+    for(let i=1;i<=pdf.numPages;i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it=>it.str).join(' ') + '\n';
+    }
+    const guess = guessPortfolioValue(text);
+    if(guess != null){
+      document.getElementById('dimeValue').value = guess;
+      dimeParseSucceeded = true;
+      msgEl.innerHTML = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ — เดามูลค่ารวมได้ ฿${fmtMoney(guess)}. ตรวจเลขในช่องด้านล่างก่อนกดบันทึกเสมอ เผื่อรูปแบบรายงานเปลี่ยนไปจากที่เดาไว้</span>`;
+    } else {
+      msgEl.innerHTML = `<span style="color:var(--amber)">อ่านไฟล์ได้ (${pdf.numPages} หน้า) แต่หา "มูลค่ารวม" ในเนื้อหาไม่เจอ — กรอกตัวเลขในช่องด้านล่างเองได้เลย</span>`;
+    }
+  }catch(err){
+    msgEl.innerHTML = `<span style="color:var(--coral)">อ่านไฟล์ไม่สำเร็จ: ${escapeHtml(err.message)} — กรอกมูลค่าด้วยมือแทนได้</span>`;
+  }
+}
+// Heuristic only — Dime's exact PDF layout isn't known, so this looks for a
+// labelled total near common Thai/English keywords first, then falls back to
+// the largest currency-looking number on the page. Always shown to the person
+// for confirmation before it's saved (see the "+ บันทึกลงพอร์ต" button).
+function guessPortfolioValue(text){
+  const keywords = ['มูลค่ารวม','รวมทั้งหมด','พอร์ตรวม','มูลค่าพอร์ตรวม','total portfolio value','total value','net asset value','nav รวม','total assets'];
+  const numRe = /[\d]{1,3}(?:,\d{3})+(?:\.\d+)?|\d{4,}(?:\.\d+)?/g;
+  const lower = text.toLowerCase();
+  for(const kw of keywords){
+    const idx = lower.indexOf(kw);
+    if(idx>=0){
+      const windowText = text.slice(idx, idx+120);
+      const m = windowText.match(numRe);
+      if(m && m.length){
+        const val = parseFloat(m[0].replace(/,/g,''));
+        if(val>0) return Math.round(val);
+      }
+    }
+  }
+  const all = [...text.matchAll(numRe)].map(m=>parseFloat(m[0].replace(/,/g,''))).filter(n=>n>=1000 && n<=500000000);
+  if(all.length) return Math.round(Math.max(...all));
+  return null;
+}
+function confirmDimeImport(){
+  const month = document.getElementById('dimeMonth').value || todayISO().slice(0,7);
+  const value = parseFloat(document.getElementById('dimeValue').value);
+  if(!value || value<=0) return;
+  const existingIdx = state.assets.reports.findIndex(r=>r.month===month);
+  const entry = {
+    id: existingIdx>=0 ? state.assets.reports[existingIdx].id : uid(),
+    month, totalValue: value,
+    source: dimeParseSucceeded ? 'dime-pdf' : 'manual',
+    importedAt: todayISO(), breakdown: []
+  };
+  if(existingIdx>=0) state.assets.reports[existingIdx] = entry; else state.assets.reports.push(entry);
+  dimeParseSucceeded = false;
+  saveState(); render();
+}
+function delAssetReport(id){ state.assets.reports = state.assets.reports.filter(r=>r.id!==id); saveState(); render(); }
+function addAssetItem(){
+  const name = document.getElementById('assetName').value.trim();
+  const category = document.getElementById('assetCategory').value;
+  const value = parseFloat(document.getElementById('assetValue').value);
+  if(!name || !value) return;
+  state.assets.items.push({id:uid(), name, category, value, note:'', updated: todayISO()});
+  document.getElementById('assetName').value = '';
+  document.getElementById('assetValue').value = '';
+  saveState(); render();
+}
+function delAssetItem(id){ state.assets.items = state.assets.items.filter(x=>x.id!==id); saveState(); render(); }
+
 /* ---------- Settings view ---------- */
 function renderSettings(){
   const s = state.settings;
@@ -1309,18 +1365,8 @@ function renderSettings(){
   </div>
 
   <div class="panel">
-    <h3>❤️ Family Health Bot</h3>
-    <div class="muted" style="margin-bottom:10px">
-      จัดการลิงก์เชื่อมข้อมูลได้จากหน้า "สุขภาพครอบครัว" โดยตรง (ช่องเดียว วางลิงก์อะไรก็ได้ ระบบดูออกเอง) — สถานะปัจจุบัน: ${state.settings.healthConnectUrl ? `<span class="mono">${escapeHtml(state.settings.healthConnectUrl)}</span>` : 'ยังไม่ได้เชื่อม'}
-      <br><br>
-      <b>ถ้าอยาก sync ตรงจาก Apps Script</b> (ไม่ผ่าน Sheet CSV) ต้องเพิ่มโค้ดนี้ใน Code.gs ก่อน (แปะไว้ในฟังก์ชัน <span class="mono">doGet(e)</span> ก่อนโค้ดเดิมที่ return หน้า HTML) — ไม่งั้นระบบจะ fallback ให้วางลิงก์ Google Sheet แทนโดยอัตโนมัติ ซึ่งใช้งานได้ทันทีอยู่แล้วไม่ต้องแก้โค้ดอะไร:
-      <pre class="mono" style="background:var(--bg); padding:10px; border-radius:8px; overflow:auto; font-size:11px; margin-top:6px">if (e.parameter.format === 'json') {
-  var out = getAllHealthRows(); // เปลี่ยนเป็นชื่อฟังก์ชันที่อ่านข้อมูลจาก Sheet อยู่แล้วในไฟล์นี้
-  // out ควรเป็น array เช่น [{name, date, note, flag, id}, ...]
-  return ContentService.createTextOutput(JSON.stringify(out))
-    .setMimeType(ContentService.MimeType.JSON);
-}</pre>
-    </div>
+    <h3>◎ ทรัพย์สิน — รายงาน Dime (PDF)</h3>
+    <div class="muted">นำเข้าไฟล์ PDF ได้จากหน้า "ทรัพย์สิน" โดยตรง (ประมวลผลในเบราว์เซอร์ทั้งหมด ไม่ส่งไฟล์ออกไปที่ไหน) ระบบยังอ่านอีเมลไม่ได้อัตโนมัติในตอนนี้ — ต้องดาวน์โหลด PDF จากอีเมล Dime มาอัปโหลดเองทุกเดือน</div>
   </div>
 
   <div class="panel">
@@ -1371,7 +1417,10 @@ function importAllJson(evt){
   reader.onload = e=>{
     try{
       const parsed = JSON.parse(e.target.result);
-      const required = ['finance','running','work','health','trips','settings'];
+      const required = ['finance','running','work','trips','settings'];
+      if(!parsed.assets) parsed.assets = {items:[], reports:[]}; // older backups won't have this yet
+      if(!parsed.calendar) parsed.calendar = {events:[]};
+      delete parsed.health; // module removed — drop it if an old backup still has it
       const looksValid = required.every(k=>Object.prototype.hasOwnProperty.call(parsed, k));
       if(!looksValid) throw new Error('ไฟล์นี้ไม่ใช่ backup ของ Life OS (โครงสร้างไม่ตรง)');
       if(!confirm('Import จะแทนที่ข้อมูลทั้งหมดในเบราว์เซอร์นี้ด้วยข้อมูลจากไฟล์ที่เลือก ดำเนินการต่อ?')) {
