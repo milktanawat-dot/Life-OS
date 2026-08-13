@@ -14,6 +14,7 @@
   --amber:#F5A623; --amber-pale:#FDEFD9;
   --coral:#FF6B8A; --coral-pale:#FFE4EA;
   --blue:#3E8DFF; --blue-pale:#E4EEFF;
+  --green:#5CB85C; --green-pale:#E4F4E2; --green-deep:#3E8E3E;
   --radius:20px; --radius-sm:14px;
   --shadow-card:0 2px 6px rgba(30,41,79,.04), 0 16px 32px -20px rgba(30,41,79,.20);
   --shadow-card-hover:0 4px 10px rgba(30,41,79,.06), 0 20px 40px -18px rgba(30,41,79,.24);
@@ -204,7 +205,11 @@ const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.'
 const thaiDays = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-function todayISO(){ return new Date().toISOString().slice(0,10); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+// Local calendar date (NOT UTC) — using toISOString() here would silently shift
+// the date by a day for any timezone ahead of UTC (e.g. Thailand, UTC+7),
+// which is what caused activities to land on the wrong weekday in charts.
+function todayISO(){ const d = new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 function fmtDate(iso){ if(!iso) return ''; const d = new Date(iso+'T00:00:00'); if(isNaN(d)) return iso; return thaiDays[d.getDay()]+' '+d.getDate()+' '+thaiMonths[d.getMonth()]; }
 function fmtMoney(n){ return (Number(n)||0).toLocaleString('th-TH'); }
 function daysUntil(iso){ const d=new Date(iso+'T00:00:00'); const t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
@@ -263,12 +268,14 @@ function runningWeekSummary(){
 
 /* ---------- Activity types (used to color the bar/donut charts) ---------- */
 const ACTIVITY_TYPES = [
-  {key:'run', label:'วิ่ง', color:'var(--teal)'},
+  {key:'run_road', label:'วิ่งถนน', color:'var(--teal)'},
+  {key:'run_trail', label:'วิ่งเทรล', color:'var(--green)'},
+  {key:'run_treadmill', label:'วิ่งลู่', color:'var(--purple)'},
   {key:'ride', label:'ปั่นจักรยาน', color:'var(--blue)'},
   {key:'weights', label:'เวทเทรนนิ่ง', color:'var(--amber)'},
   {key:'other', label:'อื่นๆ', color:'var(--coral)'}
 ];
-function activityTypeMeta(key){ return ACTIVITY_TYPES.find(t=>t.key===key) || ACTIVITY_TYPES[3]; }
+function activityTypeMeta(key){ return ACTIVITY_TYPES.find(t=>t.key===key) || ACTIVITY_TYPES.find(t=>t.key==='other'); }
 // A single "how much did this session count for" number used only to size chart
 // bars — real distance (km) for distance-based activities, otherwise minutes/10
 // as a rough stand-in so a gym session still shows up as a visible bar.
@@ -363,7 +370,9 @@ function renderActivityDonut(activities){
 function assetsItemsTotal(){ return state.assets.items.reduce((s,a)=>s+(Number(a.value)||0),0); }
 function assetsSortedReports(){ return [...state.assets.reports].sort((a,b)=>String(a.month).localeCompare(String(b.month))); }
 function assetsLatestReport(){ const r = assetsSortedReports(); return r.length ? r[r.length-1] : null; }
-function assetsNetWorth(){ const latest = assetsLatestReport(); return assetsItemsTotal() + (latest ? latest.totalValue : 0); }
+function assetsDebtsTotal(){ return (state.assets.debts||[]).reduce((s,d)=>s+(Number(d.amount)||0),0); }
+// Net worth = manual items + latest Dime portfolio snapshot − total debts/liabilities.
+function assetsNetWorth(){ const latest = assetsLatestReport(); return assetsItemsTotal() + (latest ? latest.totalValue : 0) - assetsDebtsTotal(); }
 function assetsMoM(){
   const r = assetsSortedReports();
   if(r.length < 2) return null;
@@ -371,6 +380,112 @@ function assetsMoM(){
   const diff = cur.totalValue - prev.totalValue;
   const pct = prev.totalValue ? Math.round(1000*diff/prev.totalValue)/10 : null;
   return { diff, pct };
+}
+
+// Investment-category taxonomy for individual holdings (separate from the older
+// free-text "asset type" label like เงินสด/หุ้น-กองทุน, which is preserved on
+// migration as item.assetType so nothing typed in before this update is lost).
+const ASSET_CATEGORIES = [
+  {key:'core', label:'หลัก (Core)', color:'var(--teal)'},
+  {key:'satellite', label:'เสริม (Satellite)', color:'var(--purple)'},
+  {key:'bond', label:'ตราสารหนี้ (Bond)', color:'var(--amber)'},
+  {key:'cash', label:'เงินสด (Cash)', color:'var(--blue)'},
+  {key:'other', label:'อื่นๆ', color:'var(--coral)'}
+];
+function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) || ASSET_CATEGORIES[ASSET_CATEGORIES.length-1]; }
+
+// Best-known value of one item as of a given date, from its valueHistory —
+// used to reconstruct a net-worth-over-time line without any live market feed.
+function itemValueAsOf(item, dateIso){
+  const hist = (item.valueHistory||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(!hist.length) return Number(item.value)||0;
+  const onOrBefore = hist.filter(h=>h.date<=dateIso);
+  if(onOrBefore.length) return onOrBefore[onOrBefore.length-1].value;
+  return hist[0].value; // date is before the item's first recorded snapshot — use the earliest we have
+}
+function itemsTotalAsOf(dateIso){ return state.assets.items.reduce((s,it)=>s+itemValueAsOf(it,dateIso),0); }
+function reportValueAsOf(dateIso){
+  const ym = dateIso.slice(0,7);
+  const r = assetsSortedReports().filter(r=>r.month<=ym);
+  return r.length ? r[r.length-1].totalValue : 0;
+}
+// Reconstructed total net worth (items + Dime portion − debts) as of any date, used to plot
+// the portfolio line chart. Debts aren't tracked historically, so today's debt total is used
+// as a flat offset across the whole series (best available approximation, no live data source).
+function assetsValueAt(dateIso){ return itemsTotalAsOf(dateIso) + reportValueAsOf(dateIso) - assetsDebtsTotal(); }
+
+// All distinct dates we have any snapshot for (Dime monthly reports + every item's valueHistory),
+// filtered down to the requested period window.
+function assetsChartDates(mode){
+  const set = new Set();
+  assetsSortedReports().forEach(r=> set.add(r.month+'-01'));
+  state.assets.items.forEach(it=> (it.valueHistory||[]).forEach(h=> set.add(h.date)));
+  let dates = [...set].sort();
+  const today = todayISO();
+  if(mode==='daily') dates = dates.filter(d=>d>=addDays(today,-30));
+  else if(mode==='monthly') dates = dates.filter(d=>d>=addDays(today,-365));
+  else if(mode==='yearly') dates = dates.filter(d=>d>=addDays(today,-365*5));
+  // 'all' — no window filter, use everything we have.
+  return dates;
+}
+function assetsChartSeries(mode){ return assetsChartDates(mode).map(d=>({date:d, value: assetsValueAt(d)})); }
+
+function assetsByAssetDonutEntries(){
+  const cycle = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)'];
+  const sorted = [...state.assets.items].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0));
+  const main = sorted.slice(0,6);
+  const rest = sorted.slice(6);
+  const entries = main.map((it,i)=>({label:it.name, color:cycle[i%cycle.length], value:Number(it.value)||0}));
+  if(rest.length) entries.push({label:'อื่นๆ ('+rest.length+')', color:'var(--coral-pale)', value: rest.reduce((s,it)=>s+(Number(it.value)||0),0)});
+  return entries;
+}
+function assetsByCategoryDonutEntries(){
+  return ASSET_CATEGORIES.map(c=>({label:c.label, color:c.color, value: state.assets.items.filter(it=>(it.category||'other')===c.key).reduce((s,it)=>s+(Number(it.value)||0),0)}));
+}
+// Generic conic-gradient donut — same technique as renderActivityDonut, generalized to take
+// arbitrary {label,color,value} entries so it can be reused for the assets "by holding" /
+// "by category" breakdowns without a second charting approach.
+function renderGenericDonut(entries, opts){
+  opts = opts || {};
+  const total = entries.reduce((s,e)=>s+(Number(e.value)||0),0);
+  if(!total) return `<div class="muted">${opts.emptyText || 'ยังไม่มีข้อมูล'}</div>`;
+  let acc = 0;
+  const stops = entries.filter(e=>e.value>0).map(e=>{
+    const start = acc/total*360; acc += e.value; const end = acc/total*360;
+    return `${e.color} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
+  }).join(', ');
+  const size = opts.size || 118;
+  const ringInset = Math.round(size*0.13);
+  return `
+  <div style="display:flex; align-items:center; gap:${size<90?14:22}px; flex-wrap:wrap">
+    <div style="width:${size}px; height:${size}px; border-radius:50%; background:conic-gradient(${stops}); position:relative; flex-shrink:0">
+      <div style="position:absolute; inset:${ringInset}px; background:var(--panel); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:2px">
+        <div style="font-size:${size<90?11:14}px; font-weight:700; line-height:1.15">${opts.centerLabel||''}</div>
+        <div style="font-size:8.5px; color:var(--ink-soft)">${opts.centerSub||''}</div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:${size<90?5:8}px">
+      ${entries.filter(e=>e.value>0).map(e=>`<div style="display:flex; align-items:center; gap:8px; font-size:${size<90?11:12}px">
+        <span style="width:9px; height:9px; border-radius:3px; background:${e.color}; flex-shrink:0"></span>
+        <span style="min-width:${size<90?60:88}px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px">${escapeHtml(e.label)}</span>
+        <span class="mono" style="color:var(--ink-soft)">${Math.round(100*e.value/total)}%</span>
+      </div>`).join('')}
+    </div>
+  </div>
+  `;
+}
+// Tiny inline sparkline (no axes/gridlines) for one holding's own valueHistory.
+function renderSparkline(valueHistory){
+  const h = (valueHistory||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(h.length < 2) return '<span class="muted" style="font-size:10px">—</span>';
+  const W=72, H=26, pad=2;
+  const values = h.map(x=>x.value);
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max-min) || Math.max(1, max*0.1) || 1;
+  const stepX = (W-2*pad)/(h.length-1);
+  const pts = h.map((p,i)=>{ const x=pad+i*stepX; const y=H-pad-((p.value-min)/range)*(H-2*pad); return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
+  const color = values[values.length-1] >= values[0] ? 'var(--teal)' : 'var(--coral)';
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
 /* ---------- Direct same-origin read from Milk Hub ----------
@@ -448,10 +563,11 @@ function defaultState(){
       // holds every activity type (run/ride/weights/other), each tagged with `type`.
       weeklyGoalKm: 40,
       activities: [
-        {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, done:true, type:'run', demo:true},
-        {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, done:false, type:'run', demo:true},
+        {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, done:true, type:'run_road', demo:true},
+        {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, done:false, type:'run_road', demo:true},
         {id:uid(), date:addDays(t,-1), name:'ปั่นจักรยานเช้า', distance_km:15, moving_time_min:40, done:true, type:'ride', demo:true},
-        {id:uid(), date:addDays(t,-2), name:'เวทเทรนนิ่ง', distance_km:0, moving_time_min:45, done:true, type:'weights', demo:true}
+        {id:uid(), date:addDays(t,-2), name:'เวทเทรนนิ่ง', distance_km:0, moving_time_min:45, done:true, type:'weights', demo:true},
+        {id:uid(), date:addDays(t,-4), name:'วิ่งเทรลเขาใหญ่', distance_km:12, moving_time_min:95, done:true, type:'run_trail', demo:true}
       ],
       lastSync: null
     },
@@ -467,9 +583,13 @@ function defaultState(){
     },
     assets: {
       // Manually-tracked assets (property, cash, stocks, crypto, ฯลฯ) — anything not covered by a Dime import.
+      // category is the core/satellite/bond/cash/other investment bucket (see ASSET_CATEGORIES);
+      // assetType keeps the old free-text description; valueHistory tracks manual "อัพเดทมูลค่า" snapshots.
       items: [
-        {id:uid(), name:'เงินฝากออมทรัพย์', category:'เงินสด', value:150000, note:'', updated:t, demo:true},
-        {id:uid(), name:'คอนโด (ราคาประเมิน)', category:'อสังหาริมทรัพย์', value:2800000, note:'', updated:t, demo:true}
+        {id:uid(), name:'เงินฝากออมทรัพย์', assetType:'เงินสด', category:'cash', value:150000, costBasis:150000, note:'', updated:t, demo:true,
+          valueHistory:[{date:addDays(t,-60), value:140000}, {date:addDays(t,-30), value:145000}, {date:t, value:150000}]},
+        {id:uid(), name:'คอนโด (ราคาประเมิน)', assetType:'อสังหาริมทรัพย์', category:'other', value:2800000, costBasis:2500000, note:'', updated:t, demo:true,
+          valueHistory:[{date:addDays(t,-60), value:2750000}, {date:t, value:2800000}]}
       ],
       // Monthly portfolio snapshots — added by importing a Dime PDF statement (parsed client-side)
       // or typed in by hand. Charted as a line over time in the "ทรัพย์สิน" page.
@@ -477,6 +597,10 @@ function defaultState(){
         {id:uid(), month: addDays(t,-60).slice(0,7), totalValue: 812000, source:'manual', importedAt: addDays(t,-60), breakdown:[], demo:true},
         {id:uid(), month: addDays(t,-30).slice(0,7), totalValue: 845000, source:'manual', importedAt: addDays(t,-30), breakdown:[], demo:true},
         {id:uid(), month: t.slice(0,7), totalValue: 869000, source:'manual', importedAt: t, breakdown:[], demo:true}
+      ],
+      // Liabilities — subtracted from assetsNetWorth(). No live data source, entered by hand.
+      debts: [
+        {id:uid(), name:'ผ่อนคอนโด (คงเหลือ)', amount:1200000, note:'', demo:true}
       ]
     },
     trips: {
@@ -503,7 +627,7 @@ function defaultState(){
     }
   };
 }
-function addDays(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function addDays(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 
 let state = loadState();
 function loadState(){
@@ -520,6 +644,22 @@ function loadState(){
       if(!s.assets) s.assets = {items:[], reports:[]};
       if(!s.assets.items) s.assets.items = [];
       if(!s.assets.reports) s.assets.reports = [];
+      if(!s.assets.debts) s.assets.debts = [];
+      // Backfill items saved before category/costBasis/valueHistory existed. Old free-text
+      // category values (เงินสด/หุ้น-กองทุน/ฯลฯ) are kept in assetType and mapped onto the
+      // new core/satellite/bond/cash/other taxonomy so the category donut still works.
+      (function(){
+        const legacyCategoryMap = {'เงินสด':'cash','หุ้น/กองทุน':'core','คริปโต':'satellite','อสังหาริมทรัพย์':'other','ทองคำ':'other','อื่นๆ':'other'};
+        const validKeys = ASSET_CATEGORIES.map(c=>c.key);
+        (s.assets.items||[]).forEach(it=>{
+          if(!it.category || validKeys.indexOf(it.category)===-1){
+            if(it.assetType == null) it.assetType = it.category || '';
+            it.category = legacyCategoryMap[it.category] || 'other';
+          }
+          if(it.costBasis == null) it.costBasis = 0;
+          if(!it.valueHistory) it.valueHistory = [{date: it.updated || todayISO(), value: Number(it.value)||0}];
+        });
+      })();
       if(s.running){
         // Older saves had static weekKm/weekLabel/goalNote fields that were never
         // recomputed — the "Today" card now always derives these from activities,
@@ -528,7 +668,13 @@ function loadState(){
         delete s.running.weekKm; delete s.running.weekLabel; delete s.running.goalNote;
         if(s.running.weeklyGoalKm == null) s.running.weeklyGoalKm = 40;
         // Older saves predate activity types — guess run vs. other from whether it has a distance.
-        (s.running.activities||[]).forEach(a=>{ if(!a.type) a.type = (Number(a.distance_km)>0) ? 'run' : 'other'; });
+        // Also backfill the old flat 'run' type (pre road/trail/treadmill split) to 'run_road'
+        // so it keeps the original teal color and doesn't fall through to activityTypeMeta's
+        // 'other' fallback.
+        (s.running.activities||[]).forEach(a=>{
+          if(!a.type) a.type = (Number(a.distance_km)>0) ? 'run_road' : 'other';
+          else if(a.type === 'run') a.type = 'run_road';
+        });
       }
       delete s.health; // module removed — family health tracking is gone from this build
       return s;
@@ -548,7 +694,10 @@ function parseCapture(text){
     const numMatch = seg.match(/(\d+(?:\.\d+)?)/);
     const num = numMatch ? parseFloat(numMatch[1]) : null;
     if(/กม|km|วิ่ง|ว่าย|ปั่น/i.test(seg) && num !== null){
-      const type = /ปั่น|ride|bike/i.test(seg) ? 'ride' : 'run';
+      const type = /ปั่น|ride|bike/i.test(seg) ? 'ride'
+        : /เทรล|trail/i.test(seg) ? 'run_trail'
+        : /ลู่|treadmill/i.test(seg) ? 'run_treadmill'
+        : 'run_road';
       state.running.activities.unshift({id:uid(), date:todayISO(), name:seg, distance_km:num, moving_time_min:null, done:true, type});
       results.push('→ Log กิจกรรม ' + num + 'K: "' + seg + '"');
     } else if(/บาท|฿/.test(seg) && num !== null){
@@ -686,7 +835,8 @@ function renderToday(){
         ${mom ? `<div class="pill ${mom.diff>=0?'pill-teal':'pill-coral'}">${mom.diff>=0?'+':''}${mom.pct!=null?mom.pct+'%':''} MoM</div>` : ''}
       </div>
       <div class="big-stat mono">฿${fmtMoney(netWorth)}</div>
-      <div class="stat-note">สินทรัพย์อื่นๆ ฿${fmtMoney(assetsItemsTotal())} · พอร์ต Dime ฿${fmtMoney(assetsLatestReport()?assetsLatestReport().totalValue:0)}</div>
+      <div class="stat-note">สินทรัพย์อื่นๆ ฿${fmtMoney(assetsItemsTotal())} · พอร์ต Dime ฿${fmtMoney(assetsLatestReport()?assetsLatestReport().totalValue:0)}${assetsDebtsTotal()?(' · หนี้สิน ฿'+fmtMoney(assetsDebtsTotal())):''}</div>
+      ${state.assets.items.length ? renderGenericDonut(assetsByCategoryDonutEntries(), {size:78, emptyText:''}) : ''}
     </div>
 
     <div class="card">
@@ -1052,9 +1202,11 @@ function delRun(id){ state.running.activities = state.running.activities.filter(
 // four chart categories.
 function mapIntervalsType(t){
   t = String(t||'').toLowerCase();
+  if(t.includes('treadmill')) return 'run_treadmill';
+  if(t.includes('trail')) return 'run_trail';
+  if(t.includes('run')) return 'run_road';
   if(t.includes('ride') || t.includes('bike') || t.includes('cycl')) return 'ride';
   if(t.includes('weight') || t.includes('strength')) return 'weights';
-  if(t.includes('run')) return 'run';
   return 'other';
 }
 async function syncIntervals(){
@@ -1257,8 +1409,7 @@ function renderTripCard(tr){
 }
 function gcalLink(date, title){
   const start = date.replace(/-/g,'');
-  const d = new Date(date+'T00:00:00'); d.setDate(d.getDate()+1);
-  const end = d.toISOString().slice(0,10).replace(/-/g,'');
+  const end = addDays(date,1).replace(/-/g,'');
   const text = encodeURIComponent(title || 'กิจกรรม');
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}`;
 }
@@ -1288,8 +1439,7 @@ function exportTripIcs(tripId){
   let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Milk Life OS//TH\r\n';
   tr.days.forEach((d,i)=>{
     const dt = d.date.replace(/-/g,'');
-    const nd = new Date(d.date+'T00:00:00'); nd.setDate(nd.getDate()+1);
-    const dtEnd = nd.toISOString().slice(0,10).replace(/-/g,'');
+    const dtEnd = addDays(d.date,1).replace(/-/g,'');
     ics += `BEGIN:VEVENT\r\nUID:${tr.id}-day${i}@milklifeos\r\nDTSTART;VALUE=DATE:${dt}\r\nDTEND;VALUE=DATE:${dtEnd}\r\nSUMMARY:${(tr.name+' — '+d.place).replace(/\r?\n/g,' ')}\r\nEND:VEVENT\r\n`;
   });
   ics += 'END:VCALENDAR\r\n';
@@ -1301,39 +1451,47 @@ function exportTripIcs(tripId){
 }
 
 /* ---------- Assets / net worth view ---------- */
-// Small inline SVG line+area chart for the Dime portfolio history — no chart
-// library, just plots the sorted report list on a 0..1 normalized Y axis.
-function renderPortfolioChart(reports){
-  if(!reports.length) return '';
-  const W = 640, H = 150, pad = 22;
-  const values = reports.map(r=>r.totalValue);
+// Small inline SVG line+area chart — same hand-authored technique for all Assets-module
+// line charts (linearGradient area fill + polyline path), now generalized to take any
+// {date, value} series so it can plot the daily/monthly/yearly/all-time portfolio views.
+function renderAssetsLineChart(series, mode){
+  if(series.length < 2) return `<div class="muted" style="padding:36px 0; text-align:center">ยังไม่มีข้อมูลเพียงพอสำหรับช่วงนี้</div>`;
+  const W = 640, H = 170, pad = 22;
+  const values = series.map(p=>p.value);
   const min = Math.min(...values), max = Math.max(...values);
   const range = (max - min) || Math.max(1, max*0.1) || 1;
-  const stepX = reports.length > 1 ? (W - 2*pad) / (reports.length - 1) : 0;
-  const pts = reports.map((r,i)=>{
+  const stepX = (W - 2*pad) / (series.length - 1);
+  const pts = series.map((p,i)=>{
     const x = pad + i*stepX;
-    const y = reports.length > 1 ? (H - pad - ((r.totalValue - min)/range)*(H - 2*pad)) : H/2;
-    return {x, y, r};
+    const y = H - pad - ((p.value - min)/range)*(H - 2*pad);
+    return {x, y, p};
   });
-  const path = pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
-  const areaPath = pts.length > 1
-    ? path + ` L${pts[pts.length-1].x.toFixed(1)},${H-pad} L${pts[0].x.toFixed(1)},${H-pad} Z`
-    : '';
+  const path = pts.map((pt,i)=>(i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+  const areaPath = path + ` L${pts[pts.length-1].x.toFixed(1)},${H-pad} L${pts[0].x.toFixed(1)},${H-pad} Z`;
+  const labelFor = (d)=>{
+    if(mode==='daily') return d.slice(5);
+    if(mode==='yearly') return String(parseInt(d.slice(0,4),10)+543);
+    return ymLabel(d.slice(0,7)).split(' ')[0] + " '" + String(parseInt(d.slice(0,4),10)+543).slice(-2);
+  };
+  const labelStep = Math.max(1, Math.ceil(pts.length/8));
   return `
   <svg class="portfolio-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs>
-      <linearGradient id="portGrad" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id="assetsGrad" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" style="stop-color:var(--purple); stop-opacity:0.30"/>
         <stop offset="100%" style="stop-color:var(--purple); stop-opacity:0"/>
       </linearGradient>
     </defs>
-    ${areaPath ? `<path d="${areaPath}" fill="url(#portGrad)" stroke="none"></path>` : ''}
-    ${pts.length > 1 ? `<path d="${path}" fill="none" stroke="var(--purple-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>` : ''}
-    ${pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="var(--purple-deep)" stroke="#fff" stroke-width="1.5"></circle>`).join('')}
+    <path d="${areaPath}" fill="url(#assetsGrad)" stroke="none"></path>
+    <path d="${path}" fill="none" stroke="var(--purple-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    ${pts.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="var(--purple-deep)" stroke="#fff" stroke-width="1.5"></circle>`).join('')}
   </svg>
-  <div class="portfolio-chart-labels">${reports.map(r=>`<span>${ymLabel(r.month).split(' ')[0]} '${String((parseInt(r.month.slice(0,4),10)+543)).slice(-2)}</span>`).join('')}</div>
+  <div class="portfolio-chart-labels">${pts.filter((_,i)=>i%labelStep===0||i===pts.length-1).map(pt=>`<span>${labelFor(pt.p.date)}</span>`).join('')}</div>
   `;
 }
+
+let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
+function setAssetsChartMode(mode){ assetsChartMode = mode; render(); }
 
 function renderAssets(){
   const a = state.assets;
@@ -1341,11 +1499,17 @@ function renderAssets(){
   const netWorth = assetsNetWorth();
   const mom = assetsMoM();
   const latest = assetsLatestReport();
+  const debtsTotal = assetsDebtsTotal();
+  const chartModes = [['daily','รายวัน'],['monthly','รายเดือน'],['yearly','รายปี'],['all','ทั้งหมด']];
+  const series = assetsChartSeries(assetsChartMode);
+  const byAsset = assetsByAssetDonutEntries();
+  const byCategory = assetsByCategoryDonutEntries();
+
   return `
   <div class="section-title">ทรัพย์สิน</div>
-  <div class="section-sub">มูลค่าสุทธิรวม — พอร์ต Dime (นำเข้าจาก PDF รายเดือน) บวกกับสินทรัพย์อื่นๆ ที่เพิ่มเอง</div>
+  <div class="section-sub">มูลค่าสุทธิรวม — พอร์ต Dime (นำเข้าจาก PDF รายเดือน) บวกกับสินทรัพย์อื่นๆ ที่เพิ่มเอง หักหนี้สิน</div>
 
-  <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:18px">
+  <div class="grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:18px">
     <div class="card">
       <div class="card-sub">มูลค่าสุทธิรวม</div>
       <div class="big-stat mono">฿${fmtMoney(netWorth)}</div>
@@ -1361,12 +1525,91 @@ function renderAssets(){
       <div class="big-stat mono">฿${fmtMoney(assetsItemsTotal())}</div>
       <div class="stat-note">${a.items.length} รายการ</div>
     </div>
+    <div class="card">
+      <div class="card-sub">หนี้สินรวม</div>
+      <div class="big-stat mono" style="color:${debtsTotal>0?'var(--coral)':'inherit'}">฿${fmtMoney(debtsTotal)}</div>
+      <div class="stat-note">${(a.debts||[]).length} รายการ · หักออกจากมูลค่าสุทธิแล้ว</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:14px">
+      <h3>มูลค่าพอร์ตรวมตามช่วงเวลา</h3>
+      <div style="display:flex; gap:6px; flex-wrap:wrap">
+        ${chartModes.map(([key,label])=>`<button class="btn ${assetsChartMode===key?'':'btn-ghost'} btn-sm" onclick="setAssetsChartMode('${key}')">${label}</button>`).join('')}
+      </div>
+    </div>
+    ${renderAssetsLineChart(series, assetsChartMode)}
+    <div class="muted" style="margin-top:10px">เส้นนี้คำนวณจากรายงาน Dime (รายเดือน) รวมกับ "อัพเดทมูลค่า" ของสินทรัพย์แต่ละรายการด้านล่าง — แอปนี้ไม่มีฟีดราคาตลาดสด มูลค่าจะขยับก็ต่อเมื่อพี่กดอัพเดทเองเท่านั้น</div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>สัดส่วนตามรายสินทรัพย์</h3>
+      ${renderGenericDonut(byAsset, {centerLabel:a.items.length+' รายการ', centerSub:'ทั้งหมด', emptyText:'ยังไม่มีสินทรัพย์'})}
+    </div>
+    <div class="panel">
+      <h3>สัดส่วนตามหมวด (Core/Satellite/...)</h3>
+      ${renderGenericDonut(byCategory, {emptyText:'ยังไม่มีสินทรัพย์'})}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>รายการสินทรัพย์ (แยกรายชิ้น)</h3>
+    <div class="muted" style="margin-bottom:10px">แอปนี้ไม่มีฟีดราคาตลาดสด — กด "อัพเดทมูลค่า" ต่อรายการเพื่อบันทึกมูลค่าล่าสุดด้วยตัวเอง ระบบจะเก็บประวัติไว้ทำกราฟ sparkline และเส้นพอร์ตรวมด้านบน</div>
+    ${a.items.length ? a.items.map(it=>{
+      const cat = assetCategoryMeta(it.category);
+      const gain = (Number(it.value)||0) - (Number(it.costBasis)||0);
+      const gainPct = it.costBasis ? Math.round(1000*gain/it.costBasis)/10 : null;
+      const gainColor = gain>=0 ? 'var(--teal)' : 'var(--coral)';
+      return `
+      <div class="form-row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--line)">
+        <span style="width:34px; height:34px; border-radius:10px; background:${cat.color}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0">${escapeHtml((it.name||'?').slice(0,1))}</span>
+        <div style="min-width:150px; flex:1">
+          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}</div>
+          <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}</div>
+        </div>
+        <div style="min-width:72px">${renderSparkline(it.valueHistory)}</div>
+        <div style="text-align:right; min-width:100px">
+          <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}</div>
+          <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}</div>
+        </div>
+        <div style="text-align:right; min-width:90px; color:${gainColor}">
+          <div class="mono" style="font-size:12.5px">${gain>=0?'+':''}฿${fmtMoney(gain)}</div>
+          <div style="font-size:11px">${gainPct!=null ? (gain>=0?'+':'')+gainPct+'%' : '—'}</div>
+        </div>
+        <input type="number" id="assetVal_${it.id}" placeholder="มูลค่าใหม่" style="max-width:120px">
+        <button class="btn btn-ghost btn-sm" onclick="updateAssetItemValue('${it.id}')">อัพเดทมูลค่า</button>
+        <button class="task-del" onclick="delAssetItem('${it.id}')">✕</button>
+      </div>`;
+    }).join('') : '<div class="muted">ยังไม่มีสินทรัพย์อื่น</div>'}
+    <div class="form-row" style="margin-top:14px">
+      <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
+      <select id="assetCategory">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
+      <input type="text" id="assetNote" placeholder="รายละเอียด/โน้ต (ไม่บังคับ)" style="max-width:160px">
+      <input type="number" id="assetValue" placeholder="มูลค่าปัจจุบัน (บาท)" style="max-width:150px">
+      <input type="number" id="assetCostBasis" placeholder="ต้นทุน (บาท) ไม่บังคับ" style="max-width:150px">
+      <button class="btn" onclick="addAssetItem()">+ เพิ่มสินทรัพย์</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>หนี้สิน / ภาระผูกพัน</h3>
+    <table class="table">
+      <tr><th>รายการ</th><th style="text-align:right">จำนวน</th><th>โน้ต</th><th></th></tr>
+      ${(a.debts||[]).map(d=>`<tr><td>${escapeHtml(d.name)}</td><td style="text-align:right" class="mono">฿${fmtMoney(d.amount)}</td><td class="muted">${escapeHtml(d.note||'')}</td><td><button class="task-del" onclick="delDebt('${d.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">ไม่มีหนี้สินที่บันทึกไว้</td></tr>`}
+    </table>
+    <div class="form-row" style="margin-top:14px">
+      <input type="text" id="debtName" placeholder="ชื่อหนี้สิน เช่น ผ่อนคอนโด, บัตรเครดิต">
+      <input type="number" id="debtAmount" placeholder="จำนวนคงเหลือ (บาท)" style="max-width:170px">
+      <input type="text" id="debtNote" placeholder="โน้ต (ไม่บังคับ)">
+      <button class="btn" onclick="addDebt()">+ เพิ่มหนี้สิน</button>
+    </div>
   </div>
 
   <div class="panel">
     <h3>พอร์ต Dime ย้อนหลัง</h3>
-    ${reports.length ? renderPortfolioChart(reports) : '<div class="muted">ยังไม่มีข้อมูล — นำเข้ารายงานเดือนแรกด้านล่าง</div>'}
-    <table class="table" style="margin-top:14px">
+    <table class="table">
       <tr><th>เดือน</th><th style="text-align:right">มูลค่า</th><th>ที่มา</th><th></th></tr>
       ${[...reports].reverse().map(r=>`<tr><td>${ymLabel(r.month)}</td><td style="text-align:right" class="mono">฿${fmtMoney(r.totalValue)}</td><td><span class="tag">${r.source==='dime-pdf'?'Dime PDF':'กรอกเอง'}</span></td><td><button class="task-del" onclick="delAssetReport('${r.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">ไม่มีข้อมูล</td></tr>`}
     </table>
@@ -1383,22 +1626,6 @@ function renderAssets(){
       <button class="btn" onclick="confirmDimeImport()">+ บันทึกลงพอร์ต</button>
     </div>
     <div class="muted">ไม่มี PDF ก็กรอกมูลค่ารวมของเดือนนั้นด้วยมือในช่องนี้ได้เลย</div>
-  </div>
-
-  <div class="panel">
-    <h3>สินทรัพย์อื่นๆ</h3>
-    <table class="table">
-      <tr><th>ชื่อ</th><th>ประเภท</th><th style="text-align:right">มูลค่า</th><th>อัปเดต</th><th></th></tr>
-      ${a.items.map(it=>`<tr><td>${escapeHtml(it.name)}</td><td><span class="tag">${escapeHtml(it.category)}</span></td><td style="text-align:right" class="mono">฿${fmtMoney(it.value)}</td><td>${fmtDate(it.updated)}</td><td><button class="task-del" onclick="delAssetItem('${it.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="5" class="muted">ยังไม่มีสินทรัพย์อื่น</td></tr>`}
-    </table>
-    <div class="form-row" style="margin-top:14px">
-      <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
-      <select id="assetCategory">
-        <option>เงินสด</option><option>หุ้น/กองทุน</option><option>คริปโต</option><option>อสังหาริมทรัพย์</option><option>ทองคำ</option><option>อื่นๆ</option>
-      </select>
-      <input type="number" id="assetValue" placeholder="มูลค่า (บาท)" style="max-width:150px">
-      <button class="btn" onclick="addAssetItem()">+ เพิ่มสินทรัพย์</button>
-    </div>
   </div>
   `;
 }
@@ -1492,14 +1719,49 @@ function delAssetReport(id){ state.assets.reports = state.assets.reports.filter(
 function addAssetItem(){
   const name = document.getElementById('assetName').value.trim();
   const category = document.getElementById('assetCategory').value;
+  const note = document.getElementById('assetNote').value.trim();
   const value = parseFloat(document.getElementById('assetValue').value);
+  const costBasis = parseFloat(document.getElementById('assetCostBasis').value) || 0;
   if(!name || !value) return;
-  state.assets.items.push({id:uid(), name, category, value, note:'', updated: todayISO()});
+  const today = todayISO();
+  state.assets.items.push({id:uid(), name, category, assetType:'', value, costBasis, note, updated: today, valueHistory:[{date:today, value}]});
   document.getElementById('assetName').value = '';
   document.getElementById('assetValue').value = '';
+  document.getElementById('assetCostBasis').value = '';
+  document.getElementById('assetNote').value = '';
   saveState(); render();
 }
 function delAssetItem(id){ state.assets.items = state.assets.items.filter(x=>x.id!==id); saveState(); render(); }
+// Manual "อัพเดทมูลค่า" action — the only way this app's asset values ever change over
+// time (no live market feed). Overwrites today's valueHistory entry instead of stacking
+// a duplicate if this item was already updated once today.
+function updateAssetItemValue(id){
+  const input = document.getElementById('assetVal_'+id);
+  if(!input) return;
+  const v = parseFloat(input.value);
+  if(!(v>=0)) return;
+  const it = state.assets.items.find(x=>x.id===id);
+  if(!it) return;
+  it.value = v;
+  it.updated = todayISO();
+  if(!it.valueHistory) it.valueHistory = [];
+  const today = todayISO();
+  if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
+    it.valueHistory[it.valueHistory.length-1].value = v;
+  } else {
+    it.valueHistory.push({date: today, value: v});
+  }
+  saveState(); render();
+}
+function addDebt(){
+  const name = document.getElementById('debtName').value.trim();
+  const amount = parseFloat(document.getElementById('debtAmount').value);
+  const note = document.getElementById('debtNote').value.trim();
+  if(!name || !amount) return;
+  state.assets.debts.push({id:uid(), name, amount, note});
+  saveState(); render();
+}
+function delDebt(id){ state.assets.debts = state.assets.debts.filter(d=>d.id!==id); saveState(); render(); }
 
 /* ---------- Settings view ---------- */
 function renderSettings(){
@@ -1574,6 +1836,12 @@ function importAllJson(evt){
       const parsed = JSON.parse(e.target.result);
       const required = ['finance','running','work','trips','settings'];
       if(!parsed.assets) parsed.assets = {items:[], reports:[]}; // older backups won't have this yet
+      if(!parsed.assets.debts) parsed.assets.debts = []; // older backups predate liabilities tracking
+      (parsed.assets.items||[]).forEach(it=>{
+        if(!it.category) it.category = 'other';
+        if(it.costBasis == null) it.costBasis = 0;
+        if(!it.valueHistory) it.valueHistory = [{date: it.updated || todayISO(), value: Number(it.value)||0}];
+      });
       if(!parsed.calendar) parsed.calendar = {events:[]};
       delete parsed.health; // module removed — drop it if an old backup still has it
       const looksValid = required.every(k=>Object.prototype.hasOwnProperty.call(parsed, k));
