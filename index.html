@@ -116,6 +116,14 @@ a{color:inherit;}
 .cal-day-num{font-size:12px; color:var(--ink);}
 .cal-dots{display:flex; gap:2px; min-height:6px;}
 .cal-dot{width:5px; height:5px; border-radius:50%;}
+
+/* Compact calendar — used in the "Today" overview once it's moved below the info cards */
+.cal-panel-compact{max-width:620px; margin-left:auto; margin-right:auto;}
+.cal-panel-compact .cal-grid{gap:3px;}
+.cal-panel-compact .cal-day{padding:4px 3px; border-radius:6px; gap:2px;}
+.cal-panel-compact .cal-day-num{font-size:11px;}
+.cal-panel-compact .cal-dow{font-size:10px; padding-bottom:4px;}
+.cal-panel-compact .cal-dot{width:4px; height:4px;}
 .health-alert{display:flex; align-items:center; gap:8px; background:var(--amber-pale); color:var(--amber); padding:10px 14px; border-radius:12px; font-size:13px; margin-bottom:16px;}
 .health-row-warn{background:var(--coral-pale); border-radius:8px; padding:6px 8px; margin:2px -8px;}
 
@@ -450,41 +458,6 @@ function renderToday(){
     </div>
   </div>
 
-  <div class="panel" style="margin-bottom:20px">
-    <div class="ribbon-head" style="margin-bottom:12px">
-      <h3>ปฏิทินเดือนนี้ — ${ymLabel(t.slice(0,7))}</h3>
-      <a href="https://calendar.google.com/calendar/r" target="_blank" class="btn btn-ghost btn-sm">เปิด Google Calendar</a>
-    </div>
-    <div class="cal-grid">
-      ${weekdayShort.map(w=>`<div class="cal-dow">${w}</div>`).join('')}
-      ${buildMonthGrid(t.slice(0,7)).map(d=>{
-        const inMonth = d.slice(0,7) === t.slice(0,7);
-        const isToday = d === t;
-        const isSel = d === selDay;
-        const dots = [];
-        const dayTasks = work.tasks.filter(tk=>!tk.done && (tk.due||'').slice(0,10)===d);
-        const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
-        const dayWarns = []; health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') dayWarns.push(m.name); }));
-        if(dayTasks.length) dots.push({color:'var(--amber)'});
-        if(dayTrips.length) dots.push({color:'var(--purple)'});
-        if(dayWarns.length) dots.push({color:'var(--coral)'});
-        return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
-          <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
-          <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
-        </button>`;
-      }).join('')}
-    </div>
-    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป · จุดแดง = สุขภาพต้องระวัง — คลิกวันที่เพื่อดูรายละเอียด</div>
-    <div style="border-top:1px solid var(--line); padding-top:12px">
-      <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
-      ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
-        <span style="width:7px; height:7px; border-radius:50%; background:${e.color}; flex-shrink:0"></span>
-        <span style="flex:1">${escapeHtml(e.label)}</span>
-        ${e.gcalTitle ? `<a href="${gcalLink(selDay, e.gcalTitle)}" target="_blank" class="btn btn-ghost btn-sm">+ Cal</a>` : ''}
-      </div>`).join('') : '<div class="muted">ไม่มีรายการวันนี้</div>'}
-    </div>
-  </div>
-
   <div class="grid">
     <div class="card">
       <div class="card-head">
@@ -544,6 +517,41 @@ function renderToday(){
         </div>
         ${lastCaptureResults ? `<div class="capture-chips">${lastCaptureResults.map(r=>`<div class="capture-chip">${escapeHtml(r)}</div>`).join('')}</div>` : `<div class="capture-chips"><div class="capture-chip">→ Log วิ่ง 8K</div><div class="capture-chip">→ รายจ่าย ฿65</div><div class="capture-chip">→ Task 13:00</div></div>`}
       </div>
+    </div>
+  </div>
+
+  <div class="panel cal-panel-compact" style="margin-top:20px">
+    <div class="ribbon-head" style="margin-bottom:12px">
+      <h3>ปฏิทินเดือนนี้ — ${ymLabel(t.slice(0,7))}</h3>
+      <a href="https://calendar.google.com/calendar/r" target="_blank" class="btn btn-ghost btn-sm">เปิด Google Calendar</a>
+    </div>
+    <div class="cal-grid">
+      ${weekdayShort.map(w=>`<div class="cal-dow">${w}</div>`).join('')}
+      ${buildMonthGrid(t.slice(0,7)).map(d=>{
+        const inMonth = d.slice(0,7) === t.slice(0,7);
+        const isToday = d === t;
+        const isSel = d === selDay;
+        const dots = [];
+        const dayTasks = work.tasks.filter(tk=>!tk.done && (tk.due||'').slice(0,10)===d);
+        const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
+        const dayWarns = []; health.members.forEach(m=>m.logs.forEach(l=>{ if(l.date===d && l.flag==='warn') dayWarns.push(m.name); }));
+        if(dayTasks.length) dots.push({color:'var(--amber)'});
+        if(dayTrips.length) dots.push({color:'var(--purple)'});
+        if(dayWarns.length) dots.push({color:'var(--coral)'});
+        return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
+          <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
+          <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
+        </button>`;
+      }).join('')}
+    </div>
+    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป · จุดแดง = สุขภาพต้องระวัง — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div style="border-top:1px solid var(--line); padding-top:12px">
+      <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
+      ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:${e.color}; flex-shrink:0"></span>
+        <span style="flex:1">${escapeHtml(e.label)}</span>
+        ${e.gcalTitle ? `<a href="${gcalLink(selDay, e.gcalTitle)}" target="_blank" class="btn btn-ghost btn-sm">+ Cal</a>` : ''}
+      </div>`).join('') : '<div class="muted">ไม่มีรายการวันนี้</div>'}
     </div>
   </div>
 
