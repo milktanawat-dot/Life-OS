@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- redeploy cache-bust: 2026-08-14 -->
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -2220,7 +2221,7 @@ async function refreshLivePrices(){
   let fxRate = null;
   if(eligible.some(it=>it.currency==='USD')){
     try{
-      const fxRes = await fetch('https://api.frankfurter.app/latest?from=USD&to=THB');
+      const fxRes = await fetch('https://api.frankfurter.dev/v1/latest?from=USD&to=THB');
       if(fxRes.ok){
         const fxData = await fxRes.json();
         fxRate = fxData && fxData.rates ? Number(fxData.rates.THB) : null;
