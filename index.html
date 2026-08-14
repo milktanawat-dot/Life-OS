@@ -16,6 +16,7 @@
   --coral:#FF6B8A; --coral-pale:#FFE4EA;
   --blue:#3E8DFF; --blue-pale:#E4EEFF;
   --green:#5CB85C; --green-pale:#E4F4E2; --green-deep:#3E8E3E;
+  --sienna:#C97B4A; --sienna-pale:#F5E6DA;
   --radius:20px; --radius-sm:14px;
   --shadow-card:0 2px 6px rgba(30,41,79,.04), 0 16px 32px -20px rgba(30,41,79,.20);
   --shadow-card-hover:0 4px 10px rgba(30,41,79,.06), 0 20px 40px -18px rgba(30,41,79,.24);
@@ -399,6 +400,8 @@ const ASSET_CATEGORIES = [
   {key:'satellite', label:'เสริม (Satellite)', color:'var(--purple)'},
   {key:'bond', label:'ตราสารหนี้ (Bond)', color:'var(--amber)'},
   {key:'cash', label:'เงินสด (Cash)', color:'var(--blue)'},
+  {key:'pvd', label:'กองทุนสำรองเลี้ยงชีพ (PVD)', color:'var(--green)'},
+  {key:'coop', label:'หุ้นสหกรณ์', color:'var(--sienna)'},
   {key:'other', label:'อื่นๆ', color:'var(--coral)'}
 ];
 function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) || ASSET_CATEGORIES[ASSET_CATEGORIES.length-1]; }
@@ -673,6 +676,10 @@ function defaultState(){
           valueHistory:[{date:addDays(t,-60), value:140000}, {date:addDays(t,-30), value:145000}, {date:t, value:150000}]},
         {id:uid(), name:'คอนโด (ราคาประเมิน)', assetType:'อสังหาริมทรัพย์', category:'other', value:2800000, costBasis:2500000, note:'', updated:t, demo:true, transactions:[],
           valueHistory:[{date:addDays(t,-60), value:2750000}, {date:t, value:2800000}]},
+        {id:uid(), name:'กองทุนสำรองเลี้ยงชีพ (PVD)', assetType:'PVD', category:'pvd', value:1000000, costBasis:1000000, note:'', updated:t, transactions:[],
+          valueHistory:[{date:t, value:1000000}]},
+        {id:uid(), name:'หุ้นสหกรณ์', assetType:'หุ้นสหกรณ์', category:'coop', value:323380, costBasis:323380, note:'', updated:t, transactions:[],
+          valueHistory:[{date:t, value:323380}]},
         ...dimeImportSeed().items
       ],
       // Monthly portfolio snapshots — added by importing a Dime PDF statement (parsed client-side)
