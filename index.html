@@ -17,6 +17,7 @@
   --blue:#3E8DFF; --blue-pale:#E4EEFF;
   --green:#5CB85C; --green-pale:#E4F4E2; --green-deep:#3E8E3E;
   --sienna:#C97B4A; --sienna-pale:#F5E6DA;
+  --indigo:#5B6EF5; --indigo-pale:#E6E9FD;
   --radius:20px; --radius-sm:14px;
   --shadow-card:0 2px 6px rgba(30,41,79,.04), 0 16px 32px -20px rgba(30,41,79,.20);
   --shadow-card-hover:0 4px 10px rgba(30,41,79,.06), 0 20px 40px -18px rgba(30,41,79,.24);
@@ -400,6 +401,7 @@ const ASSET_CATEGORIES = [
   {key:'satellite', label:'เสริม (Satellite)', color:'var(--purple)'},
   {key:'bond', label:'ตราสารหนี้ (Bond)', color:'var(--amber)'},
   {key:'cash', label:'เงินสด (Cash)', color:'var(--blue)'},
+  {key:'deposit', label:'เงินฝาก', color:'var(--indigo)'},
   {key:'pvd', label:'กองทุนสำรองเลี้ยงชีพ (PVD)', color:'var(--green)'},
   {key:'coop', label:'หุ้นสหกรณ์', color:'var(--sienna)'},
   {key:'other', label:'อื่นๆ', color:'var(--coral)'}
@@ -1746,6 +1748,7 @@ function renderItemTransactionsBlock(item){
 
 let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
 let livePriceMsg = null; // {ok:bool, html:string} — last refreshLivePrices() result, shown near the refresh button
+let assetAddMsg = null; // {ok:bool, html:string} — last addAssetItem() USD→THB conversion status, shown near the add-asset form
 function setAssetsChartMode(mode){ assetsChartMode = mode; render(); }
 
 // Item chart modal — clicking a holding's inline sparkline opens a larger version of the
@@ -1850,7 +1853,7 @@ function renderAssets(){
       <div class="form-row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--line)">
         <span style="width:34px; height:34px; border-radius:10px; background:${cat.color}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0">${escapeHtml((it.name||'?').slice(0,1))}</span>
         <div style="min-width:150px; flex:1">
-          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}</div>
+          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}${(it.currency==='USD' && it.originalAmount!=null) ? ' <span class="tag" style="background:var(--indigo-pale); color:var(--indigo)" title="แปลงจาก USD อัตโนมัติตอนบันทึก (rate '+it.fxRateUsed+')">$'+fmtMoney(it.originalAmount)+'</span>' : ''}</div>
           <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}</div>
         </div>
         <div style="min-width:72px; cursor:pointer" onclick="openItemChart('${it.id}')" title="ดูกราฟแนวโน้มแบบเต็ม">${renderSparkline(it.valueHistory)}</div>
@@ -1871,10 +1874,17 @@ function renderAssets(){
       <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
       <select id="assetCategory">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
       <input type="text" id="assetNote" placeholder="รายละเอียด/โน้ต (ไม่บังคับ)" style="max-width:160px">
+      <select id="assetCurrency" onchange="onAssetCurrencyChange()" style="max-width:90px">
+        <option value="THB">THB (บาท)</option>
+        <option value="USD">USD (ดอลลาร์)</option>
+      </select>
       <input type="number" id="assetValue" placeholder="มูลค่าปัจจุบัน (บาท)" style="max-width:150px">
       <input type="number" id="assetCostBasis" placeholder="ต้นทุน (บาท) ไม่บังคับ" style="max-width:150px">
-      <button class="btn" onclick="addAssetItem()">+ เพิ่มสินทรัพย์</button>
+      <button class="btn" id="assetAddBtn" onclick="addAssetItem()">+ เพิ่มสินทรัพย์</button>
     </div>
+    <div class="muted" id="assetCurrencyHint" style="margin-top:6px"></div>
+    <div id="assetAddMsg">${assetAddMsg ? assetAddMsg.html : ''}</div>
+    <div class="muted" id="assetCurrencyHint" style="margin-top:6px"></div>
   </div>
 
   <div class="panel">
@@ -2166,19 +2176,70 @@ function confirmConfirmationNoteImport(){
   render();
 }
 function cancelConfirmationNoteImport(){ confirmationNoteRows = null; render(); }
-function addAssetItem(){
+// Toggles the "มูลค่าปัจจุบัน" / "ต้นทุน" placeholders + a hint when the currency select on the
+// add-asset form is switched to USD — pure UI, no state change, so it skips render() and just
+// pokes the DOM directly (keeps whatever the person has already typed in the other fields).
+function onAssetCurrencyChange(){
+  const sel = document.getElementById('assetCurrency');
+  const valEl = document.getElementById('assetValue');
+  const costEl = document.getElementById('assetCostBasis');
+  const hintEl = document.getElementById('assetCurrencyHint');
+  if(!sel || !valEl || !costEl || !hintEl) return;
+  if(sel.value === 'USD'){
+    valEl.placeholder = 'มูลค่าปัจจุบัน (USD)';
+    costEl.placeholder = 'ต้นทุน (USD) ไม่บังคับ';
+    hintEl.textContent = 'กรอกเป็นดอลลาร์ — ระบบจะแปลงเป็นบาทให้อัตโนมัติตอนกด "+ เพิ่มสินทรัพย์" (ใช้เรทวันนี้จาก Frankfurter)';
+  } else {
+    valEl.placeholder = 'มูลค่าปัจจุบัน (บาท)';
+    costEl.placeholder = 'ต้นทุน (บาท) ไม่บังคับ';
+    hintEl.textContent = '';
+  }
+}
+// Adds a manually-tracked asset item. THB is the common case and behaves exactly as before
+// (no conversion). Selecting USD (e.g. a USD deposit account) treats the typed value/cost
+// basis as USD and converts both to THB via fetchUsdThbRate() before saving — everywhere
+// else in the app (totals, category donut, sparkline) only ever deals in THB, so the
+// conversion happens once here rather than needing every consumer to be currency-aware.
+// The original USD amount + rate used are kept on the item (originalAmount/fxRateUsed)
+// purely for display (see the $ badge in the item row) and future edits.
+async function addAssetItem(){
   const name = document.getElementById('assetName').value.trim();
   const category = document.getElementById('assetCategory').value;
   const note = document.getElementById('assetNote').value.trim();
-  const value = parseFloat(document.getElementById('assetValue').value);
-  const costBasis = parseFloat(document.getElementById('assetCostBasis').value) || 0;
-  if(!name || !value) return;
+  const currency = document.getElementById('assetCurrency').value;
+  const rawValue = parseFloat(document.getElementById('assetValue').value);
+  const rawCostBasis = parseFloat(document.getElementById('assetCostBasis').value) || 0;
+  if(!name || !rawValue) return;
+
+  // Note: deliberately no intermediate render() while the fetch below is in flight — render()
+  // does a full innerHTML replace of the view (see render()), which would blank out every
+  // field on this form (including ones already captured into the local consts above, so the
+  // eventual save is unaffected, but the on-screen inputs would look wiped while still typing).
+  // A single render() at the very end (success or failure) is enough to show the result.
+  let value = rawValue, costBasis = rawCostBasis, extra = {};
+  if(currency === 'USD'){
+    const rate = await fetchUsdThbRate();
+    if(!rate){
+      assetAddMsg = {ok:false, html:`<div class="msg msg-err">ดึงอัตราแลกเปลี่ยนไม่สำเร็จ ลองกดเพิ่มสินทรัพย์อีกครั้ง</div>`};
+      render();
+      return;
+    }
+    value = Math.round(rawValue * rate);
+    costBasis = rawCostBasis ? Math.round(rawCostBasis * rate) : 0;
+    extra = {currency:'USD', originalAmount: rawValue, originalCostBasis: rawCostBasis || null, fxRateUsed: rate};
+    assetAddMsg = {ok:true, html:`<div class="msg msg-ok">แปลง $${fmtMoney(rawValue)} → ฿${fmtMoney(value)} (เรท ${rate.toFixed(2)}) แล้ว</div>`};
+  } else {
+    assetAddMsg = null;
+  }
+
   const today = todayISO();
-  state.assets.items.push({id:uid(), name, category, assetType:'', value, costBasis, note, updated: today, transactions:[], valueHistory:[{date:today, value}]});
+  state.assets.items.push({id:uid(), name, category, assetType:'', value, costBasis, note, updated: today, transactions:[], valueHistory:[{date:today, value}], ...extra});
   document.getElementById('assetName').value = '';
   document.getElementById('assetValue').value = '';
   document.getElementById('assetCostBasis').value = '';
   document.getElementById('assetNote').value = '';
+  document.getElementById('assetCurrency').value = 'THB';
+  onAssetCurrencyChange();
   saveState(); render();
 }
 function delAssetItem(id){ state.assets.items = state.assets.items.filter(x=>x.id!==id); if(openItemChartId===id) openItemChartId = null; saveState(); render(); }
@@ -2202,6 +2263,18 @@ function updateAssetItemValue(id){
     it.valueHistory.push({date: today, value: v});
   }
   saveState(); render();
+}
+// Shared USD→THB rate fetch (Frankfurter's free no-key FX API) — used both by the live
+// market-price refresh below and by addAssetItem() when a manually-added item (e.g. a
+// USD deposit) needs one-time conversion to THB at entry time. Returns null on any
+// failure so callers can fall back / show an error instead of throwing.
+async function fetchUsdThbRate(){
+  try{
+    const fxRes = await fetch('https://api.frankfurter.dev/v1/latest?from=USD&to=THB');
+    if(!fxRes.ok) return null;
+    const fxData = await fxRes.json();
+    return fxData && fxData.rates ? Number(fxData.rates.THB) : null;
+  }catch(e){ return null; }
 }
 // Live market-price refresh for stocks/ETFs. Uses Finnhub's free quote endpoint (needs a
 // user-supplied API key, see Settings) for the price and Frankfurter's free no-key FX API
@@ -2227,13 +2300,7 @@ async function refreshLivePrices(){
 
   let fxRate = null;
   if(eligible.some(it=>it.currency==='USD')){
-    try{
-      const fxRes = await fetch('https://api.frankfurter.dev/v1/latest?from=USD&to=THB');
-      if(fxRes.ok){
-        const fxData = await fxRes.json();
-        fxRate = fxData && fxData.rates ? Number(fxData.rates.THB) : null;
-      }
-    }catch(e){ fxRate = null; }
+    fxRate = await fetchUsdThbRate();
   }
 
   const today = todayISO();
