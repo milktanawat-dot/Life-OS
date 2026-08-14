@@ -415,10 +415,10 @@ function dimeImportSeed(){
       {id:uid(), name:'SPCX — Space Exploration Technologies', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:1321, costBasis:1978, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'SPCX', units:0.3667273, currency:'USD', valueHistory:[{date:'2026-07-31', value:1321}]},
       {id:uid(), name:'TSLA — Tesla, Inc.', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:914, costBasis:1171, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'TSLA', units:0.0883761, currency:'USD', valueHistory:[{date:'2026-07-31', value:914}]},
       {id:uid(), name:'AGG — iShares Core U.S. Aggregate Bond', assetType:'ETF ตราสารหนี้ (Dime)', category:'bond', value:2385, costBasis:2406, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'AGG', units:0.7367484, currency:'USD', valueHistory:[{date:'2026-07-31', value:2385}]},
-      {id:uid(), name:'IVV — iShares Core S&P 500 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:6690, costBasis:6231, note:'Dime Offshore (2 บัญชีรวมกัน)', updated:'2026-07-31', dimeSourced:true, symbol:'IVV', units:0.2681735, currency:'USD', valueHistory:[{date:'2026-07-31', value:6690}]},
+      {id:uid(), name:'IVV — iShares Core S&P 500 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:6690, costBasis:6231, note:'Dime Offshore (2 บัญชีรวมกัน)', updated:'2026-07-31', dimeSourced:true, symbol:'IVV', units:0.2681735, currency:'USD', valueHistory:[{date:'2026-03-31', value:3715}, {date:'2026-04-30', value:4207}, {date:'2026-07-31', value:6690}]},
       {id:uid(), name:'MSTY — YieldMax MSTR Option Income', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1562, costBasis:2129, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'MSTY', units:3.7976794, currency:'USD', valueHistory:[{date:'2026-07-31', value:1562}]},
-      {id:uid(), name:'QQQM — Invesco NASDAQ 100 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:4857, costBasis:4392, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'QQQM', units:0.5156489, currency:'USD', valueHistory:[{date:'2026-07-31', value:4857}]},
-      {id:uid(), name:'VEA — Vanguard FTSE Developed Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:1978, costBasis:1881, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VEA', units:0.8419284, currency:'USD', valueHistory:[{date:'2026-07-31', value:1978}]},
+      {id:uid(), name:'QQQM — Invesco NASDAQ 100 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:4857, costBasis:4392, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'QQQM', units:0.5156489, currency:'USD', valueHistory:[{date:'2026-03-31', value:3332}, {date:'2026-04-30', value:3961}, {date:'2026-07-31', value:4857}]},
+      {id:uid(), name:'VEA — Vanguard FTSE Developed Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:1978, costBasis:1881, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VEA', units:0.8419284, currency:'USD', valueHistory:[{date:'2026-03-31', value:1014}, {date:'2026-04-30', value:1191}, {date:'2026-07-31', value:1978}]},
       {id:uid(), name:'VWO — Vanguard FTSE Emerging Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:578, costBasis:570, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VWO', units:0.2956256, currency:'USD', valueHistory:[{date:'2026-07-31', value:578}]},
       {id:uid(), name:'YMAG — YieldMax Magnificent 7 Fund of Options', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1054, costBasis:1133, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'YMAG', units:2.8166050, currency:'USD', valueHistory:[{date:'2026-07-31', value:1054}]}
     ],
@@ -434,16 +434,19 @@ function dimeImportSeed(){
 // used to reconstruct a net-worth-over-time line without any live market feed.
 function itemValueAsOf(item, dateIso){
   const hist = (item.valueHistory||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  // Dime-sourced items are gated to the fixed DIME_ITEM_TRACKING_START cutover, not to
+  // whatever their own earliest valueHistory entry happens to be. Some holdings (IVV, QQQM,
+  // VEA) now carry real pre-cutover history points (Mar/Apr 2026) purely for their own
+  // per-item detail chart (see the modal in renderAssets) — but that pre-cutover period is
+  // already fully represented by the monthly Dime report snapshots (see reportValueAsOf), so
+  // itemsTotalAsOf must contribute exactly 0 for Dime items before the cutover regardless of
+  // how much valueHistory they have, or that money gets counted twice. Non-Dime items (savings,
+  // condo, ฯลฯ) aren't covered by any report and keep the old "value was probably similar a
+  // bit earlier" fallback to their earliest known value.
+  if(item.dimeSourced && dateIso < DIME_ITEM_TRACKING_START) return 0;
   if(!hist.length) return Number(item.value)||0;
   const onOrBefore = hist.filter(h=>h.date<=dateIso);
   if(onOrBefore.length) return onOrBefore[onOrBefore.length-1].value;
-  // Date is before this item's first recorded snapshot. For Dime-sourced items we have zero
-  // information about what that specific holding was worth before its Dime import — that
-  // period is already represented by the monthly report snapshots instead (see
-  // reportValueAsOf), so inheriting the import-day value backward would double it up on the
-  // chart. Non-Dime items (savings, condo, ฯลฯ) keep the old "value was probably similar a
-  // bit earlier" fallback.
-  if(item.dimeSourced) return 0;
   return hist[0].value; // use the earliest we have
 }
 function itemsTotalAsOf(dateIso){ return state.assets.items.reduce((s,it)=>s+itemValueAsOf(it,dateIso),0); }
@@ -1529,45 +1532,98 @@ function exportTripIcs(tripId){
 // Small inline SVG line+area chart — same hand-authored technique for all Assets-module
 // line charts (linearGradient area fill + polyline path), now generalized to take any
 // {date, value} series so it can plot the daily/monthly/yearly/all-time portfolio views.
-function renderAssetsLineChart(series, mode){
-  if(series.length < 2) return `<div class="muted" style="padding:36px 0; text-align:center">ยังไม่มีข้อมูลเพียงพอสำหรับช่วงนี้</div>`;
-  const W = 640, H = 170, pad = 22;
+// Shared SVG-with-gradient-fill line chart geometry — used by both the main portfolio
+// chart (renderAssetsLineChart) and the per-holding detail chart (renderItemLineChart) so
+// there's exactly one charting technique in the app, not two.
+function buildLineChartSvg(series, opts){
+  opts = opts || {};
+  const W = opts.W || 640, H = opts.H || 170, pad = opts.pad || 22;
+  const gradId = opts.gradId || 'assetsGrad';
   const values = series.map(p=>p.value);
   const min = Math.min(...values), max = Math.max(...values);
   const range = (max - min) || Math.max(1, max*0.1) || 1;
-  const stepX = (W - 2*pad) / (series.length - 1);
+  const stepX = series.length>1 ? (W - 2*pad) / (series.length - 1) : 0;
   const pts = series.map((p,i)=>{
-    const x = pad + i*stepX;
+    const x = series.length>1 ? pad + i*stepX : W/2;
     const y = H - pad - ((p.value - min)/range)*(H - 2*pad);
     return {x, y, p};
   });
   const path = pts.map((pt,i)=>(i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
   const areaPath = path + ` L${pts[pts.length-1].x.toFixed(1)},${H-pad} L${pts[0].x.toFixed(1)},${H-pad} Z`;
+  const svg = `
+  <svg class="portfolio-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" style="stop-color:var(--purple); stop-opacity:0.30"/>
+        <stop offset="100%" style="stop-color:var(--purple); stop-opacity:0"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#${gradId})" stroke="none"></path>
+    <path d="${path}" fill="none" stroke="var(--purple-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    ${pts.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="var(--purple-deep)" stroke="#fff" stroke-width="1.5"></circle>`).join('')}
+  </svg>`;
+  return {svg, pts};
+}
+function renderAssetsLineChart(series, mode){
+  if(series.length < 2) return `<div class="muted" style="padding:36px 0; text-align:center">ยังไม่มีข้อมูลเพียงพอสำหรับช่วงนี้</div>`;
   const labelFor = (d)=>{
     if(mode==='daily') return d.slice(5);
     if(mode==='yearly') return String(parseInt(d.slice(0,4),10)+543);
     return ymLabel(d.slice(0,7)).split(' ')[0] + " '" + String(parseInt(d.slice(0,4),10)+543).slice(-2);
   };
+  const {svg, pts} = buildLineChartSvg(series, {gradId:'assetsGrad'});
   const labelStep = Math.max(1, Math.ceil(pts.length/8));
   return `
-  <svg class="portfolio-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="assetsGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" style="stop-color:var(--purple); stop-opacity:0.30"/>
-        <stop offset="100%" style="stop-color:var(--purple); stop-opacity:0"/>
-      </linearGradient>
-    </defs>
-    <path d="${areaPath}" fill="url(#assetsGrad)" stroke="none"></path>
-    <path d="${path}" fill="none" stroke="var(--purple-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
-    ${pts.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="var(--purple-deep)" stroke="#fff" stroke-width="1.5"></circle>`).join('')}
-  </svg>
+  ${svg}
   <div class="portfolio-chart-labels">${pts.filter((_,i)=>i%labelStep===0||i===pts.length-1).map(pt=>`<span>${labelFor(pt.p.date)}</span>`).join('')}</div>
+  `;
+}
+// Per-holding detail chart shown in the item chart modal (see openItemChart). Plots the
+// item's own valueHistory directly with no DIME_ITEM_TRACKING_START gating — that gating
+// only applies to the portfolio-total math (itemValueAsOf/itemsTotalAsOf), not to what a
+// single item's own history looked like.
+function renderItemLineChart(item){
+  const hist = (item.valueHistory||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(!hist.length) return `<div class="muted" style="padding:36px 0; text-align:center">ยังไม่มีข้อมูลมูลค่าสำหรับรายการนี้</div>`;
+  if(hist.length < 2){
+    return `<div class="muted" style="padding:24px 0; text-align:center">มีข้อมูลจุดเดียว — อัพเดทมูลค่าเพิ่มเพื่อดูแนวโน้ม<div class="mono" style="font-size:20px; font-weight:700; color:var(--ink); margin-top:10px">฿${fmtMoney(hist[0].value)}</div><div class="muted" style="margin-top:2px">${fmtDate(hist[0].date)}</div></div>`;
+  }
+  const series = hist.map(h=>({date:h.date, value:h.value}));
+  const {svg, pts} = buildLineChartSvg(series, {gradId:'itemChartGrad'});
+  return `
+  ${svg}
+  <div class="portfolio-chart-labels">${pts.map(pt=>`<span>${fmtDate(pt.p.date)}</span>`).join('')}</div>
+  <div class="portfolio-chart-labels" style="margin-top:2px">${pts.map(pt=>`<span class="mono" style="font-weight:600; color:var(--ink)">฿${fmtMoney(pt.p.value)}</span>`).join('')}</div>
   `;
 }
 
 let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
 let livePriceMsg = null; // {ok:bool, html:string} — last refreshLivePrices() result, shown near the refresh button
 function setAssetsChartMode(mode){ assetsChartMode = mode; render(); }
+
+// Item chart modal — clicking a holding's inline sparkline opens a larger version of the
+// same chart. Transient UI state only (not persisted), looked up by id at render time so it
+// never goes stale; delAssetItem() clears it if the deleted item was the one open.
+let openItemChartId = null;
+function openItemChart(id){ openItemChartId = id; render(); }
+function closeItemChart(){ openItemChartId = null; render(); }
+// Minimal modal/lightbox — this app has no other overlay component, so this is the one
+// pattern: full-viewport semi-transparent backdrop, closes on backdrop click only (the card
+// itself stops propagation so clicks inside it don't bubble up and close the modal).
+function renderItemChartModal(){
+  if(!openItemChartId) return '';
+  const it = state.assets.items.find(x=>x.id===openItemChartId);
+  if(!it) return '';
+  return `
+  <div style="position:fixed; inset:0; background:rgba(20,16,38,.45); z-index:200; display:flex; align-items:center; justify-content:center; padding:24px" onclick="closeItemChart()">
+    <div class="panel" style="max-width:720px; width:100%; margin-bottom:0; position:relative" onclick="event.stopPropagation()">
+      <button class="task-del" style="position:absolute; top:14px; right:14px; font-size:16px" onclick="closeItemChart()">✕</button>
+      <h3 style="padding-right:28px">${escapeHtml(it.name)}</h3>
+      <div class="muted" style="margin-bottom:14px">${escapeHtml(assetCategoryMeta(it.category).label)} · มูลค่าปัจจุบัน ฿${fmtMoney(it.value)}</div>
+      ${renderItemLineChart(it)}
+    </div>
+  </div>`;
+}
 
 function renderAssets(){
   const a = state.assets;
@@ -1649,7 +1705,7 @@ function renderAssets(){
           <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}</div>
           <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}</div>
         </div>
-        <div style="min-width:72px">${renderSparkline(it.valueHistory)}</div>
+        <div style="min-width:72px; cursor:pointer" onclick="openItemChart('${it.id}')" title="ดูกราฟแนวโน้มแบบเต็ม">${renderSparkline(it.valueHistory)}</div>
         <div style="text-align:right; min-width:100px">
           <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}</div>
           <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}</div>
@@ -1707,6 +1763,7 @@ function renderAssets(){
     </div>
     <div class="muted">ไม่มี PDF ก็กรอกมูลค่ารวมของเดือนนั้นด้วยมือในช่องนี้ได้เลย</div>
   </div>
+  ${renderItemChartModal()}
   `;
 }
 
@@ -1811,7 +1868,7 @@ function addAssetItem(){
   document.getElementById('assetNote').value = '';
   saveState(); render();
 }
-function delAssetItem(id){ state.assets.items = state.assets.items.filter(x=>x.id!==id); saveState(); render(); }
+function delAssetItem(id){ state.assets.items = state.assets.items.filter(x=>x.id!==id); if(openItemChartId===id) openItemChartId = null; saveState(); render(); }
 // Manual "อัพเดทมูลค่า" action — the only way this app's asset values ever change over
 // time (no live market feed). Overwrites today's valueHistory entry instead of stacking
 // a duplicate if this item was already updated once today.
