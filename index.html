@@ -402,6 +402,38 @@ const ASSET_CATEGORIES = [
 ];
 function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) || ASSET_CATEGORIES[ASSET_CATEGORIES.length-1]; }
 
+// Real trade-confirmation-note history, parsed once from the user's actual Dime
+// "Confirmation Note" (ใบยืนยันการซื้อขาย) PDF emails — one entry per executed trade,
+// keyed by symbol. Every entry here is a real BUY (no SELL confirmations were found in
+// the files the user provided, so none are invented). IMPORTANT CAVEAT: summing these
+// units per symbol does NOT fully add up to the units actually held (e.g. confirmed
+// buys only account for ~0.82 of MSTR's 3.18 held units) — the confirmation-note emails
+// the user provided don't cover 100% of their trade history (likely some purchases
+// happened via a mechanism that doesn't generate individual confirmation notes, e.g.
+// auto-invest/DCA, or some emails just weren't in the export). So this is a partial,
+// real, dated history — useful for the price-paid trend and cost cross-check, and it
+// deliberately does NOT claim to reconstruct the full position. Do not "fill the gap"
+// with a synthetic plug transaction — that would be fabricating data.
+const DIME_CONFIRMATION_NOTE_TXNS_RAW = {
+  AGG: [{date:'2026-05-26', units:0.1014764, price:98.35, totalTHB:324.74, orderId:'415142'}, {date:'2026-05-26', units:0.0635434, price:98.36, totalTHB:203.29, orderId:'407002'}, {date:'2026-08-04', units:0.0305524, price:97.21, totalTHB:98.86, orderId:'715178'}],
+  IVV: [{date:'2026-01-05', units:0.0045589, price:688.76, totalTHB:98.98, orderId:'054393'}, {date:'2026-01-21', units:0.0187297, price:684.48, totalTHB:398.47, orderId:'034458'}, {date:'2026-03-26', units:0.0092728, price:660.0, totalTHB:198.66, orderId:'363094'}, {date:'2026-04-02', units:0.004643, price:656.9, totalTHB:99.36, orderId:'345331'}, {date:'2026-08-04', units:0.0079027, price:752.91, totalTHB:197.73, orderId:'718672'}],
+  MSTR: [{date:'2026-06-08', units:0.0860345, price:116.0, totalTHB:325.19, orderId:'760328'}, {date:'2026-06-08', units:0.1736552, price:115.0, totalTHB:650.38, orderId:'757002'}, {date:'2026-06-08', units:0.105042, price:119.0, totalTHB:407.14, orderId:'654035'}, {date:'2026-06-18', units:0.0811382, price:123.0, totalTHB:323.67, orderId:'300874'}, {date:'2026-06-25', units:0.2993205, price:99.49, totalTHB:989.17, orderId:'971774'}, {date:'2026-06-30', units:0.0708072, price:85.3, totalTHB:200.94, orderId:'133008'}],
+  MSTY: [{date:'2026-05-26', units:0.4326715, price:23.07, totalTHB:324.74, orderId:'407427'}, {date:'2026-06-08', units:0.6049218, price:16.5, totalTHB:325.19, orderId:'655998'}, {date:'2026-06-30', units:1.246041, price:12.0, totalTHB:497.2, orderId:'171629'}],
+  QQQM: [{date:'2026-01-20', units:0.012299, price:256.12, totalTHB:98.71, orderId:'712179'}, {date:'2026-01-20', units:0.0124005, price:254.83, totalTHB:99.02, orderId:'678627'}, {date:'2026-01-21', units:0.0254731, price:251.64, totalTHB:199.24, orderId:'026174'}, {date:'2026-01-21', units:0.0124863, price:252.28, totalTHB:98.07, orderId:'993138'}, {date:'2026-01-30', units:0.0372672, price:254.92, totalTHB:294.88, orderId:'063698'}, {date:'2026-02-05', units:0.02508, price:250.0, totalTHB:197.62, orderId:'578590'}, {date:'2026-02-05', units:0.0249378, price:251.43, totalTHB:197.62, orderId:'542382'}, {date:'2026-02-12', units:0.0254986, price:250.99, totalTHB:198.37, orderId:'523813'}, {date:'2026-02-17', units:0.0262352, price:247.0, totalTHB:200.73, orderId:'986092'}, {date:'2026-03-26', units:0.0252334, price:242.54, totalTHB:198.66, orderId:'363950'}, {date:'2026-04-02', units:0.0127354, price:239.49, totalTHB:99.36, orderId:'357718'}, {date:'2026-08-04', units:0.0210296, price:283.41, totalTHB:197.73, orderId:'706069'}],
+  SPCX: [{date:'2026-07-09', units:0.0152669, price:150.0, totalTHB:76.4, orderId:'588529'}, {date:'2026-07-16', units:0.0433982, price:136.87, totalTHB:198.03, orderId:'973036'}, {date:'2026-08-04', units:0.0279083, price:106.42, totalTHB:98.86, orderId:'732253'}],
+  TSLA: [{date:'2026-06-11', units:0.0157403, price:385.0, totalTHB:198.5, orderId:'141573'}, {date:'2026-06-18', units:0.025625, price:400.0, totalTHB:332.41, orderId:'244382'}, {date:'2026-07-16', units:0.0150006, price:395.98, totalTHB:198.03, orderId:'973851'}, {date:'2026-08-04', units:0.0095566, price:310.78, totalTHB:98.86, orderId:'727776'}],
+  VEA: [{date:'2025-12-23', units:0.0258231, price:61.96, totalTHB:49.96, orderId:'842027'}, {date:'2025-12-24', units:0.0256008, price:62.5, totalTHB:49.56, orderId:'112448'}, {date:'2026-01-05', units:0.0498812, price:63.15, totalTHB:98.98, orderId:'043793'}, {date:'2026-04-02', units:0.0469447, price:64.97, totalTHB:99.36, orderId:'339140'}, {date:'2026-08-04', units:0.0841108, price:70.74, totalTHB:197.73, orderId:'737579'}],
+  VWO: [{date:'2026-08-04', units:0.0507086, price:58.57, totalTHB:98.86, orderId:'737195'}],
+  YMAG: [{date:'2026-05-26', units:0.7767746, price:12.85, totalTHB:324.74, orderId:'407585'}, {date:'2026-06-30', units:1.3230088, price:11.3, totalTHB:497.2, orderId:'170515'}]
+};
+// Turns the raw per-symbol confirmation-note rows above into full transaction objects
+// (adds id/side/currency/source) — small helper so we don't hand-write id:uid() 44 times.
+function dimeConfirmationNoteTxnsFor(symbol){
+  return (DIME_CONFIRMATION_NOTE_TXNS_RAW[symbol]||[]).map(row=>({
+    id: uid(), date: row.date, side: 'buy', units: row.units, price: row.price,
+    currency: 'USD', totalTHB: row.totalTHB, orderId: row.orderId, source: 'confirmation-pdf'
+  }));
+}
 // Real Dime portfolio data, parsed once from the user's own Dime monthly statement PDFs:
 // offshore account holdings as of 31 Jul 2026 (THB @ that day's BOT rate, 33.25/USD), plus
 // combined offshore+Thai net-worth snapshots for Mar/Apr/Jul 2026 (May/Jun statements weren't
@@ -411,16 +443,16 @@ function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) ||
 function dimeImportSeed(){
   return {
     items: [
-      {id:uid(), name:'MSTR — Strategy Inc', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:9861, costBasis:12803, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'MSTR', units:3.1789085, currency:'USD', valueHistory:[{date:'2026-07-31', value:9861}]},
-      {id:uid(), name:'SPCX — Space Exploration Technologies', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:1321, costBasis:1978, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'SPCX', units:0.3667273, currency:'USD', valueHistory:[{date:'2026-07-31', value:1321}]},
-      {id:uid(), name:'TSLA — Tesla, Inc.', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:914, costBasis:1171, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'TSLA', units:0.0883761, currency:'USD', valueHistory:[{date:'2026-07-31', value:914}]},
-      {id:uid(), name:'AGG — iShares Core U.S. Aggregate Bond', assetType:'ETF ตราสารหนี้ (Dime)', category:'bond', value:2385, costBasis:2406, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'AGG', units:0.7367484, currency:'USD', valueHistory:[{date:'2026-07-31', value:2385}]},
-      {id:uid(), name:'IVV — iShares Core S&P 500 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:6690, costBasis:6231, note:'Dime Offshore (2 บัญชีรวมกัน)', updated:'2026-07-31', dimeSourced:true, symbol:'IVV', units:0.2681735, currency:'USD', valueHistory:[{date:'2026-03-31', value:3715}, {date:'2026-04-30', value:4207}, {date:'2026-07-31', value:6690}]},
-      {id:uid(), name:'MSTY — YieldMax MSTR Option Income', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1562, costBasis:2129, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'MSTY', units:3.7976794, currency:'USD', valueHistory:[{date:'2026-07-31', value:1562}]},
-      {id:uid(), name:'QQQM — Invesco NASDAQ 100 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:4857, costBasis:4392, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'QQQM', units:0.5156489, currency:'USD', valueHistory:[{date:'2026-03-31', value:3332}, {date:'2026-04-30', value:3961}, {date:'2026-07-31', value:4857}]},
-      {id:uid(), name:'VEA — Vanguard FTSE Developed Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:1978, costBasis:1881, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VEA', units:0.8419284, currency:'USD', valueHistory:[{date:'2026-03-31', value:1014}, {date:'2026-04-30', value:1191}, {date:'2026-07-31', value:1978}]},
-      {id:uid(), name:'VWO — Vanguard FTSE Emerging Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:578, costBasis:570, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VWO', units:0.2956256, currency:'USD', valueHistory:[{date:'2026-07-31', value:578}]},
-      {id:uid(), name:'YMAG — YieldMax Magnificent 7 Fund of Options', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1054, costBasis:1133, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'YMAG', units:2.8166050, currency:'USD', valueHistory:[{date:'2026-07-31', value:1054}]}
+      {id:uid(), name:'MSTR — Strategy Inc', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:9861, costBasis:12803, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'MSTR', units:3.1789085, currency:'USD', valueHistory:[{date:'2026-07-31', value:9861}], transactions: dimeConfirmationNoteTxnsFor('MSTR')},
+      {id:uid(), name:'SPCX — Space Exploration Technologies', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:1321, costBasis:1978, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'SPCX', units:0.3667273, currency:'USD', valueHistory:[{date:'2026-07-31', value:1321}], transactions: dimeConfirmationNoteTxnsFor('SPCX')},
+      {id:uid(), name:'TSLA — Tesla, Inc.', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:914, costBasis:1171, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'TSLA', units:0.0883761, currency:'USD', valueHistory:[{date:'2026-07-31', value:914}], transactions: dimeConfirmationNoteTxnsFor('TSLA')},
+      {id:uid(), name:'AGG — iShares Core U.S. Aggregate Bond', assetType:'ETF ตราสารหนี้ (Dime)', category:'bond', value:2385, costBasis:2406, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'AGG', units:0.7367484, currency:'USD', valueHistory:[{date:'2026-07-31', value:2385}], transactions: dimeConfirmationNoteTxnsFor('AGG')},
+      {id:uid(), name:'IVV — iShares Core S&P 500 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:6690, costBasis:6231, note:'Dime Offshore (2 บัญชีรวมกัน)', updated:'2026-07-31', dimeSourced:true, symbol:'IVV', units:0.2681735, currency:'USD', valueHistory:[{date:'2026-03-31', value:3715}, {date:'2026-04-30', value:4207}, {date:'2026-07-31', value:6690}], transactions: dimeConfirmationNoteTxnsFor('IVV')},
+      {id:uid(), name:'MSTY — YieldMax MSTR Option Income', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1562, costBasis:2129, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'MSTY', units:3.7976794, currency:'USD', valueHistory:[{date:'2026-07-31', value:1562}], transactions: dimeConfirmationNoteTxnsFor('MSTY')},
+      {id:uid(), name:'QQQM — Invesco NASDAQ 100 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:4857, costBasis:4392, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'QQQM', units:0.5156489, currency:'USD', valueHistory:[{date:'2026-03-31', value:3332}, {date:'2026-04-30', value:3961}, {date:'2026-07-31', value:4857}], transactions: dimeConfirmationNoteTxnsFor('QQQM')},
+      {id:uid(), name:'VEA — Vanguard FTSE Developed Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:1978, costBasis:1881, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VEA', units:0.8419284, currency:'USD', valueHistory:[{date:'2026-03-31', value:1014}, {date:'2026-04-30', value:1191}, {date:'2026-07-31', value:1978}], transactions: dimeConfirmationNoteTxnsFor('VEA')},
+      {id:uid(), name:'VWO — Vanguard FTSE Emerging Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:578, costBasis:570, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VWO', units:0.2956256, currency:'USD', valueHistory:[{date:'2026-07-31', value:578}], transactions: dimeConfirmationNoteTxnsFor('VWO')},
+      {id:uid(), name:'YMAG — YieldMax Magnificent 7 Fund of Options', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1054, costBasis:1133, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'YMAG', units:2.8166050, currency:'USD', valueHistory:[{date:'2026-07-31', value:1054}], transactions: dimeConfirmationNoteTxnsFor('YMAG')}
     ],
     reports: [
       {id:uid(), month:'2026-03', totalValue:15344, source:'dime-pdf', importedAt:'2026-08-14', breakdown:[], note:'Offshore + Thai Securities (KKP Dime)'},
@@ -636,9 +668,9 @@ function defaultState(){
       // category is the core/satellite/bond/cash/other investment bucket (see ASSET_CATEGORIES);
       // assetType keeps the old free-text description; valueHistory tracks manual "อัพเดทมูลค่า" snapshots.
       items: [
-        {id:uid(), name:'เงินฝากออมทรัพย์', assetType:'เงินสด', category:'cash', value:150000, costBasis:150000, note:'', updated:t, demo:true,
+        {id:uid(), name:'เงินฝากออมทรัพย์', assetType:'เงินสด', category:'cash', value:150000, costBasis:150000, note:'', updated:t, demo:true, transactions:[],
           valueHistory:[{date:addDays(t,-60), value:140000}, {date:addDays(t,-30), value:145000}, {date:t, value:150000}]},
-        {id:uid(), name:'คอนโด (ราคาประเมิน)', assetType:'อสังหาริมทรัพย์', category:'other', value:2800000, costBasis:2500000, note:'', updated:t, demo:true,
+        {id:uid(), name:'คอนโด (ราคาประเมิน)', assetType:'อสังหาริมทรัพย์', category:'other', value:2800000, costBasis:2500000, note:'', updated:t, demo:true, transactions:[],
           valueHistory:[{date:addDays(t,-60), value:2750000}, {date:t, value:2800000}]},
         ...dimeImportSeed().items
       ],
@@ -702,6 +734,8 @@ function loadState(){
       // guess symbol/units for pre-existing non-Dime items, they just aren't eligible for
       // live refresh until the user (or a later Dime import) sets those explicitly.
       (s.assets.items||[]).forEach(it=>{ if(it.currency == null) it.currency = 'THB'; });
+      // Backfill items saved before confirmation-note transaction history existed.
+      (s.assets.items||[]).forEach(it=>{ if(!it.transactions) it.transactions = []; });
       // Backfill items saved before category/costBasis/valueHistory existed. Old free-text
       // category values (เงินสด/หุ้น-กองทุน/ฯลฯ) are kept in assetType and mapped onto the
       // new core/satellite/bond/cash/other taxonomy so the category donut still works.
@@ -1578,10 +1612,34 @@ function renderAssetsLineChart(series, mode){
   <div class="portfolio-chart-labels">${pts.filter((_,i)=>i%labelStep===0||i===pts.length-1).map(pt=>`<span>${labelFor(pt.p.date)}</span>`).join('')}</div>
   `;
 }
+// Builds small buy/sell tick markers for an item's confirmation-note transactions, placed
+// along the SAME x-axis coordinate system buildLineChartSvg already established for the
+// valueHistory `pts` (interpolated by date between the chart's own points, not a second
+// independent coordinate system). Green/teal for buy, coral for sell, per the app's
+// existing gain/loss semantic colors.
+function buildTxnMarkersSvg(item, pts, W, H, pad){
+  const txns = (item.transactions||[]).filter(t=>t.date);
+  if(!txns.length || pts.length<2) return '';
+  const t0 = new Date(pts[0].p.date+'T00:00:00').getTime();
+  const t1 = new Date(pts[pts.length-1].p.date+'T00:00:00').getTime();
+  const xForDate = (d)=>{
+    const t = new Date(d+'T00:00:00').getTime();
+    if(!(t1>t0)) return pts[0].x;
+    const frac = Math.max(0, Math.min(1, (t-t0)/(t1-t0)));
+    return pad + frac*(W-2*pad);
+  };
+  const y = H-3;
+  return txns.map(tx=>{
+    const x = xForDate(tx.date);
+    const color = tx.side==='sell' ? 'var(--coral)' : 'var(--teal)';
+    return `<circle cx="${x.toFixed(1)}" cy="${y}" r="3" fill="${color}" stroke="#fff" stroke-width="1"><title>${tx.side==='sell'?'ขาย':'ซื้อ'} ${tx.units} @ $${tx.price} (${fmtDate(tx.date)})</title></circle>`;
+  }).join('');
+}
 // Per-holding detail chart shown in the item chart modal (see openItemChart). Plots the
 // item's own valueHistory directly with no DIME_ITEM_TRACKING_START gating — that gating
 // only applies to the portfolio-total math (itemValueAsOf/itemsTotalAsOf), not to what a
-// single item's own history looked like.
+// single item's own history looked like. When the item has confirmation-note transactions,
+// small buy/sell markers are overlaid along the x-axis (see buildTxnMarkersSvg).
 function renderItemLineChart(item){
   const hist = (item.valueHistory||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   if(!hist.length) return `<div class="muted" style="padding:36px 0; text-align:center">ยังไม่มีข้อมูลมูลค่าสำหรับรายการนี้</div>`;
@@ -1589,12 +1647,51 @@ function renderItemLineChart(item){
     return `<div class="muted" style="padding:24px 0; text-align:center">มีข้อมูลจุดเดียว — อัพเดทมูลค่าเพิ่มเพื่อดูแนวโน้ม<div class="mono" style="font-size:20px; font-weight:700; color:var(--ink); margin-top:10px">฿${fmtMoney(hist[0].value)}</div><div class="muted" style="margin-top:2px">${fmtDate(hist[0].date)}</div></div>`;
   }
   const series = hist.map(h=>({date:h.date, value:h.value}));
-  const {svg, pts} = buildLineChartSvg(series, {gradId:'itemChartGrad'});
+  const W = 640, H = 170, pad = 22;
+  const {svg, pts} = buildLineChartSvg(series, {gradId:'itemChartGrad', W, H, pad});
+  const markers = buildTxnMarkersSvg(item, pts, W, H, pad);
+  const svgWithMarkers = markers ? svg.replace('</svg>', markers + '</svg>') : svg;
   return `
-  ${svg}
+  ${svgWithMarkers}
   <div class="portfolio-chart-labels">${pts.map(pt=>`<span>${fmtDate(pt.p.date)}</span>`).join('')}</div>
   <div class="portfolio-chart-labels" style="margin-top:2px">${pts.map(pt=>`<span class="mono" style="font-weight:600; color:var(--ink)">฿${fmtMoney(pt.p.value)}</span>`).join('')}</div>
+  ${markers ? `<div class="muted" style="margin-top:6px; font-size:11px"><span style="color:var(--teal)">●</span> ซื้อ &nbsp; <span style="color:var(--coral)">●</span> ขาย — จากใบยืนยันการซื้อขาย</div>` : ''}
   `;
+}
+// Compact transaction table + weighted-average-cost cross-check shown below the per-item
+// chart in the modal. Deliberately does NOT try to reconcile confirmation-note units against
+// the item's actual held units if they don't match — see the caveat on
+// DIME_CONFIRMATION_NOTE_TXNS_RAW for why that gap is real and expected, not a bug.
+function renderItemTransactionsBlock(item){
+  const txns = (item.transactions||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(!txns.length) return '';
+  const buys = txns.filter(t=>t.side==='buy');
+  const sumUnits = buys.reduce((s,t)=>s+(Number(t.units)||0),0);
+  const sumCost = buys.reduce((s,t)=>s+(Number(t.units)||0)*(Number(t.price)||0),0);
+  const wavgUsd = sumUnits ? sumCost/sumUnits : null;
+  const stmtAvgThb = (item.units>0) ? (Number(item.costBasis)||0)/item.units : null;
+  const unitsGapNote = (sumUnits && item.units && Math.abs(sumUnits-item.units)>0.0005)
+    ? `<div style="font-size:11px; margin-top:4px">หมายเหตุ: ใบยืนยันที่มีไม่ครบทุกรายการซื้อ (${sumUnits.toFixed(4)} หน่วยจากใบยืนยัน เทียบกับ ${item.units} หน่วยที่ถือครองจริง) — อาจมีการซื้อผ่านช่องทางอื่น เช่น auto-invest หรืออีเมลบางฉบับไม่อยู่ในชุดที่นำเข้า ตัวเลขทั้งสองแสดงไว้ตรงๆ ไม่พยายามปรับให้ตรงกัน</div>`
+    : '';
+  return `
+  <div style="margin-top:18px">
+    <h3 style="font-size:13px; margin-bottom:8px">ประวัติการซื้อขายจากใบยืนยัน (${txns.length} รายการ)</h3>
+    <table class="table">
+      <tr><th>วันที่</th><th>ฝั่ง</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">ราคา (USD)</th><th style="text-align:right">รวม (THB)</th></tr>
+      ${txns.map(t=>`<tr>
+        <td class="mono">${fmtDate(t.date)}</td>
+        <td><span class="tag" style="background:${t.side==='buy'?'var(--teal-pale)':'var(--coral-pale)'}; color:${t.side==='buy'?'var(--teal)':'var(--coral)'}">${t.side==='buy'?'ซื้อ':'ขาย'}</span></td>
+        <td style="text-align:right" class="mono">${t.units}</td>
+        <td style="text-align:right" class="mono">$${t.price}</td>
+        <td style="text-align:right" class="mono">฿${fmtMoney(t.totalTHB)}</td>
+      </tr>`).join('')}
+    </table>
+    <div class="muted" style="margin-top:8px">
+      ต้นทุนเฉลี่ยจากใบยืนยัน (USD/หน่วย): <b>${wavgUsd!=null ? '$'+wavgUsd.toFixed(2) : '—'}</b>
+      ${stmtAvgThb!=null ? ` &nbsp;|&nbsp; ต้นทุนเฉลี่ยจากรายงานพอร์ต (THB/หน่วย): <b>฿${stmtAvgThb.toFixed(2)}</b>` : ''}
+      ${unitsGapNote}
+    </div>
+  </div>`;
 }
 
 let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
@@ -1621,6 +1718,7 @@ function renderItemChartModal(){
       <h3 style="padding-right:28px">${escapeHtml(it.name)}</h3>
       <div class="muted" style="margin-bottom:14px">${escapeHtml(assetCategoryMeta(it.category).label)} · มูลค่าปัจจุบัน ฿${fmtMoney(it.value)}</div>
       ${renderItemLineChart(it)}
+      ${renderItemTransactionsBlock(it)}
     </div>
   </div>`;
 }
@@ -1763,6 +1861,14 @@ function renderAssets(){
     </div>
     <div class="muted">ไม่มี PDF ก็กรอกมูลค่ารวมของเดือนนั้นด้วยมือในช่องนี้ได้เลย</div>
   </div>
+
+  <div class="panel">
+    <h3>นำเข้าใบยืนยันการซื้อขาย (Confirmation Note)</h3>
+    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF "ใบยืนยันการซื้อขาย" ที่ Dime ส่งทางอีเมลทุกครั้งที่มีการซื้อขาย (คนละไฟล์กับรายงานพอร์ตรายเดือนด้านบน) ระบบจะอ่านรายการซื้อ/ขายในไฟล์ให้อัตโนมัติ — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน ไฟล์ที่มีรหัสผ่านจะมีกล่องให้กรอกรหัส (วันเกิด 8 หลัก) <b>ระบบจะให้ตรวจรายการทุกแถวก่อนกดยืนยันนำเข้าเสมอ</b> รายการจะถูกผูกเข้ากับสินทรัพย์ที่มี symbol ตรงกันเท่านั้น (ไม่สร้างสินทรัพย์ใหม่ให้อัตโนมัติ)</div>
+    <input type="file" id="confirmationNoteFile" accept="application/pdf" onchange="handleConfirmationNotePdf(event)">
+    <div id="confirmationNoteMsg" class="muted" style="margin-top:8px">${confirmationNoteMsg || ''}</div>
+  </div>
+  ${renderConfirmationNoteReview()}
   ${renderItemChartModal()}
   `;
 }
@@ -1853,6 +1959,163 @@ function confirmDimeImport(){
   saveState(); render();
 }
 function delAssetReport(id){ state.assets.reports = state.assets.reports.filter(r=>r.id!==id); saveState(); render(); }
+
+/* ---------- Confirmation Note (ใบยืนยันการซื้อขาย) PDF import ----------
+   Mirrors the safety pattern of the monthly Dime statement import above (handleDimePdf/
+   confirmDimeImport): parse client-side with pdf.js, never auto-save, always show a
+   review-before-save step. Uses pdf.js's password callback (same 8-digit-birthdate
+   password scheme as the monthly statements) instead of guessing the password. */
+
+// Loads a PDF with pdf.js, prompting for a password via window.prompt if the file needs
+// one (pdf.js calls onPassword again with reason=2 if the entered password was wrong).
+function loadPdfWithPassword(buf){
+  return new Promise((resolve, reject)=>{
+    const loadingTask = window.pdfjsLib.getDocument({
+      data: buf,
+      onPassword: (updatePassword, reason)=>{
+        const msg = reason===2 ? 'รหัสผ่านไม่ถูกต้อง ลองใหม่ (วันเกิด 8 หลัก DDMMYYYY):' : 'ไฟล์นี้มีรหัสผ่าน — กรอกรหัสผ่าน (วันเกิด 8 หลัก DDMMYYYY):';
+        const pw = window.prompt(msg);
+        if(pw == null){ reject(new Error('ยกเลิกการกรอกรหัสผ่าน')); return; }
+        updatePassword(pw);
+      }
+    });
+    loadingTask.promise.then(resolve, reject);
+  });
+}
+// pdf.js's getTextContent() returns positioned text items, not a reconstructed layout like
+// pdftotext -layout would — so to get back readable "rows" (needed to match the 3-line
+// OrderID/date/side/units/price block per trade) we group items by Y-coordinate (small
+// tolerance for items on the same visual line) and sort each group by X.
+async function extractPdfLines(pdf){
+  const lines = [];
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const items = content.items.map(it=>({str:it.str, x:it.transform[4], y:it.transform[5]})).filter(it=>it.str.trim());
+    const groups = [];
+    items.forEach(it=>{
+      let g = groups.find(g=>Math.abs(g.y-it.y)<=2.5);
+      if(!g){ g = {y: it.y, items: []}; groups.push(g); }
+      g.items.push(it);
+    });
+    groups.sort((a,b)=>b.y-a.y); // top of page first
+    groups.forEach(g=>{
+      g.items.sort((a,b)=>a.x-b.x);
+      lines.push(g.items.map(it=>it.str).join(' '));
+    });
+  }
+  return lines;
+}
+// Matches the repeating 3-line block per trade in a confirmation note: a symbol line, the
+// OrderID/date/side/units/price/currency line, and an exchange+numbers line whose LAST
+// number is the total THB paid/received. One PDF can contain multiple trades, so this scans
+// every line for the order line and looks one line above/below for symbol/total.
+function parseConfirmationNoteLines(lines){
+  const orderRe = /(\d{5,7})\s+(\d{2})\/(\d{2})\/(\d{4})\s+(BUY|SELL)\s+([\d.]+)\s+([\d.]+)\s+(USD|THB)/;
+  const numRe = /\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?/g;
+  const out = [];
+  for(let i=0;i<lines.length;i++){
+    const m = lines[i].match(orderRe);
+    if(!m) continue;
+    const [, orderId, dd, mm, yyyy, sideRaw, unitsRaw, priceRaw, currency] = m;
+    const symLine = lines[i-1] || '';
+    const symMatch = symLine.match(/^([A-Z]{1,6})\b/);
+    const symbol = symMatch ? symMatch[1] : '';
+    const totalLine = lines[i+1] || '';
+    const nums = totalLine.match(numRe) || [];
+    const totalTHB = nums.length ? parseFloat(nums[nums.length-1].replace(/,/g,'')) : null;
+    out.push({
+      symbol, date: `${yyyy}-${mm}-${dd}`, side: sideRaw.toLowerCase(),
+      units: parseFloat(unitsRaw), price: parseFloat(priceRaw), currency,
+      totalTHB, orderId
+    });
+  }
+  return out;
+}
+
+// confirmationNoteRows: transient (not persisted) preview of parsed-but-not-yet-saved
+// transactions, shown for human review before anything is written to state — same
+// require-confirmation safety pattern as the Dime monthly-statement import above.
+let confirmationNoteRows = null;
+let confirmationNoteMsg = null;
+async function handleConfirmationNotePdf(evt){
+  const file = evt.target.files[0];
+  confirmationNoteRows = null;
+  if(!file) return;
+  confirmationNoteMsg = '<span class="muted">กำลังอ่านไฟล์...</span>';
+  render();
+  try{
+    await ensurePdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await loadPdfWithPassword(buf);
+    const lines = await extractPdfLines(pdf);
+    const parsed = parseConfirmationNoteLines(lines);
+    if(!parsed.length){
+      confirmationNoteMsg = `<span style="color:var(--amber)">อ่านไฟล์ได้ (${pdf.numPages} หน้า) แต่ไม่พบรายการซื้อขายที่จับรูปแบบได้ — ลองตรวจไฟล์อีกครั้ง</span>`;
+    } else {
+      confirmationNoteRows = parsed.map(p=>({...p, checked:true}));
+      confirmationNoteMsg = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ พบ ${parsed.length} รายการ — ตรวจสอบด้านล่างก่อนกดยืนยันนำเข้า</span>`;
+    }
+  }catch(err){
+    confirmationNoteMsg = `<span style="color:var(--coral)">ไม่สามารถอ่านไฟล์นี้ได้ ลองตรวจสอบรหัสผ่านหรือรูปแบบไฟล์ (${escapeHtml(err && err.message || '')})</span>`;
+  }
+  render();
+}
+// Review-before-save table — every parsed row gets a checkbox (checked by default) and an
+// editable symbol field, since OCR/layout parsing can occasionally get the symbol wrong.
+// Rows whose symbol doesn't match any existing holding are flagged and simply skipped on
+// confirm (this import path is additive-only to existing holdings, never creates new items).
+function renderConfirmationNoteReview(){
+  if(!confirmationNoteRows || !confirmationNoteRows.length) return '';
+  const rows = confirmationNoteRows;
+  return `
+  <div class="panel">
+    <h3>ตรวจสอบก่อนนำเข้า (${rows.length} รายการ)</h3>
+    <table class="table">
+      <tr><th></th><th>วันที่</th><th>Symbol</th><th>ฝั่ง</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">ราคา</th><th style="text-align:right">รวม (THB)</th><th></th></tr>
+      ${rows.map((r,i)=>{
+        const matched = state.assets.items.some(it=>String(it.symbol||'').toUpperCase()===String(r.symbol||'').toUpperCase());
+        return `<tr>
+          <td><input type="checkbox" id="cnRow_${i}" ${r.checked?'checked':''}></td>
+          <td class="mono">${fmtDate(r.date)}</td>
+          <td><input type="text" id="cnSym_${i}" value="${escapeHtml(r.symbol)}" style="max-width:80px" class="mono"></td>
+          <td><span class="tag" style="background:${r.side==='buy'?'var(--teal-pale)':'var(--coral-pale)'}; color:${r.side==='buy'?'var(--teal)':'var(--coral)'}">${r.side==='buy'?'ซื้อ':'ขาย'}</span></td>
+          <td style="text-align:right" class="mono">${r.units}</td>
+          <td style="text-align:right" class="mono">${r.price} ${r.currency}</td>
+          <td style="text-align:right" class="mono">฿${fmtMoney(r.totalTHB)}</td>
+          <td>${matched ? '' : '<span style="font-size:11px; color:var(--coral)">ไม่พบสินทรัพย์ที่ถือครองอยู่ตรงกับสัญลักษณ์นี้ — ข้าม</span>'}</td>
+        </tr>`;
+      }).join('')}
+    </table>
+    <div class="form-row" style="margin-top:12px">
+      <button class="btn" onclick="confirmConfirmationNoteImport()">ยืนยันนำเข้า</button>
+      <button class="btn btn-ghost" onclick="cancelConfirmationNoteImport()">ยกเลิก</button>
+    </div>
+  </div>`;
+}
+function confirmConfirmationNoteImport(){
+  if(!confirmationNoteRows) return;
+  let imported = 0, skipped = 0;
+  confirmationNoteRows.forEach((r,i)=>{
+    const cb = document.getElementById('cnRow_'+i);
+    if(!cb || !cb.checked) return;
+    const symInput = document.getElementById('cnSym_'+i);
+    const symbol = (symInput ? symInput.value : r.symbol).trim();
+    const item = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===symbol.toUpperCase());
+    if(!item){ skipped++; return; }
+    if(!item.transactions) item.transactions = [];
+    item.transactions.push({
+      id: uid(), date: r.date, side: r.side, units: r.units, price: r.price,
+      currency: r.currency, totalTHB: r.totalTHB, orderId: r.orderId, source: 'confirmation-pdf'
+    });
+    imported++;
+  });
+  confirmationNoteRows = null;
+  confirmationNoteMsg = `<span style="color:var(--teal)">นำเข้า ${imported} รายการ${skipped ? ` (ข้าม ${skipped} รายการที่ไม่พบสินทรัพย์ตรงกัน)` : ''}</span>`;
+  saveState();
+  render();
+}
+function cancelConfirmationNoteImport(){ confirmationNoteRows = null; render(); }
 function addAssetItem(){
   const name = document.getElementById('assetName').value.trim();
   const category = document.getElementById('assetCategory').value;
@@ -1861,7 +2124,7 @@ function addAssetItem(){
   const costBasis = parseFloat(document.getElementById('assetCostBasis').value) || 0;
   if(!name || !value) return;
   const today = todayISO();
-  state.assets.items.push({id:uid(), name, category, assetType:'', value, costBasis, note, updated: today, valueHistory:[{date:today, value}]});
+  state.assets.items.push({id:uid(), name, category, assetType:'', value, costBasis, note, updated: today, transactions:[], valueHistory:[{date:today, value}]});
   document.getElementById('assetName').value = '';
   document.getElementById('assetValue').value = '';
   document.getElementById('assetCostBasis').value = '';
