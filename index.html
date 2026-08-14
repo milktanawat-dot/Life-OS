@@ -772,6 +772,27 @@ function loadState(){
         // in memory on every load without ever landing in localStorage.
         try{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }catch(e){}
       }
+      // Separate one-time backfill for confirmation-note transaction history. This is needed
+      // in addition to dimeImportV1 above because that flag already fired for browsers that
+      // loaded this app before the 44 real confirmation-note transactions existed — their 10
+      // Dime items are already sitting in assets.items with transactions:[] (from the plain
+      // backfill above) and dimeImportV1 being true means the seed never runs again, so those
+      // real buy records would otherwise never reach this browser. Runs once via its own flag,
+      // matching existing dimeSourced items by symbol and only filling in ones that are still
+      // empty (so it never clobbers real transactions a user has since added or edited).
+      if(!s.assets.dimeConfirmationTxnsV1){
+        const seed = dimeImportSeed();
+        (s.assets.items||[]).forEach(it=>{
+          if(!it.dimeSourced || !it.symbol) return;
+          if(it.transactions && it.transactions.length) return;
+          const seedItem = seed.items.find(si=>si.symbol===it.symbol);
+          if(seedItem && seedItem.transactions && seedItem.transactions.length){
+            it.transactions = seedItem.transactions;
+          }
+        });
+        s.assets.dimeConfirmationTxnsV1 = true;
+        try{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }catch(e){}
+      }
       if(s.running){
         // Older saves had static weekKm/weekLabel/goalNote fields that were never
         // recomputed — the "Today" card now always derives these from activities,
