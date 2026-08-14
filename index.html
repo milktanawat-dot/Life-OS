@@ -367,12 +367,20 @@ function renderActivityDonut(activities){
 }
 
 /* ---------- Assets / net worth (manual items + Dime portfolio snapshots) ---------- */
+// Dime holdings switched from being tracked as one lump monthly PDF-report total to being
+// tracked as individual items (see dimeImportSeed()) as of this date — the date of the Dime
+// items' single valueHistory snapshot. Before this date we only have the monthly report
+// totals (no item-level breakdown), so those still count. On/after this date the items are
+// the source of truth, so adding the report total on top would double-count the same money
+// (this was the cause of the reported "net worth jumped to 60k+" bug).
+const DIME_ITEM_TRACKING_START = '2026-07-31';
 function assetsItemsTotal(){ return state.assets.items.reduce((s,a)=>s+(Number(a.value)||0),0); }
 function assetsSortedReports(){ return [...state.assets.reports].sort((a,b)=>String(a.month).localeCompare(String(b.month))); }
 function assetsLatestReport(){ const r = assetsSortedReports(); return r.length ? r[r.length-1] : null; }
 function assetsDebtsTotal(){ return (state.assets.debts||[]).reduce((s,d)=>s+(Number(d.amount)||0),0); }
-// Net worth = manual items + latest Dime portfolio snapshot − total debts/liabilities.
-function assetsNetWorth(){ const latest = assetsLatestReport(); return assetsItemsTotal() + (latest ? latest.totalValue : 0) - assetsDebtsTotal(); }
+// Net worth is defined identically to "value as of today" (see assetsValueAt) so the
+// headline stat and the rightmost point of the portfolio line chart can never disagree.
+function assetsNetWorth(){ return assetsValueAt(todayISO()); }
 function assetsMoM(){
   const r = assetsSortedReports();
   if(r.length < 2) return null;
@@ -403,16 +411,16 @@ function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) ||
 function dimeImportSeed(){
   return {
     items: [
-      {id:uid(), name:'MSTR — Strategy Inc', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:9861, costBasis:12803, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:9861}]},
-      {id:uid(), name:'SPCX — Space Exploration Technologies', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:1321, costBasis:1978, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1321}]},
-      {id:uid(), name:'TSLA — Tesla, Inc.', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:914, costBasis:1171, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:914}]},
-      {id:uid(), name:'AGG — iShares Core U.S. Aggregate Bond', assetType:'ETF ตราสารหนี้ (Dime)', category:'bond', value:2385, costBasis:2406, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:2385}]},
-      {id:uid(), name:'IVV — iShares Core S&P 500 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:6690, costBasis:6231, note:'Dime Offshore (2 บัญชีรวมกัน)', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:6690}]},
-      {id:uid(), name:'MSTY — YieldMax MSTR Option Income', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1562, costBasis:2129, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1562}]},
-      {id:uid(), name:'QQQM — Invesco NASDAQ 100 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:4857, costBasis:4392, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:4857}]},
-      {id:uid(), name:'VEA — Vanguard FTSE Developed Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:1978, costBasis:1881, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1978}]},
-      {id:uid(), name:'VWO — Vanguard FTSE Emerging Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:578, costBasis:570, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:578}]},
-      {id:uid(), name:'YMAG — YieldMax Magnificent 7 Fund of Options', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1054, costBasis:1133, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1054}]}
+      {id:uid(), name:'MSTR — Strategy Inc', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:9861, costBasis:12803, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'MSTR', units:3.1789085, currency:'USD', valueHistory:[{date:'2026-07-31', value:9861}]},
+      {id:uid(), name:'SPCX — Space Exploration Technologies', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:1321, costBasis:1978, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'SPCX', units:0.3667273, currency:'USD', valueHistory:[{date:'2026-07-31', value:1321}]},
+      {id:uid(), name:'TSLA — Tesla, Inc.', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:914, costBasis:1171, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'TSLA', units:0.0883761, currency:'USD', valueHistory:[{date:'2026-07-31', value:914}]},
+      {id:uid(), name:'AGG — iShares Core U.S. Aggregate Bond', assetType:'ETF ตราสารหนี้ (Dime)', category:'bond', value:2385, costBasis:2406, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'AGG', units:0.7367484, currency:'USD', valueHistory:[{date:'2026-07-31', value:2385}]},
+      {id:uid(), name:'IVV — iShares Core S&P 500 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:6690, costBasis:6231, note:'Dime Offshore (2 บัญชีรวมกัน)', updated:'2026-07-31', dimeSourced:true, symbol:'IVV', units:0.2681735, currency:'USD', valueHistory:[{date:'2026-07-31', value:6690}]},
+      {id:uid(), name:'MSTY — YieldMax MSTR Option Income', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1562, costBasis:2129, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'MSTY', units:3.7976794, currency:'USD', valueHistory:[{date:'2026-07-31', value:1562}]},
+      {id:uid(), name:'QQQM — Invesco NASDAQ 100 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:4857, costBasis:4392, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'QQQM', units:0.5156489, currency:'USD', valueHistory:[{date:'2026-07-31', value:4857}]},
+      {id:uid(), name:'VEA — Vanguard FTSE Developed Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:1978, costBasis:1881, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VEA', units:0.8419284, currency:'USD', valueHistory:[{date:'2026-07-31', value:1978}]},
+      {id:uid(), name:'VWO — Vanguard FTSE Emerging Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:578, costBasis:570, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'VWO', units:0.2956256, currency:'USD', valueHistory:[{date:'2026-07-31', value:578}]},
+      {id:uid(), name:'YMAG — YieldMax Magnificent 7 Fund of Options', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1054, costBasis:1133, note:'Dime Offshore', updated:'2026-07-31', dimeSourced:true, symbol:'YMAG', units:2.8166050, currency:'USD', valueHistory:[{date:'2026-07-31', value:1054}]}
     ],
     reports: [
       {id:uid(), month:'2026-03', totalValue:15344, source:'dime-pdf', importedAt:'2026-08-14', breakdown:[], note:'Offshore + Thai Securities (KKP Dime)'},
@@ -429,10 +437,21 @@ function itemValueAsOf(item, dateIso){
   if(!hist.length) return Number(item.value)||0;
   const onOrBefore = hist.filter(h=>h.date<=dateIso);
   if(onOrBefore.length) return onOrBefore[onOrBefore.length-1].value;
-  return hist[0].value; // date is before the item's first recorded snapshot — use the earliest we have
+  // Date is before this item's first recorded snapshot. For Dime-sourced items we have zero
+  // information about what that specific holding was worth before its Dime import — that
+  // period is already represented by the monthly report snapshots instead (see
+  // reportValueAsOf), so inheriting the import-day value backward would double it up on the
+  // chart. Non-Dime items (savings, condo, ฯลฯ) keep the old "value was probably similar a
+  // bit earlier" fallback.
+  if(item.dimeSourced) return 0;
+  return hist[0].value; // use the earliest we have
 }
 function itemsTotalAsOf(dateIso){ return state.assets.items.reduce((s,it)=>s+itemValueAsOf(it,dateIso),0); }
 function reportValueAsOf(dateIso){
+  // From DIME_ITEM_TRACKING_START onward, Dime holdings are tracked at item granularity
+  // (see itemValueAsOf/itemsTotalAsOf) — the monthly report total would just be the same
+  // money counted a second time, so it no longer contributes past that cutover.
+  if(dateIso >= DIME_ITEM_TRACKING_START) return 0;
   const ym = dateIso.slice(0,7);
   const r = assetsSortedReports().filter(r=>r.month<=ym);
   return r.length ? r[r.length-1].totalValue : 0;
@@ -651,7 +670,8 @@ function defaultState(){
     },
     settings: {
       intervalsApiKey: '',
-      intervalsAthleteId: '0'
+      intervalsAthleteId: '0',
+      finnhubApiKey: ''
     }
   };
 }
@@ -673,6 +693,12 @@ function loadState(){
       if(!s.assets.items) s.assets.items = [];
       if(!s.assets.reports) s.assets.reports = [];
       if(!s.assets.debts) s.assets.debts = [];
+      if(!s.settings) s.settings = {};
+      if(s.settings.finnhubApiKey == null) s.settings.finnhubApiKey = '';
+      // Backfill currency on items saved before live market-price tracking existed — don't
+      // guess symbol/units for pre-existing non-Dime items, they just aren't eligible for
+      // live refresh until the user (or a later Dime import) sets those explicitly.
+      (s.assets.items||[]).forEach(it=>{ if(it.currency == null) it.currency = 'THB'; });
       // Backfill items saved before category/costBasis/valueHistory existed. Old free-text
       // category values (เงินสด/หุ้น-กองทุน/ฯลฯ) are kept in assetType and mapped onto the
       // new core/satellite/bond/cash/other taxonomy so the category donut still works.
@@ -884,7 +910,7 @@ function renderToday(){
         ${mom ? `<div class="pill ${mom.diff>=0?'pill-teal':'pill-coral'}">${mom.diff>=0?'+':''}${mom.pct!=null?mom.pct+'%':''} MoM</div>` : ''}
       </div>
       <div class="big-stat mono">฿${fmtMoney(netWorth)}</div>
-      <div class="stat-note">สินทรัพย์อื่นๆ ฿${fmtMoney(assetsItemsTotal())} · พอร์ต Dime ฿${fmtMoney(assetsLatestReport()?assetsLatestReport().totalValue:0)}${assetsDebtsTotal()?(' · หนี้สิน ฿'+fmtMoney(assetsDebtsTotal())):''}</div>
+      <div class="stat-note">สินทรัพย์รวม ฿${fmtMoney(assetsItemsTotal())}${assetsDebtsTotal()?(' · หนี้สิน ฿'+fmtMoney(assetsDebtsTotal())):''} (พอร์ต Dime รวมอยู่ในนี้แล้ว — พอร์ต Dime ล่าสุดจากรายงาน PDF ฿${fmtMoney(assetsLatestReport()?assetsLatestReport().totalValue:0)} เป็นข้อมูลอ้างอิงเฉยๆ)</div>
       ${state.assets.items.length ? renderGenericDonut(assetsByCategoryDonutEntries(), {size:78, emptyText:''}) : ''}
     </div>
 
@@ -1540,6 +1566,7 @@ function renderAssetsLineChart(series, mode){
 }
 
 let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
+let livePriceMsg = null; // {ok:bool, html:string} — last refreshLivePrices() result, shown near the refresh button
 function setAssetsChartMode(mode){ assetsChartMode = mode; render(); }
 
 function renderAssets(){
@@ -1556,21 +1583,21 @@ function renderAssets(){
 
   return `
   <div class="section-title">ทรัพย์สิน</div>
-  <div class="section-sub">มูลค่าสุทธิรวม — พอร์ต Dime (นำเข้าจาก PDF รายเดือน) บวกกับสินทรัพย์อื่นๆ ที่เพิ่มเอง หักหนี้สิน</div>
+  <div class="section-sub">มูลค่าสุทธิรวม — ผลรวมสินทรัพย์ทุกรายการ (รวมโฮลดิ้ง Dime รายตัว) หักหนี้สิน</div>
 
   <div class="grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:18px">
     <div class="card">
       <div class="card-sub">มูลค่าสุทธิรวม</div>
       <div class="big-stat mono">฿${fmtMoney(netWorth)}</div>
-      ${mom ? `<div class="stat-note" style="color:${mom.diff>=0?'var(--teal)':'var(--coral)'}">${mom.diff>=0?'+':''}฿${fmtMoney(mom.diff)} (${mom.pct!=null?mom.pct+'%':''}) จากเดือนก่อน</div>` : '<div class="stat-note">ยังไม่มีข้อมูลเทียบเดือนก่อน</div>'}
+      ${mom ? `<div class="stat-note" style="color:${mom.diff>=0?'var(--teal)':'var(--coral)'}">${mom.diff>=0?'+':''}฿${fmtMoney(mom.diff)} (${mom.pct!=null?mom.pct+'%':''}) เทียบรายงาน Dime ครั้งก่อน</div>` : '<div class="stat-note">ยังไม่มีข้อมูลเทียบเดือนก่อน</div>'}
     </div>
     <div class="card">
-      <div class="card-sub">พอร์ต Dime ล่าสุด</div>
+      <div class="card-sub">พอร์ต Dime ล่าสุด (อ้างอิงจาก PDF)</div>
       <div class="big-stat mono">฿${fmtMoney(latest?latest.totalValue:0)}</div>
-      <div class="stat-note">${latest ? ymLabel(latest.month) + ' · นำเข้า ' + fmtDate(latest.importedAt) : 'ยังไม่เคยนำเข้า'}</div>
+      <div class="stat-note">${latest ? ymLabel(latest.month) + ' · นำเข้า ' + fmtDate(latest.importedAt) + ' — ข้อมูลอ้างอิง ไม่ได้บวกซ้ำเข้ามูลค่าสุทธิ' : 'ยังไม่เคยนำเข้า'}</div>
     </div>
     <div class="card">
-      <div class="card-sub">สินทรัพย์อื่นๆ</div>
+      <div class="card-sub">สินทรัพย์ทั้งหมด</div>
       <div class="big-stat mono">฿${fmtMoney(assetsItemsTotal())}</div>
       <div class="stat-note">${a.items.length} รายการ</div>
     </div>
@@ -1604,9 +1631,13 @@ function renderAssets(){
   </div>
 
   <div class="panel">
-    <h3>รายการสินทรัพย์ (แยกรายชิ้น)</h3>
-    <div class="muted" style="margin-bottom:10px">แอปนี้ไม่มีฟีดราคาตลาดสด — กด "อัพเดทมูลค่า" ต่อรายการเพื่อบันทึกมูลค่าล่าสุดด้วยตัวเอง ระบบจะเก็บประวัติไว้ทำกราฟ sparkline และเส้นพอร์ตรวมด้านบน</div>
-    ${a.items.length ? a.items.map(it=>{
+    <div class="ribbon-head" style="margin-bottom:6px">
+      <h3>รายการสินทรัพย์ (แยกรายชิ้น)</h3>
+      <button class="btn btn-ghost btn-sm" onclick="refreshLivePrices()">📈 รีเฟรชราคาตลาด</button>
+    </div>
+    <div id="livePriceMsg">${livePriceMsg ? livePriceMsg.html : ''}</div>
+    <div class="muted" style="margin-bottom:10px">เรียงตามมูลค่าปัจจุบันมากไปน้อย — กด "อัพเดทมูลค่า" ต่อรายการเพื่อบันทึกมูลค่าเอง หรือรายการที่มีแท็ก 📈 ใส่ symbol/units ไว้แล้วสามารถกด "รีเฟรชราคาตลาด" ด้านบนเพื่อดึงราคาจริงได้ (ต้องตั้งค่า Finnhub API key ที่หน้า "ตั้งค่า" ก่อน — เฉพาะหุ้น/ETF ต่างประเทศเท่านั้น) ระบบจะเก็บประวัติไว้ทำกราฟ sparkline และเส้นพอร์ตรวมด้านบน</div>
+    ${a.items.length ? [...a.items].sort((x,y)=>(Number(y.value)||0)-(Number(x.value)||0)).map(it=>{
       const cat = assetCategoryMeta(it.category);
       const gain = (Number(it.value)||0) - (Number(it.costBasis)||0);
       const gainPct = it.costBasis ? Math.round(1000*gain/it.costBasis)/10 : null;
@@ -1615,7 +1646,7 @@ function renderAssets(){
       <div class="form-row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--line)">
         <span style="width:34px; height:34px; border-radius:10px; background:${cat.color}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0">${escapeHtml((it.name||'?').slice(0,1))}</span>
         <div style="min-width:150px; flex:1">
-          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}</div>
+          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}</div>
           <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}</div>
         </div>
         <div style="min-width:72px">${renderSparkline(it.valueHistory)}</div>
@@ -1802,6 +1833,67 @@ function updateAssetItemValue(id){
   }
   saveState(); render();
 }
+// Live market-price refresh for stocks/ETFs. Uses Finnhub's free quote endpoint (needs a
+// user-supplied API key, see Settings) for the price and Frankfurter's free no-key FX API
+// for USD→THB, fetched once per batch and reused across all USD items. Only items with both
+// `symbol` and `units` set are eligible — everything else keeps working via the manual
+// "อัพเดทมูลค่า" flow untouched. Mirrors the exact same-day valueHistory de-dup convention as
+// updateAssetItemValue() so history doesn't grow a duplicate entry per refresh in one day.
+async function refreshLivePrices(){
+  const key = state.settings.finnhubApiKey;
+  if(!key){
+    livePriceMsg = {ok:false, html:`<div class="msg msg-err">ยังไม่ได้ใส่ Finnhub API key — ไปที่หน้า "ตั้งค่า" ก่อน</div>`};
+    render();
+    return;
+  }
+  const eligible = state.assets.items.filter(it=>it.symbol && it.units);
+  if(!eligible.length){
+    livePriceMsg = {ok:false, html:`<div class="muted">ยังไม่มีสินทรัพย์ที่ตั้งค่า symbol/units ไว้สำหรับดึงราคาสด</div>`};
+    render();
+    return;
+  }
+  livePriceMsg = {ok:true, html:`<div class="muted">กำลังดึงราคาตลาด...</div>`};
+  render();
+
+  let fxRate = null;
+  if(eligible.some(it=>it.currency==='USD')){
+    try{
+      const fxRes = await fetch('https://api.frankfurter.app/latest?from=USD&to=THB');
+      if(fxRes.ok){
+        const fxData = await fxRes.json();
+        fxRate = fxData && fxData.rates ? Number(fxData.rates.THB) : null;
+      }
+    }catch(e){ fxRate = null; }
+  }
+
+  const today = todayISO();
+  let ok = 0, fail = 0;
+  for(const it of eligible){
+    try{
+      if(it.currency === 'USD' && !fxRate) throw new Error('no fx rate');
+      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(it.symbol)}&token=${encodeURIComponent(key)}`);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const price = Number(data && data.c);
+      if(!(price>0)) throw new Error('no price');
+      const value = Math.round(it.currency === 'USD' ? it.units * price * fxRate : it.units * price);
+      it.value = value;
+      it.updated = today;
+      if(!it.valueHistory) it.valueHistory = [];
+      if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
+        it.valueHistory[it.valueHistory.length-1].value = value;
+      } else {
+        it.valueHistory.push({date: today, value});
+      }
+      ok++;
+    }catch(e){ fail++; }
+  }
+  saveState();
+  livePriceMsg = fail
+    ? {ok:false, html:`<div class="msg msg-err">อัพเดท ${ok}/${eligible.length} รายการ — ${fail} รายการดึงราคาไม่สำเร็จ</div>`}
+    : {ok:true, html:`<div class="msg msg-ok">อัพเดทราคาตลาดสำเร็จ ${ok}/${eligible.length} รายการ</div>`};
+  render();
+}
 function addDebt(){
   const name = document.getElementById('debtName').value.trim();
   const amount = parseFloat(document.getElementById('debtAmount').value);
@@ -1836,6 +1928,15 @@ function renderSettings(){
   </div>
 
   <div class="panel">
+    <h3>📈 Finnhub (ราคาตลาดหุ้น/ETF สด)</h3>
+    <div class="muted" style="margin-bottom:10px">สมัครฟรีที่ <a href="https://finnhub.io" target="_blank">finnhub.io</a> แล้วสร้าง API key มาใส่ไว้ตรงนี้ — ใช้สำหรับดึงราคาล่าสุดของหุ้น/ETF รายตัวในหน้า "ทรัพย์สิน" (ปุ่ม "รีเฟรชราคาตลาด") ครอบคลุมเฉพาะหุ้น/ETF ที่จดทะเบียนในตลาดสหรัฐฯ (เช่นโฮลดิ้ง Dime Offshore) เท่านั้น — หุ้นไทย/SET ไม่รองรับใน free tier ของ Finnhub อัตราแลกเปลี่ยน USD→THB ดึงจาก Frankfurter (ไม่ต้องใช้ key)</div>
+    <div class="form-row">
+      <input type="text" id="finnhubKey" placeholder="Finnhub API key" value="${escapeHtml(s.finnhubApiKey||'')}">
+      <button class="btn" onclick="saveFinnhubSettings()">บันทึก</button>
+    </div>
+  </div>
+
+  <div class="panel">
     <h3>✈ ทริป / Google Calendar</h3>
     <div class="muted">ไม่ต้องตั้งค่าอะไร — ใช้ปุ่ม "+ Calendar" ต่อวันในหน้าทริป (เปิดหน้าสร้างอีเวนต์ของ Google Calendar ให้ทันที) หรือปุ่ม "Export .ics" เพื่อ import ทั้งทริปเข้า Calendar ทีเดียว การเชื่อมแบบเต็มรูปแบบผ่าน OAuth ทำได้ แต่ต้องสร้าง Google Cloud OAuth client ก่อน ซึ่งเป็นขั้นตอนที่พี่ต้องทำเองผ่านบัญชี Google — บอกได้ถ้าอยากให้ทำส่วนนี้ต่อ</div>
   </div>
@@ -1858,6 +1959,10 @@ function renderSettings(){
 function saveIntervalsSettings(){
   state.settings.intervalsApiKey = document.getElementById('intervalsKey').value.trim();
   state.settings.intervalsAthleteId = document.getElementById('intervalsAthlete').value.trim() || '0';
+  saveState(); render();
+}
+function saveFinnhubSettings(){
+  state.settings.finnhubApiKey = document.getElementById('finnhubKey').value.trim();
   saveState(); render();
 }
 function saveHealthSettings(){
