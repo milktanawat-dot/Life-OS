@@ -793,6 +793,27 @@ function loadState(){
         s.assets.dimeConfirmationTxnsV1 = true;
         try{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }catch(e){}
       }
+      // Same story as dimeConfirmationTxnsV1 above, but for the real Mar/Apr valueHistory
+      // points added to IVV/QQQM/VEA (used by the per-item sparkline + detail chart). Browsers
+      // that already had dimeImportV1 fire before those points were added would otherwise be
+      // stuck with a single July-31 point forever — sparkline shows "—" and the modal says
+      // "มีข้อมูลจุดเดียว" even though real earlier data exists. Merges by date so a user's own
+      // manually-added valueHistory entries are kept and never duplicated.
+      if(!s.assets.dimeValueHistoryV1){
+        const seed = dimeImportSeed();
+        (s.assets.items||[]).forEach(it=>{
+          if(!it.dimeSourced || !it.symbol) return;
+          const seedItem = seed.items.find(si=>si.symbol===it.symbol);
+          if(!seedItem || !seedItem.valueHistory || !seedItem.valueHistory.length) return;
+          const existingDates = new Set((it.valueHistory||[]).map(h=>h.date));
+          const missing = seedItem.valueHistory.filter(h=>!existingDates.has(h.date));
+          if(missing.length){
+            it.valueHistory = (it.valueHistory||[]).concat(missing).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+          }
+        });
+        s.assets.dimeValueHistoryV1 = true;
+        try{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }catch(e){}
+      }
       if(s.running){
         // Older saves had static weekKm/weekLabel/goalNote fields that were never
         // recomputed — the "Today" card now always derives these from activities,
