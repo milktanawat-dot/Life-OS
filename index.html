@@ -394,6 +394,34 @@ const ASSET_CATEGORIES = [
 ];
 function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) || ASSET_CATEGORIES[ASSET_CATEGORIES.length-1]; }
 
+// Real Dime portfolio data, parsed once from the user's own Dime monthly statement PDFs:
+// offshore account holdings as of 31 Jul 2026 (THB @ that day's BOT rate, 33.25/USD), plus
+// combined offshore+Thai net-worth snapshots for Mar/Apr/Jul 2026 (May/Jun statements weren't
+// available for the main account, so those months are skipped rather than shown as a
+// misleading dip). Shared by defaultState() (fresh installs) and loadState()'s one-time
+// dimeImportV1 migration (existing installs) so there's one copy of the numbers to maintain.
+function dimeImportSeed(){
+  return {
+    items: [
+      {id:uid(), name:'MSTR — Strategy Inc', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:9861, costBasis:12803, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:9861}]},
+      {id:uid(), name:'SPCX — Space Exploration Technologies', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:1321, costBasis:1978, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1321}]},
+      {id:uid(), name:'TSLA — Tesla, Inc.', assetType:'หุ้นต่างประเทศ (Dime)', category:'satellite', value:914, costBasis:1171, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:914}]},
+      {id:uid(), name:'AGG — iShares Core U.S. Aggregate Bond', assetType:'ETF ตราสารหนี้ (Dime)', category:'bond', value:2385, costBasis:2406, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:2385}]},
+      {id:uid(), name:'IVV — iShares Core S&P 500 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:6690, costBasis:6231, note:'Dime Offshore (2 บัญชีรวมกัน)', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:6690}]},
+      {id:uid(), name:'MSTY — YieldMax MSTR Option Income', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1562, costBasis:2129, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1562}]},
+      {id:uid(), name:'QQQM — Invesco NASDAQ 100 ETF', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:4857, costBasis:4392, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:4857}]},
+      {id:uid(), name:'VEA — Vanguard FTSE Developed Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:1978, costBasis:1881, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1978}]},
+      {id:uid(), name:'VWO — Vanguard FTSE Emerging Markets', assetType:'ETF ต่างประเทศ (Dime)', category:'core', value:578, costBasis:570, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:578}]},
+      {id:uid(), name:'YMAG — YieldMax Magnificent 7 Fund of Options', assetType:'ETF ต่างประเทศ (Dime)', category:'satellite', value:1054, costBasis:1133, note:'Dime Offshore', updated:'2026-07-31', valueHistory:[{date:'2026-07-31', value:1054}]}
+    ],
+    reports: [
+      {id:uid(), month:'2026-03', totalValue:15344, source:'dime-pdf', importedAt:'2026-08-14', breakdown:[], note:'Offshore + Thai Securities (KKP Dime)'},
+      {id:uid(), month:'2026-04', totalValue:16716, source:'dime-pdf', importedAt:'2026-08-14', breakdown:[], note:'Offshore + Thai Securities (KKP Dime)'},
+      {id:uid(), month:'2026-07', totalValue:31233, source:'dime-pdf', importedAt:'2026-08-14', breakdown:[], note:'Offshore x2 บัญชี (KKP Dime)'}
+    ]
+  };
+}
+
 // Best-known value of one item as of a given date, from its valueHistory —
 // used to reconstruct a net-worth-over-time line without any live market feed.
 function itemValueAsOf(item, dateIso){
@@ -589,19 +617,19 @@ function defaultState(){
         {id:uid(), name:'เงินฝากออมทรัพย์', assetType:'เงินสด', category:'cash', value:150000, costBasis:150000, note:'', updated:t, demo:true,
           valueHistory:[{date:addDays(t,-60), value:140000}, {date:addDays(t,-30), value:145000}, {date:t, value:150000}]},
         {id:uid(), name:'คอนโด (ราคาประเมิน)', assetType:'อสังหาริมทรัพย์', category:'other', value:2800000, costBasis:2500000, note:'', updated:t, demo:true,
-          valueHistory:[{date:addDays(t,-60), value:2750000}, {date:t, value:2800000}]}
+          valueHistory:[{date:addDays(t,-60), value:2750000}, {date:t, value:2800000}]},
+        ...dimeImportSeed().items
       ],
       // Monthly portfolio snapshots — added by importing a Dime PDF statement (parsed client-side)
-      // or typed in by hand. Charted as a line over time in the "ทรัพย์สิน" page.
-      reports: [
-        {id:uid(), month: addDays(t,-60).slice(0,7), totalValue: 812000, source:'manual', importedAt: addDays(t,-60), breakdown:[], demo:true},
-        {id:uid(), month: addDays(t,-30).slice(0,7), totalValue: 845000, source:'manual', importedAt: addDays(t,-30), breakdown:[], demo:true},
-        {id:uid(), month: t.slice(0,7), totalValue: 869000, source:'manual', importedAt: t, breakdown:[], demo:true}
-      ],
+      // or typed in by hand. Charted as a line over time in the "ทรัพย์สิน" page. Seeded with the
+      // real Dime history (see dimeImportSeed) instead of placeholder demo months, so the chart
+      // shows real data from the very first load.
+      reports: [...dimeImportSeed().reports],
       // Liabilities — subtracted from assetsNetWorth(). No live data source, entered by hand.
       debts: [
         {id:uid(), name:'ผ่อนคอนโด (คงเหลือ)', amount:1200000, note:'', demo:true}
-      ]
+      ],
+      dimeImportV1: true
     },
     trips: {
       list: [
@@ -660,6 +688,27 @@ function loadState(){
           if(!it.valueHistory) it.valueHistory = [{date: it.updated || todayISO(), value: Number(it.value)||0}];
         });
       })();
+      // One-time seed of real Dime portfolio data (parsed from the user's own Dime monthly
+      // statement PDFs, offshore account holdings as of 31 Jul 2026, THB @ that day's BOT rate
+      // of 33.25/USD, plus combined offshore+Thai net-worth snapshots for Mar/Apr/Jul 2026 —
+      // May/Jun statements weren't available for the main account so those months are skipped
+      // rather than shown as a misleading dip). Runs once per browser via the dimeImportV1 flag;
+      // items land in the normal editable/deletable assets.items list afterwards like any other
+      // holding, so nothing here is special-cased beyond this one seed.
+      if(!s.assets.dimeImportV1){
+        const seed = dimeImportSeed();
+        s.assets.items.push(...seed.items);
+        seed.reports.forEach(rep=>{
+          const idx = s.assets.reports.findIndex(r=>r.month===rep.month);
+          if(idx>=0) s.assets.reports[idx] = rep; else s.assets.reports.push(rep);
+        });
+        s.assets.dimeImportV1 = true;
+        // Persist immediately (unlike the rest of this function, which only mutates the
+        // in-memory copy) so the seed survives even if the user closes the tab before any
+        // other action would have called saveState() — otherwise it'd silently re-derive
+        // in memory on every load without ever landing in localStorage.
+        try{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }catch(e){}
+      }
       if(s.running){
         // Older saves had static weekKm/weekLabel/goalNote fields that were never
         // recomputed — the "Today" card now always derives these from activities,
