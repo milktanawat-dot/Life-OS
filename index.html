@@ -74,6 +74,7 @@ a{color:inherit;}
 .icon-work{background:linear-gradient(135deg,var(--amber),#F8BC5A); box-shadow:0 6px 14px -6px rgba(245,166,35,.5);}
 .icon-assets{background:linear-gradient(135deg,var(--purple-deep),#8B7FD1); box-shadow:0 6px 14px -6px rgba(90,76,196,.5);}
 .icon-trip{background:linear-gradient(135deg,var(--teal),#4FDBC0); box-shadow:0 6px 14px -6px rgba(34,195,166,.5);}
+.icon-car{background:linear-gradient(135deg,var(--indigo),#8B98FF); box-shadow:0 6px 14px -6px rgba(91,110,245,.5);}
 .icon-capture{background:linear-gradient(135deg,var(--purple),#A79BEE); box-shadow:0 6px 14px -6px rgba(139,127,209,.5);}
 .icon-settings{background:linear-gradient(135deg,var(--amber),#F8BC5A); box-shadow:0 6px 14px -6px rgba(245,166,35,.5);}
 .pill-coral{background:var(--coral-pale); color:var(--coral);}
@@ -185,6 +186,7 @@ a{color:inherit;}
   <button class="nav-item" data-view="work" onclick="nav('work')"><div class="icon">▣</div>งาน</button>
   <button class="nav-item" data-view="trips" onclick="nav('trips')"><div class="icon">✈</div>ทริป</button>
   <button class="nav-item" data-view="assets" onclick="nav('assets')"><div class="icon">◎</div>ทรัพย์สิน</button>
+  <button class="nav-item" data-view="car" onclick="nav('car')"><div class="icon">⚡</div>รถ</button>
   <div class="nav-spacer"></div>
   <button class="nav-item" data-view="settings" onclick="nav('settings')" title="Settings"><div class="icon">⚙</div>ตั้งค่า</button>
   <div class="profile-dot" title="Milk">M</div>
@@ -699,14 +701,33 @@ function defaultState(){
       list: [
         {id:uid(), name:'ทริปอีสาน — Isan in love', vehicle:'Tesla Model 3', startDate: addDays(t,18), budget:15000,
           days:[
-            {date:addDays(t,18), place:'บึงกาฬ', notes:''},
-            {date:addDays(t,19), place:'นครพนม', notes:''},
-            {date:addDays(t,20), place:'สกลนคร', notes:''},
-            {date:addDays(t,21), place:'อุดรฯ', notes:''}
+            {date:addDays(t,18), place:'บึงกาฬ', notes:'', activities:[]},
+            {date:addDays(t,19), place:'นครพนม', notes:'', activities:[]},
+            {date:addDays(t,20), place:'สกลนคร', notes:'', activities:[]},
+            {date:addDays(t,21), place:'อุดรฯ', notes:'', activities:[]}
           ],
-          expenses:[]
+          expenses:[], participants:[], splitExpenses:[]
         }
       ]
+    },
+    // Tesla / car maintenance tracker — odometerKm is the one manually-updated number
+    // everything else is computed from (see carItemStatus()). items are recurring maintenance
+    // types (interval by km and/or by months — either can trigger "due"); serviceLog is the
+    // append-only history of actual service visits, each one able to cover multiple items at
+    // once (mirrors how a single shop visit usually knocks out several maintenance items).
+    car: {
+      vehicle: 'Tesla Model 3',
+      odometerKm: 12000,
+      odometerUpdated: t,
+      items: [
+        {id:uid(), name:'การเปลี่ยนใบปัดน้ำฝน', intervalKm:null, intervalMonths:12, lastServiceDate:t, lastServiceKm:12000, note:''},
+        {id:uid(), name:'การเปลี่ยนไส้กรองอากาศในห้องโดยสาร', intervalKm:null, intervalMonths:24, lastServiceDate:t, lastServiceKm:12000, note:''},
+        {id:uid(), name:'การสลับตำแหน่งยาง', intervalKm:10000, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:''},
+        {id:uid(), name:'การทำความสะอาดบริเวณกล้อง/กระจกหน้าด้วยความแม่นยำ', intervalKm:null, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:'ตามความจำเป็น'},
+        {id:uid(), name:'การทำความสะอาดหม้อน้ำ', intervalKm:null, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:'ตามความจำเป็น'},
+        {id:uid(), name:'การตั้งศูนย์ถ่วงล้อ', intervalKm:null, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:'ตามความจำเป็น'}
+      ],
+      serviceLog: []
     },
     calendar: {
       events: [
@@ -721,6 +742,7 @@ function defaultState(){
   };
 }
 function addDays(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function addMonths(iso, n){ const d = new Date(iso+'T00:00:00'); d.setMonth(d.getMonth()+n); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 
 let state = loadState();
 function loadState(){
@@ -841,6 +863,19 @@ function loadState(){
         });
       }
       delete s.health; // module removed — family health tracking is gone from this build
+      // Backfill for the car/Tesla maintenance tracker and the trip day-activities / bill-split
+      // fields — both added after some browsers already had a saved state. car is seeded fresh
+      // (same as defaultState()) since there's no prior data to preserve; the trips fields just
+      // default to empty so existing trips (place/notes/expenses) are left exactly as they were.
+      if(!s.car) s.car = defaultState().car;
+      if(!s.car.items) s.car.items = [];
+      if(!s.car.serviceLog) s.car.serviceLog = [];
+      if(s.car.odometerKm == null) s.car.odometerKm = 0;
+      (s.trips.list||[]).forEach(tr=>{
+        if(!tr.participants) tr.participants = [];
+        if(!tr.splitExpenses) tr.splitExpenses = [];
+        (tr.days||[]).forEach(d=>{ if(!d.activities) d.activities = []; });
+      });
       return s;
     }catch(e){ console.warn('bad state, resetting'); }
   }
@@ -917,7 +952,7 @@ function render(){
   const h = new Date().getHours();
   document.getElementById('greetingText').textContent = (h<12 ? 'สวัสดีตอนเช้า, Milk' : h<18 ? 'สวัสดีตอนบ่าย, Milk' : 'สวัสดีตอนเย็น, Milk');
   const root = document.getElementById('viewRoot');
-  const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, trips:renderTrips, assets:renderAssets, settings:renderSettings};
+  const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, trips:renderTrips, assets:renderAssets, car:renderCar, settings:renderSettings};
   root.innerHTML = (renderers[currentView] || renderToday)();
 }
 
@@ -935,6 +970,7 @@ function renderToday(){
   const thisMonth = monthSummary(todayISO().slice(0,7));
   const pendingTasks = work.tasks.filter(x=>!x.done).length;
   const upcomingTrip = trips.list.map(tr=>({tr, nd: daysUntil(tr.days[0] ? tr.days[0].date : tr.startDate)})).filter(x=>x.nd>=0).sort((a,b)=>a.nd-b.nd)[0];
+  const carUpcoming = carMostUrgentItem();
   const runWeek = runningWeekSummary();
   const netWorth = assetsNetWorth();
   const mom = assetsMoM();
@@ -1012,6 +1048,17 @@ function renderToday(){
         <div class="stat-note" style="margin-bottom:2px">แผน ${upcomingTrip.tr.days.length} วัน · งบ ฿${fmtMoney(upcomingTrip.tr.budget)}</div>
         <div class="trip-strip">${upcomingTrip.tr.days.slice(0,4).map((d,i)=>`<div class="trip-day"><div class="d">Day ${i+1}</div><div class="place">${escapeHtml(d.place)}</div></div>`).join('')}</div>
       ` : '<div class="muted">ยังไม่มีทริปที่วางแผนไว้</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-car">⚡</div><div><h3>รถ</h3><div class="card-sub">${escapeHtml(state.car.vehicle||'')}</div></div></div>
+        ${carUpcoming ? `<div class="pill ${carUpcoming.st.status==='overdue'?'pill-coral':carUpcoming.st.status==='soon'?'pill-amber':'pill-teal'}">${carUpcoming.st.status==='overdue'?'เลยกำหนด':carUpcoming.st.status==='soon'?'ใกล้ถึงกำหนด':'ปกติ'}</div>` : ''}
+      </div>
+      ${carUpcoming ? `
+        <div style="font-weight:600; font-size:13.5px; margin-bottom:2px">${escapeHtml(carUpcoming.it.name)}</div>
+        <div class="stat-note">${[carUpcoming.st.dueKmLabel, carUpcoming.st.dueDateLabel].filter(Boolean).join(' · ')} · เลขไมล์ ${fmtMoney(state.car.odometerKm)} km</div>
+      ` : '<div class="muted">ยังไม่มีรายการบำรุงรักษาที่ตั้งรอบไว้</div>'}
     </div>
 
     <div class="card">
@@ -1520,7 +1567,7 @@ function renderTrips(){
   const trips = state.trips.list;
   return `
   <div class="section-title">ทริป</div>
-  <div class="section-sub">วางแผนหลายทริป ใส่ค่าใช้จ่ายต่อทริป และ export เข้า Google Calendar ได้โดยไม่ต้องตั้งค่า OAuth (ใช้ .ics import หรือปุ่ม "เพิ่มลง Calendar" ต่อวัน)</div>
+  <div class="section-sub">วางแผนหลายทริป ใส่หลายกิจกรรม/ค่าใช้จ่ายต่อวันได้ หารบิลกับเพื่อนได้ และ export เข้า Google Calendar โดยไม่ต้องตั้งค่า OAuth (ใช้ .ics import หรือปุ่ม "เพิ่มลง Calendar" ต่อวัน)</div>
   <div class="panel">
     <h3>สร้างทริปใหม่</h3>
     <div class="form-row">
@@ -1533,8 +1580,27 @@ function renderTrips(){
   ${trips.map(tr=>renderTripCard(tr)).join('') || '<div class="muted">ยังไม่มีทริป</div>'}
   `;
 }
+// Per-day / per-trip expense totals — sourced entirely from day.activities[].cost (the
+// itemized "went here, spent this much" log). Legacy tr.expenses (the old flat trip-level
+// list this replaced) is still added in for safety in case an older save has entries in it,
+// but the add/edit UI for that list is gone — everything now goes through activities.
+function dayActivitiesTotal(d){ return (d.activities||[]).reduce((s,a)=>s+(Number(a.cost)||0),0); }
+function tripActivitiesTotal(tr){ return tr.days.reduce((s,d)=>s+dayActivitiesTotal(d),0); }
+function tripLegacyExpenseTotal(tr){ return (tr.expenses||[]).reduce((s,e)=>s+(Number(e.amount)||0),0); }
+function tripTotalExpense(tr){ return tripActivitiesTotal(tr) + tripLegacyExpenseTotal(tr); }
+function tripCategoryTotals(tr){
+  const totals = {};
+  tr.days.forEach(d=>(d.activities||[]).forEach(a=>{
+    const c = a.category || 'อื่นๆ';
+    totals[c] = (totals[c]||0) + (Number(a.cost)||0);
+  }));
+  return totals;
+}
+const TRIP_ACTIVITY_CATEGORIES = ['เดินทาง','ที่พัก','อาหาร','อื่นๆ'];
 function renderTripCard(tr){
-  const totalExpense = tr.expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const totalExpense = tripTotalExpense(tr);
+  const catTotals = tripCategoryTotals(tr);
+  const participants = tr.participants || [];
   return `
   <div class="panel trip-card">
     <div class="trip-card-head">
@@ -1548,27 +1614,100 @@ function renderTripCard(tr){
       <div>
         <h3 style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px">แผนแต่ละวัน</h3>
         ${tr.days.map((d,i)=>`
-          <div class="form-row" style="align-items:center">
-            <span class="tag">Day ${i+1}</span>
-            <input type="date" value="${d.date}" onchange="updateTripDay('${tr.id}',${i},'date',this.value)" style="max-width:150px">
-            <input type="text" value="${escapeHtml(d.place)}" placeholder="สถานที่" onchange="updateTripDay('${tr.id}',${i},'place',this.value)">
-            <a href="${gcalLink(d.date, d.place || 'ทริป')}" target="_blank" class="btn btn-ghost btn-sm">+ Calendar</a>
-            <button class="task-del" onclick="delTripDay('${tr.id}',${i})">✕</button>
+          <div style="margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line)">
+            <div class="form-row" style="align-items:center">
+              <span class="tag">Day ${i+1}</span>
+              <input type="date" value="${d.date}" onchange="updateTripDay('${tr.id}',${i},'date',this.value)" style="max-width:150px">
+              <input type="text" value="${escapeHtml(d.place)}" placeholder="สถานที่" onchange="updateTripDay('${tr.id}',${i},'place',this.value)">
+              <a href="${gcalLink(d.date, d.place || 'ทริป')}" target="_blank" class="btn btn-ghost btn-sm">+ Calendar</a>
+              <button class="task-del" onclick="delTripDay('${tr.id}',${i})">✕</button>
+            </div>
+            <div style="margin:8px 0 0 0; padding-left:10px; border-left:2px solid var(--line)">
+              <div class="muted" style="margin-bottom:4px">กิจกรรม/ค่าใช้จ่ายวันนี้${dayActivitiesTotal(d) ? (' — รวม ฿'+fmtMoney(dayActivitiesTotal(d))) : ''}</div>
+              ${(d.activities||[]).map((a,ai)=>`
+                <div class="form-row" style="align-items:center; margin-bottom:5px">
+                  <input type="text" value="${escapeHtml(a.place||'')}" placeholder="กิจกรรม/สถานที่ เช่น รถไฟ, โรงแรม" onchange="updateTripActivity('${tr.id}',${i},${ai},'place',this.value)">
+                  <select onchange="updateTripActivity('${tr.id}',${i},${ai},'category',this.value)" style="max-width:100px">
+                    ${TRIP_ACTIVITY_CATEGORIES.map(c=>`<option value="${c}" ${a.category===c?'selected':''}>${c}</option>`).join('')}
+                  </select>
+                  <input type="number" value="${a.cost||''}" placeholder="บาท" style="max-width:95px" onchange="updateTripActivity('${tr.id}',${i},${ai},'cost',this.value)">
+                  <button class="task-del" onclick="delTripActivity('${tr.id}',${i},${ai})">✕</button>
+                </div>
+              `).join('') || ''}
+              <button class="btn btn-ghost btn-sm" onclick="addTripActivity('${tr.id}',${i})">+ กิจกรรม</button>
+            </div>
           </div>
         `).join('')}
         <button class="btn btn-ghost btn-sm" onclick="addTripDay('${tr.id}')">+ เพิ่มวัน</button>
       </div>
       <div>
-        <h3 style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px">ค่าใช้จ่าย (รวม ฿${fmtMoney(totalExpense)} / งบ ฿${fmtMoney(tr.budget)})</h3>
-        <ul class="small-list">${tr.expenses.map(e=>`<li>${fmtDate(e.date)} — ${escapeHtml(e.item)}: ฿${fmtMoney(e.amount)} <button class="task-del" onclick="delTripExpense('${tr.id}','${e.id}')">✕</button></li>`).join('') || '<li>ยังไม่มีค่าใช้จ่าย</li>'}</ul>
-        <div class="form-row" style="margin-top:8px">
-          <input type="text" id="expItem-${tr.id}" placeholder="รายการ">
-          <input type="number" id="expAmount-${tr.id}" placeholder="บาท" style="max-width:100px">
-          <button class="btn btn-sm" onclick="addTripExpense('${tr.id}')">+</button>
-        </div>
+        <h3 style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px">ค่าใช้จ่ายรวมทั้งทริป</h3>
+        <div class="big-stat mono" style="font-size:22px">฿${fmtMoney(totalExpense)}</div>
+        <div class="stat-note" style="margin-bottom:10px">งบที่ตั้งไว้ ฿${fmtMoney(tr.budget)}${tr.budget ? (' · เหลือ ฿'+fmtMoney(tr.budget-totalExpense)) : ''}</div>
+        ${Object.keys(catTotals).length ? `<ul class="small-list">${Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<li>${escapeHtml(c)}: ฿${fmtMoney(v)}</li>`).join('')}</ul>` : '<div class="muted">ยังไม่มีค่าใช้จ่าย — เพิ่มกิจกรรมในแต่ละวันด้านซ้าย</div>'}
       </div>
     </div>
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--line)">
+      <h3 style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px">หารค่าใช้จ่ายกับเพื่อน</h3>
+      <div class="form-row" style="margin-bottom:8px; align-items:center">
+        ${participants.map((p,pi)=>`<span class="tag">${escapeHtml(p)} <span style="cursor:pointer" onclick="delTripParticipant('${tr.id}',${pi})">✕</span></span>`).join('')}
+        <input type="text" id="tripParticipant-${tr.id}" placeholder="ชื่อเพื่อน" style="max-width:140px">
+        <button class="btn btn-ghost btn-sm" onclick="addTripParticipant('${tr.id}')">+ เพิ่มคน</button>
+      </div>
+      ${participants.length >= 2 ? `
+        <ul class="small-list">${(tr.splitExpenses||[]).map(e=>`<li>${escapeHtml(e.item)}: ฿${fmtMoney(e.amount)} — ${escapeHtml(e.payer)} จ่าย, หารกัน ${e.splitBetween.length} คน <button class="task-del" onclick="delTripSplitExpense('${tr.id}','${e.id}')">✕</button></li>`).join('') || '<li>ยังไม่มีรายการที่หารกัน</li>'}</ul>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="splitItem-${tr.id}" placeholder="รายการ เช่น ค่าที่พัก">
+          <input type="number" id="splitAmount-${tr.id}" placeholder="บาท" style="max-width:100px">
+          <select id="splitPayer-${tr.id}">${participants.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select>
+          <button class="btn btn-sm" onclick="addTripSplitExpense('${tr.id}')">+ เพิ่ม (หารเท่ากันทุกคน)</button>
+        </div>
+        <div style="margin-top:10px">${renderTripSettlement(tr)}</div>
+      ` : '<div class="muted">เพิ่มชื่อเพื่อนอย่างน้อย 2 คนเพื่อเริ่มคำนวณหารค่าใช้จ่าย</div>'}
+    </div>
   </div>
+  `;
+}
+// Settlement math: each split expense's amount is divided equally among its splitBetween
+// list (currently always "everyone in the trip" — see addTripSplitExpense). net = paid - owed
+// per person; positive net means they're owed money back, negative means they still owe.
+// The greedy match-largest-creditor-to-largest-debtor loop below turns that into the smallest
+// possible number of actual payments (standard "settle up" simplification).
+function tripSettlement(tr){
+  const participants = tr.participants || [];
+  const paid = {}, owed = {};
+  participants.forEach(p=>{ paid[p]=0; owed[p]=0; });
+  (tr.splitExpenses||[]).forEach(e=>{
+    paid[e.payer] = (paid[e.payer]||0) + (Number(e.amount)||0);
+    const between = (e.splitBetween && e.splitBetween.length) ? e.splitBetween : participants;
+    const share = (Number(e.amount)||0) / (between.length || 1);
+    between.forEach(p=>{ if(owed[p] == null) owed[p] = 0; owed[p] += share; });
+  });
+  const net = {};
+  participants.forEach(p=>{ net[p] = Math.round(((paid[p]||0)-(owed[p]||0))*100)/100; });
+  const creditors = participants.filter(p=>net[p]>0.5).map(p=>({p, amt:net[p]})).sort((a,b)=>b.amt-a.amt);
+  const debtors = participants.filter(p=>net[p]<-0.5).map(p=>({p, amt:-net[p]})).sort((a,b)=>b.amt-a.amt);
+  const transactions = [];
+  let ci=0, di=0;
+  while(ci<creditors.length && di<debtors.length){
+    const pay = Math.min(creditors[ci].amt, debtors[di].amt);
+    if(pay > 0.5) transactions.push({from: debtors[di].p, to: creditors[ci].p, amount: Math.round(pay)});
+    creditors[ci].amt -= pay; debtors[di].amt -= pay;
+    if(creditors[ci].amt < 0.5) ci++;
+    if(debtors[di].amt < 0.5) di++;
+  }
+  return {paid, owed, net, transactions};
+}
+function renderTripSettlement(tr){
+  const participants = tr.participants || [];
+  const {paid, owed, net, transactions} = tripSettlement(tr);
+  return `
+    <table class="table">
+      <tr><th>คน</th><th style="text-align:right">จ่ายไปจริง</th><th style="text-align:right">ควรจ่าย(ส่วนแบ่ง)</th><th style="text-align:right">สุทธิ</th></tr>
+      ${participants.map(p=>`<tr><td>${escapeHtml(p)}</td><td style="text-align:right" class="mono">฿${fmtMoney(paid[p]||0)}</td><td style="text-align:right" class="mono">฿${fmtMoney(Math.round(owed[p]||0))}</td><td style="text-align:right; color:${(net[p]||0)>=0?'var(--teal)':'var(--coral)'}" class="mono">${(net[p]||0)>=0?'+':''}฿${fmtMoney(Math.round(net[p]||0))}</td></tr>`).join('')}
+    </table>
+    <div class="muted" style="margin-top:8px">สรุปการโอน (จำนวนรายการโอนน้อยที่สุด):</div>
+    <ul class="small-list">${transactions.length ? transactions.map(t=>`<li>${escapeHtml(t.from)} ต้องโอนให้ ${escapeHtml(t.to)}: ฿${fmtMoney(t.amount)}</li>`).join('') : '<li>ทุกคนจ่ายเท่ากันแล้ว ไม่ต้องโอนเพิ่ม</li>'}</ul>
   `;
 }
 function gcalLink(date, title){
@@ -1582,21 +1721,77 @@ function addTrip(){
   const vehicle = document.getElementById('tripVehicle').value.trim();
   const budget = parseFloat(document.getElementById('tripBudget').value) || 0;
   if(!name) return;
-  state.trips.list.push({id:uid(), name, vehicle, startDate:todayISO(), budget, days:[{date:todayISO(), place:'', notes:''}], expenses:[]});
+  state.trips.list.push({id:uid(), name, vehicle, startDate:todayISO(), budget, days:[{date:todayISO(), place:'', notes:'', activities:[]}], expenses:[], participants:[], splitExpenses:[]});
   saveState(); render();
 }
 function delTrip(id){ state.trips.list = state.trips.list.filter(t=>t.id!==id); saveState(); render(); }
-function addTripDay(tripId){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ const last = tr.days[tr.days.length-1]; tr.days.push({date: last?addDays(last.date,1):todayISO(), place:'', notes:''}); saveState(); render(); } }
+function addTripDay(tripId){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ const last = tr.days[tr.days.length-1]; tr.days.push({date: last?addDays(last.date,1):todayISO(), place:'', notes:'', activities:[]}); saveState(); render(); } }
 function delTripDay(tripId, idx){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ tr.days.splice(idx,1); saveState(); render(); } }
 function updateTripDay(tripId, idx, field, value){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr && tr.days[idx]){ tr.days[idx][field] = value; saveState(); } }
-function addTripExpense(tripId){
-  const item = document.getElementById('expItem-'+tripId).value.trim();
-  const amount = parseFloat(document.getElementById('expAmount-'+tripId).value);
-  if(!item || !amount) return;
+// Per-day itinerary activities — each one is a place/thing done that day plus what it cost,
+// replacing the old flat trip-level "ค่าใช้จ่าย" list (see dayActivitiesTotal/tripTotalExpense
+// in renderTripCard) so spend is always tied to the day (and, for the daily/trip summaries,
+// the category) it actually happened on.
+function addTripActivity(tripId, dayIdx){
   const tr = state.trips.list.find(t=>t.id===tripId);
-  if(tr){ tr.expenses.unshift({id:uid(), item, amount, date:todayISO()}); saveState(); render(); }
+  if(!tr || !tr.days[dayIdx]) return;
+  if(!tr.days[dayIdx].activities) tr.days[dayIdx].activities = [];
+  tr.days[dayIdx].activities.push({id:uid(), place:'', category:'อื่นๆ', cost:0, note:''});
+  saveState(); render();
 }
-function delTripExpense(tripId, expId){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ tr.expenses = tr.expenses.filter(e=>e.id!==expId); saveState(); render(); } }
+function delTripActivity(tripId, dayIdx, actIdx){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities) return;
+  tr.days[dayIdx].activities.splice(actIdx,1);
+  saveState(); render();
+}
+function updateTripActivity(tripId, dayIdx, actIdx, field, value){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
+  tr.days[dayIdx].activities[actIdx][field] = field==='cost' ? (parseFloat(value)||0) : value;
+  saveState(); render();
+}
+// Bill-split participants + shared expenses (see tripSettlement() for the payoff math).
+// Removing a participant also drops them from any expense's splitBetween list so the math
+// stays consistent — their share of past expenses is silently dropped, not reassigned.
+function addTripParticipant(tripId){
+  const input = document.getElementById('tripParticipant-'+tripId);
+  const name = input.value.trim();
+  if(!name) return;
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  if(!tr.participants) tr.participants = [];
+  if(!tr.participants.includes(name)) tr.participants.push(name);
+  input.value = '';
+  saveState(); render();
+}
+function delTripParticipant(tripId, idx){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  const name = (tr.participants||[])[idx];
+  tr.participants = (tr.participants||[]).filter((_,i)=>i!==idx);
+  (tr.splitExpenses||[]).forEach(e=>{ e.splitBetween = (e.splitBetween||[]).filter(p=>p!==name); });
+  saveState(); render();
+}
+function addTripSplitExpense(tripId){
+  const item = document.getElementById('splitItem-'+tripId).value.trim();
+  const amount = parseFloat(document.getElementById('splitAmount-'+tripId).value);
+  const payer = document.getElementById('splitPayer-'+tripId).value;
+  if(!item || !amount || !payer) return;
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  if(!tr.splitExpenses) tr.splitExpenses = [];
+  tr.splitExpenses.push({id:uid(), item, amount, payer, splitBetween:[...(tr.participants||[])], date:todayISO()});
+  document.getElementById('splitItem-'+tripId).value = '';
+  document.getElementById('splitAmount-'+tripId).value = '';
+  saveState(); render();
+}
+function delTripSplitExpense(tripId, expId){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  tr.splitExpenses = (tr.splitExpenses||[]).filter(e=>e.id!==expId);
+  saveState(); render();
+}
 function exportTripIcs(tripId){
   const tr = state.trips.list.find(t=>t.id===tripId);
   if(!tr) return;
@@ -1613,6 +1808,157 @@ function exportTripIcs(tripId){
   a.download = tr.name.replace(/[^a-zA-Z0-9ก-๙ ]/g,'') + '.ics';
   a.click();
 }
+
+/* ---------- Car / Tesla maintenance tracker ---------- */
+// Status for one maintenance item, compared against state.car.odometerKm and today's date.
+// Either interval (km, months) can independently push status to "soon"/"overdue" — whichever
+// is closer to due wins, mirroring real "10,000 km or 1 year, whichever comes first" rules.
+// fraction is how far through the interval we are (1.0 = exactly due, >1 = overdue) — used
+// both for the color cutoffs below and to rank items by urgency on the "today" card.
+function carItemStatus(item){
+  const car = state.car;
+  let kmFraction = null, timeFraction = null, dueKmLabel = null, dueDateLabel = null;
+  if(item.intervalKm){
+    const base = Number(item.lastServiceKm)||0;
+    const remainKm = (base + Number(item.intervalKm)) - (Number(car.odometerKm)||0);
+    kmFraction = ((Number(car.odometerKm)||0) - base) / Number(item.intervalKm);
+    dueKmLabel = remainKm >= 0 ? `อีก ${fmtMoney(Math.round(remainKm))} km` : `เลยกำหนด ${fmtMoney(Math.round(-remainKm))} km`;
+  }
+  if(item.intervalMonths && item.lastServiceDate){
+    const dueDate = addMonths(item.lastServiceDate, item.intervalMonths);
+    const nd = daysUntil(dueDate);
+    timeFraction = 1 - (nd / (item.intervalMonths*30.44));
+    dueDateLabel = nd >= 0 ? `${fmtDate(dueDate)} (อีก ${nd} วัน)` : `เลยกำหนด ${fmtDate(dueDate)} (${-nd} วันแล้ว)`;
+  }
+  const fractions = [kmFraction, timeFraction].filter(f=>f!=null);
+  const fraction = fractions.length ? Math.max(...fractions) : null;
+  let status = 'unset', color = 'var(--ink-soft)';
+  if(fraction != null){
+    if(fraction >= 1){ status='overdue'; color='var(--coral)'; }
+    else if(fraction >= 0.8){ status='soon'; color='var(--amber)'; }
+    else { status='ok'; color='var(--teal)'; }
+  }
+  return {status, color, fraction, dueKmLabel, dueDateLabel};
+}
+// The single most urgent item — feeds the "today" overview card. unset items (no interval,
+// "ตามความจำเป็น") are excluded since there's nothing time-bound to warn about.
+function carMostUrgentItem(){
+  return state.car.items.map(it=>({it, st:carItemStatus(it)}))
+    .filter(x=>x.st.status!=='unset')
+    .sort((a,b)=>(b.st.fraction||-Infinity)-(a.st.fraction||-Infinity))[0] || null;
+}
+let carCheckedItems = new Set(); // transient — items ticked for the "log a service visit" panel, not persisted
+function toggleCarChecked(id){ if(carCheckedItems.has(id)) carCheckedItems.delete(id); else carCheckedItems.add(id); render(); }
+function renderCar(){
+  const car = state.car;
+  const rank = {overdue:0, soon:1, ok:2, unset:3};
+  const rows = car.items.map(it=>({it, st:carItemStatus(it)}))
+    .sort((a,b)=> (rank[a.st.status]-rank[b.st.status]) || ((b.st.fraction||0)-(a.st.fraction||0)));
+  const totalSpent = car.serviceLog.reduce((s,l)=>s+(Number(l.cost)||0),0);
+  return `
+  <div class="section-title">รถ</div>
+  <div class="section-sub">ติดตามระยะบำรุงรักษา${car.vehicle?(' — '+escapeHtml(car.vehicle)):''} — ติ๊กรายการที่เพิ่งเข้ารับบริการแล้วบันทึกค่าใช้จ่าย ระบบนับรอบถัดไปให้อัตโนมัติ</div>
+
+  <div class="panel">
+    <div class="form-row" style="align-items:center">
+      <div style="flex:1; min-width:140px">
+        <div class="muted">เลขไมล์ปัจจุบัน</div>
+        <div class="mono" style="font-size:20px; font-weight:700">${fmtMoney(car.odometerKm)} km</div>
+        <div class="muted" style="font-size:11px">อัปเดตล่าสุด ${fmtDate(car.odometerUpdated)}</div>
+      </div>
+      <input type="number" id="carOdo" placeholder="เลขไมล์ใหม่ (km)" style="max-width:140px">
+      <button class="btn btn-ghost btn-sm" onclick="updateCarOdometer()">อัปเดตเลขไมล์</button>
+      <div class="muted" style="margin-left:auto; text-align:right">ค่าบำรุงรักษาสะสม<br><span class="mono" style="font-size:15px; color:var(--ink)">฿${fmtMoney(totalSpent)}</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>รายการบำรุงรักษา</h3>
+    ${rows.map(({it,st})=>`
+      <div class="form-row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--line)">
+        <input type="checkbox" ${carCheckedItems.has(it.id)?'checked':''} onchange="toggleCarChecked('${it.id}')" style="width:18px; height:18px; flex-shrink:0; accent-color:var(--indigo)">
+        <span style="width:9px; height:9px; border-radius:50%; background:${st.color}; flex-shrink:0" title="${st.status}"></span>
+        <div style="flex:1; min-width:160px">
+          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}</div>
+          <div class="muted">${[it.intervalKm?('ทุก '+fmtMoney(it.intervalKm)+' km'):null, it.intervalMonths?('ทุก '+it.intervalMonths+' เดือน'):null].filter(Boolean).join(' หรือ ') || 'ตามความจำเป็น'}</div>
+        </div>
+        <div style="text-align:right; min-width:150px; font-size:12px; color:${st.color}">${[st.dueKmLabel, st.dueDateLabel].filter(Boolean).join(' · ') || '—'}</div>
+        <button class="task-del" onclick="delCarItem('${it.id}')">✕</button>
+      </div>
+    `).join('') || '<div class="muted">ยังไม่มีรายการ</div>'}
+    <div class="form-row" style="margin-top:14px">
+      <input type="text" id="carItemName" placeholder="ชื่อรายการ เช่น เปลี่ยนน้ำมันเบรก">
+      <input type="number" id="carItemIntervalKm" placeholder="ทุกกี่ km (ไม่บังคับ)" style="max-width:140px">
+      <input type="number" id="carItemIntervalMonths" placeholder="ทุกกี่เดือน (ไม่บังคับ)" style="max-width:140px">
+      <button class="btn" onclick="addCarItem()">+ เพิ่มรายการ</button>
+    </div>
+  </div>
+
+  ${carCheckedItems.size ? `
+  <div class="panel">
+    <h3>บันทึกการเข้ารับบริการ (เลือกไว้ ${carCheckedItems.size} รายการ)</h3>
+    <div class="form-row">
+      <input type="date" id="carLogDate" value="${todayISO()}">
+      <input type="number" id="carLogOdo" placeholder="เลขไมล์วันนี้ (km)" value="${car.odometerKm||''}" style="max-width:150px">
+      <input type="number" id="carLogCost" placeholder="ค่าใช้จ่ายรวม (บาท)" style="max-width:150px">
+      <input type="text" id="carLogNote" placeholder="โน้ต (ไม่บังคับ)" style="max-width:160px">
+      <button class="btn" onclick="logCarService()">✓ เสร็จสิ้น</button>
+    </div>
+  </div>` : ''}
+
+  <div class="panel">
+    <h3>ประวัติเข้ารับบริการ</h3>
+    <table class="table">
+      <tr><th>วันที่</th><th>เลขไมล์</th><th>รายการที่ทำ</th><th style="text-align:right">ค่าใช้จ่าย</th><th></th></tr>
+      ${[...car.serviceLog].reverse().map(l=>`<tr><td>${fmtDate(l.date)}</td><td class="mono">${fmtMoney(l.odometerKm)} km</td><td class="muted">${escapeHtml((l.itemNames||[]).join(', '))}${l.note?(' · '+escapeHtml(l.note)):''}</td><td style="text-align:right" class="mono">฿${fmtMoney(l.cost)}</td><td><button class="task-del" onclick="delCarServiceLog('${l.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="5" class="muted">ยังไม่มีประวัติ</td></tr>`}
+    </table>
+  </div>
+  `;
+}
+function updateCarOdometer(){
+  const el = document.getElementById('carOdo');
+  const v = parseFloat(el.value);
+  if(!(v>=0)) return;
+  state.car.odometerKm = v;
+  state.car.odometerUpdated = todayISO();
+  saveState(); render();
+}
+function addCarItem(){
+  const name = document.getElementById('carItemName').value.trim();
+  const intervalKm = parseFloat(document.getElementById('carItemIntervalKm').value) || null;
+  const intervalMonths = parseFloat(document.getElementById('carItemIntervalMonths').value) || null;
+  if(!name) return;
+  state.car.items.push({id:uid(), name, intervalKm, intervalMonths, lastServiceDate: todayISO(), lastServiceKm: state.car.odometerKm||0, note:''});
+  document.getElementById('carItemName').value = '';
+  document.getElementById('carItemIntervalKm').value = '';
+  document.getElementById('carItemIntervalMonths').value = '';
+  saveState(); render();
+}
+function delCarItem(id){ state.car.items = state.car.items.filter(x=>x.id!==id); carCheckedItems.delete(id); saveState(); render(); }
+// Logs one service visit covering every currently-checked item at once (one shop trip, one
+// combined cost) — each covered item's lastServiceDate/lastServiceKm rolls forward to this
+// visit, which is what carItemStatus() uses to compute the next due date/km.
+function logCarService(){
+  const checkedIds = [...carCheckedItems];
+  if(!checkedIds.length) return;
+  const date = document.getElementById('carLogDate').value || todayISO();
+  const odometerKm = parseFloat(document.getElementById('carLogOdo').value) || state.car.odometerKm || 0;
+  const cost = parseFloat(document.getElementById('carLogCost').value) || 0;
+  const note = document.getElementById('carLogNote').value.trim();
+  const itemNames = [];
+  checkedIds.forEach(id=>{
+    const it = state.car.items.find(x=>x.id===id);
+    if(!it) return;
+    itemNames.push(it.name);
+    it.lastServiceDate = date;
+    it.lastServiceKm = odometerKm;
+  });
+  state.car.serviceLog.push({id:uid(), date, odometerKm, cost, note, itemNames});
+  if(odometerKm > (Number(state.car.odometerKm)||0)){ state.car.odometerKm = odometerKm; state.car.odometerUpdated = date; }
+  carCheckedItems.clear();
+  saveState(); render();
+}
+function delCarServiceLog(id){ state.car.serviceLog = state.car.serviceLog.filter(x=>x.id!==id); saveState(); render(); }
 
 /* ---------- Assets / net worth view ---------- */
 // Small inline SVG line+area chart — same hand-authored technique for all Assets-module
