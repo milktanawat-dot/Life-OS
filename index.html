@@ -710,22 +710,28 @@ function defaultState(){
         }
       ]
     },
-    // Tesla / car maintenance tracker — odometerKm is the one manually-updated number
-    // everything else is computed from (see carItemStatus()). items are recurring maintenance
-    // types (interval by km and/or by months — either can trigger "due"); serviceLog is the
-    // append-only history of actual service visits, each one able to cover multiple items at
-    // once (mirrors how a single shop visit usually knocks out several maintenance items).
+    // Tesla / car maintenance tracker. odometerKm is the one manually-updated number almost
+    // everything else derives from (see carItemStatus()). deliveryDate is the "day one"
+    // baseline that date-based intervals count from until an item has an actual service
+    // logged against it — item.lastServiceDate/lastServiceKm are null until then, meaning
+    // "count from delivery / from 0 km" (carItemStatus() does that fallback live, so changing
+    // deliveryDate later automatically recalculates every never-yet-serviced item — nothing
+    // is baked in at item-creation time). items are recurring maintenance types (interval by
+    // km and/or by months — either can trigger "due"); serviceLog is the append-only history
+    // of actual service visits, each one able to cover multiple items at once (mirrors how a
+    // single shop visit usually knocks out several maintenance items with one combined bill).
     car: {
       vehicle: 'Tesla Model 3',
+      deliveryDate: t,
       odometerKm: 12000,
       odometerUpdated: t,
       items: [
-        {id:uid(), name:'การเปลี่ยนใบปัดน้ำฝน', intervalKm:null, intervalMonths:12, lastServiceDate:t, lastServiceKm:12000, note:''},
-        {id:uid(), name:'การเปลี่ยนไส้กรองอากาศในห้องโดยสาร', intervalKm:null, intervalMonths:24, lastServiceDate:t, lastServiceKm:12000, note:''},
-        {id:uid(), name:'การสลับตำแหน่งยาง', intervalKm:10000, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:''},
-        {id:uid(), name:'การทำความสะอาดบริเวณกล้อง/กระจกหน้าด้วยความแม่นยำ', intervalKm:null, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:'ตามความจำเป็น'},
-        {id:uid(), name:'การทำความสะอาดหม้อน้ำ', intervalKm:null, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:'ตามความจำเป็น'},
-        {id:uid(), name:'การตั้งศูนย์ถ่วงล้อ', intervalKm:null, intervalMonths:null, lastServiceDate:t, lastServiceKm:12000, note:'ตามความจำเป็น'}
+        {id:uid(), name:'การเปลี่ยนใบปัดน้ำฝน', intervalKm:null, intervalMonths:12, lastServiceDate:null, lastServiceKm:null, note:''},
+        {id:uid(), name:'การเปลี่ยนไส้กรองอากาศในห้องโดยสาร', intervalKm:null, intervalMonths:24, lastServiceDate:null, lastServiceKm:null, note:''},
+        {id:uid(), name:'การสลับตำแหน่งยาง', intervalKm:10000, intervalMonths:null, lastServiceDate:null, lastServiceKm:null, note:''},
+        {id:uid(), name:'การทำความสะอาดบริเวณกล้อง/กระจกหน้าด้วยความแม่นยำ', intervalKm:null, intervalMonths:null, lastServiceDate:null, lastServiceKm:null, note:'ตามความจำเป็น'},
+        {id:uid(), name:'การทำความสะอาดหม้อน้ำ', intervalKm:null, intervalMonths:null, lastServiceDate:null, lastServiceKm:null, note:'ตามความจำเป็น'},
+        {id:uid(), name:'การตั้งศูนย์ถ่วงล้อ', intervalKm:null, intervalMonths:null, lastServiceDate:null, lastServiceKm:null, note:'ตามความจำเป็น'}
       ],
       serviceLog: []
     },
@@ -871,6 +877,11 @@ function loadState(){
       if(!s.car.items) s.car.items = [];
       if(!s.car.serviceLog) s.car.serviceLog = [];
       if(s.car.odometerKm == null) s.car.odometerKm = 0;
+      // deliveryDate is new — default it to when this browser's odometer was first tracked
+      // (best available guess for browsers that already had a car saved before this field
+      // existed) rather than defaultState()'s "today", so it doesn't silently reset the
+      // baseline every existing item's due date is calculated from.
+      if(!s.car.deliveryDate) s.car.deliveryDate = s.car.odometerUpdated || todayISO();
       (s.trips.list||[]).forEach(tr=>{
         if(!tr.participants) tr.participants = [];
         if(!tr.splitExpenses) tr.splitExpenses = [];
@@ -970,7 +981,7 @@ function renderToday(){
   const thisMonth = monthSummary(todayISO().slice(0,7));
   const pendingTasks = work.tasks.filter(x=>!x.done).length;
   const upcomingTrip = trips.list.map(tr=>({tr, nd: daysUntil(tr.days[0] ? tr.days[0].date : tr.startDate)})).filter(x=>x.nd>=0).sort((a,b)=>a.nd-b.nd)[0];
-  const carUpcoming = carMostUrgentItem();
+  const carUpcomingList = carUpcomingItems(5);
   const runWeek = runningWeekSummary();
   const netWorth = assetsNetWorth();
   const mom = assetsMoM();
@@ -1052,13 +1063,15 @@ function renderToday(){
 
     <div class="card">
       <div class="card-head">
-        <div class="card-title"><div class="card-icon icon-car">⚡</div><div><h3>รถ</h3><div class="card-sub">${escapeHtml(state.car.vehicle||'')}</div></div></div>
-        ${carUpcoming ? `<div class="pill ${carUpcoming.st.status==='overdue'?'pill-coral':carUpcoming.st.status==='soon'?'pill-amber':'pill-teal'}">${carUpcoming.st.status==='overdue'?'เลยกำหนด':carUpcoming.st.status==='soon'?'ใกล้ถึงกำหนด':'ปกติ'}</div>` : ''}
+        <div class="card-title"><div class="card-icon icon-car">⚡</div><div><h3>รถ</h3><div class="card-sub">${escapeHtml(state.car.vehicle||'')} · เลขไมล์ ${fmtMoney(state.car.odometerKm)} km</div></div></div>
+        ${carUpcomingList.length ? `<div class="pill ${carUpcomingList[0].st.status==='overdue'?'pill-coral':carUpcomingList[0].st.status==='soon'?'pill-amber':'pill-teal'}">${carUpcomingList[0].st.status==='overdue'?'เลยกำหนด':carUpcomingList[0].st.status==='soon'?'ใกล้ถึงกำหนด':'ปกติ'}</div>` : ''}
       </div>
-      ${carUpcoming ? `
-        <div style="font-weight:600; font-size:13.5px; margin-bottom:2px">${escapeHtml(carUpcoming.it.name)}</div>
-        <div class="stat-note">${[carUpcoming.st.dueKmLabel, carUpcoming.st.dueDateLabel].filter(Boolean).join(' · ')} · เลขไมล์ ${fmtMoney(state.car.odometerKm)} km</div>
-      ` : '<div class="muted">ยังไม่มีรายการบำรุงรักษาที่ตั้งรอบไว้</div>'}
+      ${carUpcomingList.length ? carUpcomingList.map(({it,st})=>`
+        <div class="bar-row" style="align-items:center">
+          <div class="tl-dot" style="background:${st.color}; margin-right:6px"></div>
+          <div class="bar-label" style="flex:1 1 auto; font-weight:500">${escapeHtml(it.name)}</div>
+          <div class="bar-val" style="font-size:12px; color:var(--ink-soft)">${[st.dueKmLabel, st.dueDateLabel].filter(Boolean).join(' · ')}</div>
+        </div>`).join('') : '<div class="muted">ยังไม่มีรายการบำรุงรักษาที่ตั้งรอบไว้</div>'}
     </div>
 
     <div class="card">
@@ -1817,18 +1830,23 @@ function exportTripIcs(tripId){
 // both for the color cutoffs below and to rank items by urgency on the "today" card.
 function carItemStatus(item){
   const car = state.car;
+  // Never-serviced items (lastServiceKm/lastServiceDate null) count from the car's own
+  // baseline — 0 km and deliveryDate — not from whenever the item happened to be typed into
+  // the app. Once a service is logged against an item, its own lastServiceKm/lastServiceDate
+  // takes over as the new baseline for the next cycle (see logCarService()).
+  const baseKm = item.lastServiceKm != null ? Number(item.lastServiceKm) : 0;
+  const baseDate = item.lastServiceDate || car.deliveryDate || null;
   let kmFraction = null, timeFraction = null, dueKmLabel = null, dueDateLabel = null;
   if(item.intervalKm){
-    const base = Number(item.lastServiceKm)||0;
-    const remainKm = (base + Number(item.intervalKm)) - (Number(car.odometerKm)||0);
-    kmFraction = ((Number(car.odometerKm)||0) - base) / Number(item.intervalKm);
-    dueKmLabel = remainKm >= 0 ? `อีก ${fmtMoney(Math.round(remainKm))} km` : `เลยกำหนด ${fmtMoney(Math.round(-remainKm))} km`;
+    const remainKm = (baseKm + Number(item.intervalKm)) - (Number(car.odometerKm)||0);
+    kmFraction = ((Number(car.odometerKm)||0) - baseKm) / Number(item.intervalKm);
+    dueKmLabel = remainKm >= 0 ? `${fmtMoney(Math.round(baseKm+Number(item.intervalKm)))} km ถัดไป` : `เลยกำหนด ${fmtMoney(Math.round(-remainKm))} km`;
   }
-  if(item.intervalMonths && item.lastServiceDate){
-    const dueDate = addMonths(item.lastServiceDate, item.intervalMonths);
+  if(item.intervalMonths && baseDate){
+    const dueDate = addMonths(baseDate, item.intervalMonths);
     const nd = daysUntil(dueDate);
     timeFraction = 1 - (nd / (item.intervalMonths*30.44));
-    dueDateLabel = nd >= 0 ? `${fmtDate(dueDate)} (อีก ${nd} วัน)` : `เลยกำหนด ${fmtDate(dueDate)} (${-nd} วันแล้ว)`;
+    dueDateLabel = nd >= 0 ? `${fmtDate(dueDate)} ถัดไป` : `เลยกำหนด ${fmtDate(dueDate)}`;
   }
   const fractions = [kmFraction, timeFraction].filter(f=>f!=null);
   const fraction = fractions.length ? Math.max(...fractions) : null;
@@ -1840,27 +1858,55 @@ function carItemStatus(item){
   }
   return {status, color, fraction, dueKmLabel, dueDateLabel};
 }
-// The single most urgent item — feeds the "today" overview card. unset items (no interval,
-// "ตามความจำเป็น") are excluded since there's nothing time-bound to warn about.
-function carMostUrgentItem(){
+// Items ranked soonest-due first (highest fraction = closest to/over its limit), for both the
+// full "รถ" page list and the top-N "today" card. unset items (no interval at all — "ตามความ
+// จำเป็น") sort last since there's nothing time-bound to rank them by.
+function carItemsByUrgency(){
   return state.car.items.map(it=>({it, st:carItemStatus(it)}))
-    .filter(x=>x.st.status!=='unset')
-    .sort((a,b)=>(b.st.fraction||-Infinity)-(a.st.fraction||-Infinity))[0] || null;
+    .sort((a,b)=>(b.st.fraction ?? -Infinity)-(a.st.fraction ?? -Infinity));
+}
+function carUpcomingItems(n){
+  return carItemsByUrgency().filter(x=>x.st.status!=='unset').slice(0, n||5);
 }
 let carCheckedItems = new Set(); // transient — items ticked for the "log a service visit" panel, not persisted
 function toggleCarChecked(id){ if(carCheckedItems.has(id)) carCheckedItems.delete(id); else carCheckedItems.add(id); render(); }
+let carSpendView = 'month'; // 'month' | 'year' | 'item' — toggled on the "รถ" page spend summary
+function setCarSpendView(v){ carSpendView = v; render(); }
+// Spend rollups for the "สรุปค่าใช้จ่ายบำรุงรักษา" panel. by-item allocates a multi-item
+// visit's cost evenly across the items it covered (there's no per-item cost breakdown in a
+// combined shop bill, so an even split is the simplest reasonable estimate) — it's meant to
+// show roughly where the money goes, not to be an exact accounting.
+function carSpendByMonth(){
+  const m = {};
+  state.car.serviceLog.forEach(l=>{ const k=(l.date||'').slice(0,7); if(!k) return; m[k]=(m[k]||0)+(Number(l.cost)||0); });
+  return Object.entries(m).sort((a,b)=>b[0].localeCompare(a[0]));
+}
+function carSpendByYear(){
+  const y = {};
+  state.car.serviceLog.forEach(l=>{ const k=(l.date||'').slice(0,4); if(!k) return; y[k]=(y[k]||0)+(Number(l.cost)||0); });
+  return Object.entries(y).sort((a,b)=>b[0].localeCompare(a[0]));
+}
+function carSpendByItem(){
+  const byName = {};
+  state.car.serviceLog.forEach(l=>{
+    const names = (l.itemNames && l.itemNames.length) ? l.itemNames : ['(ไม่ระบุรายการ)'];
+    const share = (Number(l.cost)||0) / names.length;
+    names.forEach(n=>{ byName[n] = (byName[n]||0) + share; });
+  });
+  return Object.entries(byName).sort((a,b)=>b[1]-a[1]);
+}
 function renderCar(){
   const car = state.car;
-  const rank = {overdue:0, soon:1, ok:2, unset:3};
-  const rows = car.items.map(it=>({it, st:carItemStatus(it)}))
-    .sort((a,b)=> (rank[a.st.status]-rank[b.st.status]) || ((b.st.fraction||0)-(a.st.fraction||0)));
+  const rows = carItemsByUrgency();
   const totalSpent = car.serviceLog.reduce((s,l)=>s+(Number(l.cost)||0),0);
+  const spendRows = carSpendView==='month' ? carSpendByMonth() : carSpendView==='year' ? carSpendByYear() : carSpendByItem();
+  const spendLabel = (k)=> carSpendView==='month' ? ymLabel(k) : carSpendView==='year' ? (String(parseInt(k,10)+543)) : escapeHtml(k);
   return `
   <div class="section-title">รถ</div>
   <div class="section-sub">ติดตามระยะบำรุงรักษา${car.vehicle?(' — '+escapeHtml(car.vehicle)):''} — ติ๊กรายการที่เพิ่งเข้ารับบริการแล้วบันทึกค่าใช้จ่าย ระบบนับรอบถัดไปให้อัตโนมัติ</div>
 
   <div class="panel">
-    <div class="form-row" style="align-items:center">
+    <div class="form-row" style="align-items:center; flex-wrap:wrap">
       <div style="flex:1; min-width:140px">
         <div class="muted">เลขไมล์ปัจจุบัน</div>
         <div class="mono" style="font-size:20px; font-weight:700">${fmtMoney(car.odometerKm)} km</div>
@@ -1868,8 +1914,13 @@ function renderCar(){
       </div>
       <input type="number" id="carOdo" placeholder="เลขไมล์ใหม่ (km)" style="max-width:140px">
       <button class="btn btn-ghost btn-sm" onclick="updateCarOdometer()">อัปเดตเลขไมล์</button>
+      <div style="min-width:140px">
+        <div class="muted">วันรับรถ</div>
+        <input type="date" id="carDeliveryDate" value="${car.deliveryDate||''}" onchange="updateCarDeliveryDate(this.value)" style="margin-top:2px">
+      </div>
       <div class="muted" style="margin-left:auto; text-align:right">ค่าบำรุงรักษาสะสม<br><span class="mono" style="font-size:15px; color:var(--ink)">฿${fmtMoney(totalSpent)}</span></div>
     </div>
+    <div class="muted" style="margin-top:8px; font-size:11px">วันรับรถใช้เป็นจุดเริ่มนับรอบสำหรับรายการที่ยังไม่เคยเข้ารับบริการ (นับ "ทุกกี่เดือน/ปี" จากวันนี้) — พอเข้ารับบริการจริงครั้งแรก ระบบจะเปลี่ยนไปนับจากวันนั้นแทน</div>
   </div>
 
   <div class="panel">
@@ -1913,6 +1964,22 @@ function renderCar(){
       ${[...car.serviceLog].reverse().map(l=>`<tr><td>${fmtDate(l.date)}</td><td class="mono">${fmtMoney(l.odometerKm)} km</td><td class="muted">${escapeHtml((l.itemNames||[]).join(', '))}${l.note?(' · '+escapeHtml(l.note)):''}</td><td style="text-align:right" class="mono">฿${fmtMoney(l.cost)}</td><td><button class="task-del" onclick="delCarServiceLog('${l.id}')">✕</button></td></tr>`).join('') || `<tr><td colspan="5" class="muted">ยังไม่มีประวัติ</td></tr>`}
     </table>
   </div>
+
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:14px">
+      <h3>สรุปค่าใช้จ่ายบำรุงรักษา</h3>
+      <div style="display:flex; gap:6px; flex-wrap:wrap">
+        <button class="btn ${carSpendView==='month'?'':'btn-ghost'} btn-sm" onclick="setCarSpendView('month')">รายเดือน</button>
+        <button class="btn ${carSpendView==='year'?'':'btn-ghost'} btn-sm" onclick="setCarSpendView('year')">รายปี</button>
+        <button class="btn ${carSpendView==='item'?'':'btn-ghost'} btn-sm" onclick="setCarSpendView('item')">รายรายการ</button>
+      </div>
+    </div>
+    ${spendRows.length ? `<table class="table">
+      <tr><th>${carSpendView==='item'?'รายการ':carSpendView==='year'?'ปี':'เดือน'}</th><th style="text-align:right">ค่าใช้จ่าย</th></tr>
+      ${spendRows.map(([k,v])=>`<tr><td>${spendLabel(k)}</td><td style="text-align:right" class="mono">฿${fmtMoney(Math.round(v))}</td></tr>`).join('')}
+    </table>` : '<div class="muted">ยังไม่มีประวัติเข้ารับบริการให้สรุป</div>'}
+    ${carSpendView==='item' ? '<div class="muted" style="margin-top:8px; font-size:11px">หมายเหตุ: ถ้าเข้ารับบริการหลายรายการพร้อมกันในบิลเดียว ระบบจะหารค่าใช้จ่ายเท่าๆ กันในแต่ละรายการเพื่อประมาณการเท่านั้น</div>' : ''}
+  </div>
   `;
 }
 function updateCarOdometer(){
@@ -1923,12 +1990,23 @@ function updateCarOdometer(){
   state.car.odometerUpdated = todayISO();
   saveState(); render();
 }
+// Changing the delivery date re-anchors every item that's never had a real service logged
+// against it (their lastServiceDate stays null) — nothing to backfill per-item, since
+// carItemStatus() always reads car.deliveryDate live as the fallback baseline.
+function updateCarDeliveryDate(value){
+  if(!value) return;
+  state.car.deliveryDate = value;
+  saveState(); render();
+}
+// New items start with lastServiceDate/lastServiceKm left null — carItemStatus() then counts
+// their first cycle from the car's own baseline (deliveryDate / 0 km) rather than from
+// whatever day this happened to be typed in, matching how the real maintenance schedule works.
 function addCarItem(){
   const name = document.getElementById('carItemName').value.trim();
   const intervalKm = parseFloat(document.getElementById('carItemIntervalKm').value) || null;
   const intervalMonths = parseFloat(document.getElementById('carItemIntervalMonths').value) || null;
   if(!name) return;
-  state.car.items.push({id:uid(), name, intervalKm, intervalMonths, lastServiceDate: todayISO(), lastServiceKm: state.car.odometerKm||0, note:''});
+  state.car.items.push({id:uid(), name, intervalKm, intervalMonths, lastServiceDate: null, lastServiceKm: null, note:''});
   document.getElementById('carItemName').value = '';
   document.getElementById('carItemIntervalKm').value = '';
   document.getElementById('carItemIntervalMonths').value = '';
