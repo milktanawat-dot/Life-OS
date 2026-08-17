@@ -1605,6 +1605,14 @@ function renderTrips(){
       <button class="btn" onclick="addTrip()">+ สร้างทริป</button>
     </div>
   </div>
+  <div class="panel">
+    <h3>⬆ Import ทริป (JSON)</h3>
+    <div class="muted" style="margin-bottom:8px">อัปโหลดไฟล์ .json ที่มีข้อมูลทริป — รองรับทั้งไฟล์ทริปเดียว (object) และหลายทริป (array) ถ้า id ในไฟล์ตรงกับทริปที่มีอยู่แล้วจะอัปเดตทับ ถ้าไม่ตรงจะเพิ่มเป็นทริปใหม่ ข้อมูลโมดูลอื่น (เงิน/งาน/ทรัพย์สิน ฯลฯ) จะไม่ถูกแตะต้อง</div>
+    <div class="form-row">
+      <input type="file" id="tripImportFile" accept="application/json" onchange="importTripsJson(event)">
+    </div>
+    <div id="tripImportMsg"></div>
+  </div>
   ${trips.map(tr=>renderTripCard(tr)).join('') || '<div class="muted">ยังไม่มีทริป</div>'}
   `;
 }
@@ -1635,6 +1643,7 @@ function renderTripCard(tr){
       <h4>✈ ${escapeHtml(tr.name)} <span class="muted">${tr.vehicle?('· '+escapeHtml(tr.vehicle)):''}</span></h4>
       <div style="display:flex; gap:8px; align-items:center">
         <button class="btn btn-ghost btn-sm" onclick="exportTripIcs('${tr.id}')">⬇ Export .ics</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportTripJson('${tr.id}')">⬇ Export JSON</button>
         <button class="task-del" onclick="delTrip('${tr.id}')">✕</button>
       </div>
     </div>
@@ -1753,6 +1762,89 @@ function addTrip(){
   saveState(); render();
 }
 function delTrip(id){ state.trips.list = state.trips.list.filter(t=>t.id!==id); saveState(); render(); }
+// Export a single trip exactly as stored, so it round-trips back in through importTripsJson()
+// (or through an external tool/assistant generating files against this same shape) without
+// any field translation needed.
+function exportTripJson(tripId){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  const blob = new Blob([JSON.stringify(tr, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const safeName = (tr.name||'trip').replace(/[^a-zA-Z0-9ก-๙]+/g,'-').replace(/^-+|-+$/g,'') || 'trip';
+  a.download = 'trip-' + safeName + '-' + todayISO() + '.json';
+  a.click();
+}
+// Fills in any missing fields on an imported trip object with sane defaults, and accepts a
+// couple of common alternate key names (e.g. paid_by/shared_with from planning tools that
+// don't know this app's exact field names) so imports don't hard-fail on near-misses.
+function normalizeImportedTrip(tr){
+  tr = tr || {};
+  return {
+    id: tr.id || uid(),
+    name: tr.name || 'ทริป',
+    vehicle: tr.vehicle || '',
+    startDate: tr.startDate || (tr.days && tr.days[0] && tr.days[0].date) || todayISO(),
+    budget: Number(tr.budget) || 0,
+    days: (Array.isArray(tr.days) && tr.days.length ? tr.days : [{date: tr.startDate || todayISO(), place:'', notes:'', activities:[]}]).map(d=>({
+      date: d.date || todayISO(),
+      place: d.place || '',
+      notes: d.notes || '',
+      activities: Array.isArray(d.activities) ? d.activities.map(a=>({
+        id: a.id || uid(),
+        place: a.place || '',
+        category: a.category || 'อื่นๆ',
+        cost: Number(a.cost) || 0,
+        note: a.note || ''
+      })) : []
+    })),
+    expenses: Array.isArray(tr.expenses) ? tr.expenses : [],
+    participants: Array.isArray(tr.participants) ? tr.participants : [],
+    splitExpenses: Array.isArray(tr.splitExpenses) ? tr.splitExpenses.map(e=>({
+      id: e.id || uid(),
+      item: e.item || e.description || '',
+      amount: Number(e.amount) || 0,
+      payer: e.payer || e.paid_by || '',
+      splitBetween: Array.isArray(e.splitBetween) ? e.splitBetween : (Array.isArray(e.shared_with) ? e.shared_with : []),
+      date: e.date || todayISO()
+    })) : []
+  };
+}
+// Merges one or more trips from an uploaded JSON file into state.trips.list — matching by id
+// (update) or appending (new) — without touching any other module's data. Accepts a bare trip
+// object, an array of trips, or {trips:[...]} / {trip:{...}} wrapper shapes.
+function importTripsJson(evt){
+  const file = evt.target.files[0];
+  const msgEl = document.getElementById('tripImportMsg');
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      let list = [];
+      if(Array.isArray(parsed)) list = parsed;
+      else if(parsed && Array.isArray(parsed.trips)) list = parsed.trips;
+      else if(parsed && parsed.trip && typeof parsed.trip === 'object') list = [parsed.trip];
+      else if(parsed && typeof parsed === 'object') list = [parsed];
+      if(!list.length) throw new Error('ไม่พบข้อมูลทริปในไฟล์นี้');
+      let added = 0, updated = 0;
+      list.forEach(raw=>{
+        const tr = normalizeImportedTrip(raw);
+        const idx = state.trips.list.findIndex(t=>t.id===tr.id);
+        if(idx >= 0){ state.trips.list[idx] = tr; updated++; }
+        else { state.trips.list.push(tr); added++; }
+      });
+      saveState();
+      msgEl.innerHTML = `<div class="msg msg-ok">Import สำเร็จ — เพิ่มทริปใหม่ ${added} รายการ, อัปเดต ${updated} รายการ</div>`;
+      evt.target.value = '';
+      render();
+    }catch(err){
+      msgEl.innerHTML = `<div class="msg msg-err">อ่านไฟล์ไม่ได้ — ตรวจสอบว่าเป็นไฟล์ JSON ทริปที่ถูกต้อง ข้อผิดพลาด: ${escapeHtml(err.message)}</div>`;
+      evt.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
 function addTripDay(tripId){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ const last = tr.days[tr.days.length-1]; tr.days.push({date: last?addDays(last.date,1):todayISO(), place:'', notes:'', activities:[]}); saveState(); render(); } }
 function delTripDay(tripId, idx){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ tr.days.splice(idx,1); saveState(); render(); } }
 function updateTripDay(tripId, idx, field, value){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr && tr.days[idx]){ tr.days[idx][field] = value; saveState(); } }
