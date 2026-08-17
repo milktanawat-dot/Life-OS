@@ -979,7 +979,11 @@ function renderToday(){
 
   const finance = state.finance, running = state.running, work = state.work, trips = state.trips;
   const thisMonth = monthSummary(todayISO().slice(0,7));
-  const pendingTasks = work.tasks.filter(x=>!x.done).length;
+  const workYm = t.slice(0,7);
+  const workMonthDone = work.routineCompletions[workYm] || {};
+  const pendingOneOffTasks = work.tasks.filter(x=>!x.done);
+  const pendingRoutines = work.routines.filter(r=>!workMonthDone[r.id]);
+  const pendingTasks = pendingOneOffTasks.length + pendingRoutines.length;
   const upcomingTrip = trips.list.map(tr=>({tr, nd: daysUntil(tr.days[0] ? tr.days[0].date : tr.startDate)})).filter(x=>x.nd>=0).sort((a,b)=>a.nd-b.nd)[0];
   const carUpcomingList = carUpcomingItems(5);
   const runWeek = runningWeekSummary();
@@ -1037,7 +1041,7 @@ function renderToday(){
         <div class="card-title"><div class="card-icon icon-work">▣</div><div><h3>งาน EGAT</h3><div class="card-sub">แม่เมาะ</div></div></div>
         <div class="pill pill-amber">${pendingTasks} ค้าง</div>
       </div>
-      <div class="task-list">${work.tasks.slice(0,4).map(taskRowHtml).join('') || '<div class="muted">ไม่มีงานค้าง</div>'}</div>
+      <div class="task-list">${[...pendingRoutines.map(routineRowHtml), ...pendingOneOffTasks.map(taskRowHtml)].join('') || '<div class="muted">ไม่มีงานค้าง</div>'}</div>
     </div>
 
     <div class="card">
@@ -1147,6 +1151,17 @@ function taskRowHtml(tk){
     <button class="task-check ${tk.done?'done':''}" onclick="toggleTask('${tk.id}')"></button>
     <div class="task-text ${tk.done?'done':''}">${escapeHtml(tk.text)}</div>
     <div class="task-due">${(tk.due||'').slice(0,10)===todayISO() ? 'วันนี้' : fmtDate((tk.due||'').slice(0,10))}</div>
+  </div>`;
+}
+// Used on the today-overview card so pending monthly Routine items show up alongside
+// one-off tasks — only ever called with items not yet done this month (see renderToday),
+// so there's no "done" state to render here; ticking it calls the same toggleRoutine()
+// used on the Work page, which flips routineCompletions[thisMonth][id] and re-renders,
+// which drops the row out of the (already-filtered) pendingRoutines list automatically.
+function routineRowHtml(r){
+  return `<div class="task-row">
+    <button class="task-check" onclick="toggleRoutine('${r.id}')"></button>
+    <div class="task-text">${escapeHtml(r.text)} ${r.priority==='high'?'<span class="tag" style="background:var(--coral-pale); color:var(--coral)">สำคัญมาก</span>':''}<span class="tag" style="background:var(--purple-pale); color:var(--purple-deep)">ทุกเดือน</span></div>
   </div>`;
 }
 function doCapture(){
