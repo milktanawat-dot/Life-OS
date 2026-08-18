@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- redeploy cache-bust: 2026-08-14 -->
+<!-- redeploy cache-bust: 2026-08-18 -->
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -167,8 +167,11 @@ a{color:inherit;}
 @media (max-width:900px){.two-col{grid-template-columns:1fr;}}
 .trip-card{border:1px solid var(--line); border-radius:14px; padding:15px; margin-bottom:14px; transition:box-shadow .15s ease;}
 .trip-card:hover{box-shadow:var(--shadow-sm);}
-.trip-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.trip-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;}
 .trip-card-head h4{font-size:14px; font-weight:600;}
+.trip-name-input{border:1px solid transparent; background:transparent; font-size:14px; font-weight:600; font-family:inherit; color:var(--ink); padding:4px 8px; border-radius:8px; min-width:0; flex:1; transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;}
+.trip-name-input:hover{border-color:var(--line); background:var(--bg);}
+.trip-name-input:focus{outline:none; border-color:var(--purple); background:var(--bg); box-shadow:0 0 0 3px var(--purple-pale);}
 .small-list{list-style:none; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px;}
 
 /* Assets / portfolio chart */
@@ -1640,8 +1643,12 @@ function renderTripCard(tr){
   return `
   <div class="panel trip-card">
     <div class="trip-card-head">
-      <h4>✈ ${escapeHtml(tr.name)} <span class="muted">${tr.vehicle?('· '+escapeHtml(tr.vehicle)):''}</span></h4>
-      <div style="display:flex; gap:8px; align-items:center">
+      <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:180px">
+        <span style="font-size:15px; flex-shrink:0">✈</span>
+        <input type="text" class="trip-name-input" value="${escapeHtml(tr.name)}" placeholder="ชื่อทริป" title="แก้ไขชื่อทริป" onchange="updateTripName('${tr.id}', this.value)">
+        ${tr.vehicle ? `<span class="muted" style="flex-shrink:0">· ${escapeHtml(tr.vehicle)}</span>` : ''}
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
         <button class="btn btn-ghost btn-sm" onclick="exportTripIcs('${tr.id}')">⬇ Export .ics</button>
         <button class="btn btn-ghost btn-sm" onclick="exportTripJson('${tr.id}')">⬇ Export JSON</button>
         <button class="task-del" onclick="delTrip('${tr.id}')">✕</button>
@@ -1762,6 +1769,15 @@ function addTrip(){
   saveState(); render();
 }
 function delTrip(id){ state.trips.list = state.trips.list.filter(t=>t.id!==id); saveState(); render(); }
+// Trip title is edited inline via the input in the trip card header. Falls back to the
+// existing name if cleared to blank so a trip can never end up with an empty/undefined title.
+function updateTripName(tripId, value){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  const name = (value||'').trim();
+  tr.name = name || tr.name;
+  saveState(); render();
+}
 // Export a single trip exactly as stored, so it round-trips back in through importTripsJson()
 // (or through an external tool/assistant generating files against this same shape) without
 // any field translation needed.
@@ -1786,6 +1802,8 @@ function normalizeImportedTrip(tr){
     vehicle: tr.vehicle || '',
     startDate: tr.startDate || (tr.days && tr.days[0] && tr.days[0].date) || todayISO(),
     budget: Number(tr.budget) || 0,
+    // Sorted soonest-first (see sortTripDays) so an imported trip lands already in the same
+    // chronological order the UI keeps every other trip in, without needing an extra add/edit.
     days: (Array.isArray(tr.days) && tr.days.length ? tr.days : [{date: tr.startDate || todayISO(), place:'', notes:'', activities:[]}]).map(d=>({
       date: d.date || todayISO(),
       place: d.place || '',
@@ -1797,7 +1815,7 @@ function normalizeImportedTrip(tr){
         cost: Number(a.cost) || 0,
         note: a.note || ''
       })) : []
-    })),
+    })).sort((a,b)=> String(a.date).localeCompare(String(b.date))),
     expenses: Array.isArray(tr.expenses) ? tr.expenses : [],
     participants: Array.isArray(tr.participants) ? tr.participants : [],
     splitExpenses: Array.isArray(tr.splitExpenses) ? tr.splitExpenses.map(e=>({
@@ -1845,9 +1863,30 @@ function importTripsJson(evt){
   };
   reader.readAsText(file);
 }
-function addTripDay(tripId){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ const last = tr.days[tr.days.length-1]; tr.days.push({date: last?addDays(last.date,1):todayISO(), place:'', notes:'', activities:[]}); saveState(); render(); } }
+// Keeps a trip's days in chronological order (soonest date first) — called whenever a day is
+// added or a day's own date is edited, so "Day 1" in the UI always matches the trip's actual
+// earliest calendar day regardless of the order days were created/edited in. Also keeps
+// upcomingTrip() (Today view) correct, since that relies on tr.days[0] being the earliest date.
+function sortTripDays(tr){
+  if(!tr || !Array.isArray(tr.days)) return;
+  tr.days.sort((a,b)=> String(a.date).localeCompare(String(b.date)));
+}
+function addTripDay(tripId){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  const last = tr.days[tr.days.length-1];
+  tr.days.push({date: last?addDays(last.date,1):todayISO(), place:'', notes:'', activities:[]});
+  sortTripDays(tr);
+  saveState(); render();
+}
 function delTripDay(tripId, idx){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr){ tr.days.splice(idx,1); saveState(); render(); } }
-function updateTripDay(tripId, idx, field, value){ const tr = state.trips.list.find(t=>t.id===tripId); if(tr && tr.days[idx]){ tr.days[idx][field] = value; saveState(); } }
+function updateTripDay(tripId, idx, field, value){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr || !tr.days[idx]) return;
+  tr.days[idx][field] = value;
+  if(field === 'date'){ sortTripDays(tr); saveState(); render(); }
+  else saveState();
+}
 // Per-day itinerary activities — each one is a place/thing done that day plus what it cost,
 // replacing the old flat trip-level "ค่าใช้จ่าย" list (see dayActivitiesTotal/tripTotalExpense
 // in renderTripCard) so spend is always tied to the day (and, for the daily/trip summaries,
@@ -2415,7 +2454,6 @@ function renderAssets(){
     </div>
     <div class="muted" id="assetCurrencyHint" style="margin-top:6px"></div>
     <div id="assetAddMsg">${assetAddMsg ? assetAddMsg.html : ''}</div>
-    <div class="muted" id="assetCurrencyHint" style="margin-top:6px"></div>
   </div>
 
   <div class="panel">
