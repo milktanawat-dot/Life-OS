@@ -212,6 +212,14 @@ const LS_KEY = 'milkLifeOS_v1';
 const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const thaiDays = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 
+// Seed lists only, used to initialize a fresh install (defaultState()) and to backfill older
+// saves (loadState()). The lists a trip form actually offers/remembers are the live,
+// user-extendable state.trips.categories / state.trips.currencies — every custom category or
+// currency Milk types into a trip activity gets appended there (see rememberTripCategory /
+// rememberTripCurrency) so it shows up as a choice again next time, across every trip.
+const DEFAULT_TRIP_CATEGORIES = ['เดินทาง','ที่พัก','อาหาร','อื่นๆ'];
+const DEFAULT_TRIP_CURRENCIES = ['THB','USD','EUR','JPY','GBP','SGD','KRW','CNY','AUD','HKD','TWD','VND','LAK','PHP','IDR','MYR','INR'];
+
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function pad2(n){ return String(n).padStart(2,'0'); }
 // Local calendar date (NOT UTC) — using toISOString() here would silently shift
@@ -711,7 +719,14 @@ function defaultState(){
           ],
           expenses:[], participants:[], splitExpenses:[]
         }
-      ]
+      ],
+      // Shared across every trip so a category/currency typed once shows up as an autocomplete
+      // choice everywhere afterward. fxCache holds one THB exchange rate per exact
+      // "YYYY-MM-DD_CUR" key, fetched once (see fetchTripFxRate) and reused forever after —
+      // it's what lets a trip's THB total stay based on that day's real rate without refetching.
+      categories: DEFAULT_TRIP_CATEGORIES.slice(),
+      currencies: DEFAULT_TRIP_CURRENCIES.slice(),
+      fxCache: {}
     },
     // Tesla / car maintenance tracker. odometerKm is the one manually-updated number almost
     // everything else derives from (see carItemStatus()). deliveryDate is the "day one"
@@ -885,10 +900,26 @@ function loadState(){
       // existed) rather than defaultState()'s "today", so it doesn't silently reset the
       // baseline every existing item's due date is calculated from.
       if(!s.car.deliveryDate) s.car.deliveryDate = s.car.odometerUpdated || todayISO();
+      // categories/currencies/fxCache are new (custom-category memory + per-item currency +
+      // day-of-expense THB conversion) — default them in for saves from before this existed.
+      if(!s.trips.categories) s.trips.categories = DEFAULT_TRIP_CATEGORIES.slice();
+      if(!s.trips.currencies) s.trips.currencies = DEFAULT_TRIP_CURRENCIES.slice();
+      if(!s.trips.fxCache) s.trips.fxCache = {};
       (s.trips.list||[]).forEach(tr=>{
         if(!tr.participants) tr.participants = [];
         if(!tr.splitExpenses) tr.splitExpenses = [];
-        (tr.days||[]).forEach(d=>{ if(!d.activities) d.activities = []; });
+        (tr.days||[]).forEach(d=>{
+          if(!d.activities) d.activities = [];
+          // Backfill pre-currency activities as THB @ rate 1 (no conversion needed — that's
+          // what they always were), so old data keeps showing the exact same totals it always did.
+          d.activities.forEach(a=>{
+            if(!a.currency) a.currency = 'THB';
+            if(a.rate == null) a.rate = a.currency === 'THB' ? 1 : 0;
+            if(a.rateDate === undefined) a.rateDate = a.currency === 'THB' ? d.date : null;
+            if(a.rateCurrency === undefined) a.rateCurrency = a.rate ? a.currency : null;
+            if(a.rateSource === undefined) a.rateSource = '';
+          });
+        });
       });
       return s;
     }catch(e){ console.warn('bad state, resetting'); }
@@ -1616,6 +1647,8 @@ function renderTrips(){
     </div>
     <div id="tripImportMsg"></div>
   </div>
+  <datalist id="tripCategoryList">${(state.trips.categories||DEFAULT_TRIP_CATEGORIES).map(c=>`<option value="${escapeHtml(c)}">`).join('')}</datalist>
+  <datalist id="tripCurrencyList">${(state.trips.currencies||DEFAULT_TRIP_CURRENCIES).map(c=>`<option value="${escapeHtml(c)}">`).join('')}</datalist>
   ${trips.map(tr=>renderTripCard(tr)).join('') || '<div class="muted">ยังไม่มีทริป</div>'}
   `;
 }
@@ -1623,7 +1656,22 @@ function renderTrips(){
 // itemized "went here, spent this much" log). Legacy tr.expenses (the old flat trip-level
 // list this replaced) is still added in for safety in case an older save has entries in it,
 // but the add/edit UI for that list is gone — everything now goes through activities.
-function dayActivitiesTotal(d){ return (d.activities||[]).reduce((s,a)=>s+(Number(a.cost)||0),0); }
+// THB-equivalent of one activity's cost. THB (or an activity with no currency set, e.g. old
+// data) is 1:1. A foreign-currency activity uses its own rate snapshot (a.rate, taken for
+// a.rateDate — see fetchTripFxRate/refreshTripActivityRate) rather than always converting at
+// today's rate, so a trip's total doesn't silently drift every time you reopen it. Until a
+// rate has actually been fetched/entered (a.rate is 0), the raw number is shown as-is instead
+// of being zeroed out, so an unconverted entry is still visible in the running total.
+function activityCostTHB(a){
+  const cost = Number(a.cost)||0;
+  if(!a.currency || a.currency === 'THB') return cost;
+  const rate = Number(a.rate);
+  // rateCurrency must match the activity's *current* currency — otherwise the stored rate is a
+  // leftover snapshot from before the currency was last changed (see refreshTripActivityRate),
+  // and using it here would silently convert at the wrong currency's rate.
+  return (rate > 0 && a.rateCurrency === a.currency) ? cost * rate : cost;
+}
+function dayActivitiesTotal(d){ return (d.activities||[]).reduce((s,a)=>s+activityCostTHB(a),0); }
 function tripActivitiesTotal(tr){ return tr.days.reduce((s,d)=>s+dayActivitiesTotal(d),0); }
 function tripLegacyExpenseTotal(tr){ return (tr.expenses||[]).reduce((s,e)=>s+(Number(e.amount)||0),0); }
 function tripTotalExpense(tr){ return tripActivitiesTotal(tr) + tripLegacyExpenseTotal(tr); }
@@ -1631,11 +1679,80 @@ function tripCategoryTotals(tr){
   const totals = {};
   tr.days.forEach(d=>(d.activities||[]).forEach(a=>{
     const c = a.category || 'อื่นๆ';
-    totals[c] = (totals[c]||0) + (Number(a.cost)||0);
+    totals[c] = (totals[c]||0) + activityCostTHB(a);
   }));
   return totals;
 }
-const TRIP_ACTIVITY_CATEGORIES = ['เดินทาง','ที่พัก','อาหาร','อื่นๆ'];
+// Appends a custom category/currency Milk types into any trip's activity form to the shared,
+// all-trips list (state.trips.categories / .currencies) so it becomes an autocomplete choice
+// (via the tripCategoryList / tripCurrencyList <datalist>s below) the next time too.
+function rememberTripCategory(cat){
+  if(!cat) return;
+  if(!state.trips.categories) state.trips.categories = DEFAULT_TRIP_CATEGORIES.slice();
+  if(!state.trips.categories.includes(cat)) state.trips.categories.push(cat);
+}
+function rememberTripCurrency(cur){
+  if(!cur) return;
+  if(!state.trips.currencies) state.trips.currencies = DEFAULT_TRIP_CURRENCIES.slice();
+  if(!state.trips.currencies.includes(cur)) state.trips.currencies.push(cur);
+}
+// Historical THB rate for one calendar day, from frankfurter.dev — free, no API key, CORS-open,
+// ECB reference rates back to 1999. Looked up once per exact (date, currency) pair and cached
+// in state.trips.fxCache, so re-opening a trip (or adding a second expense on the same day in
+// the same currency) never re-fetches — it's also what keeps a past trip's THB totals stable
+// even if today's live rate has since moved.
+async function fetchTripFxRate(dateIso, currency){
+  if(!currency || currency === 'THB') return 1;
+  if(!state.trips.fxCache) state.trips.fxCache = {};
+  const key = dateIso + '_' + currency;
+  if(state.trips.fxCache[key] != null) return state.trips.fxCache[key];
+  const res = await fetch(`https://api.frankfurter.dev/v1/${dateIso}?from=${encodeURIComponent(currency)}&to=THB`);
+  if(!res.ok) throw new Error('เรียกอัตราแลกเปลี่ยนไม่สำเร็จ (' + res.status + ')');
+  const data = await res.json();
+  const rate = data && data.rates && data.rates.THB;
+  if(!(rate > 0)) throw new Error('ไม่พบอัตราแลกเปลี่ยนของ ' + currency + ' ณ วันที่นี้');
+  state.trips.fxCache[key] = rate;
+  return rate;
+}
+// Fetches (or reuses the cached) THB rate for one activity's own day + currency, and stores it
+// on the activity itself so the conversion used in every total is a frozen snapshot, not a
+// live recompute. Wired to fire automatically when an activity's currency is changed away from
+// THB (see updateTripActivity) — Milk can also hit "⟳ อัปเดตเรท" to re-pull it any time, or type
+// a rate in by hand (setTripActivityManualRate) when offline or to override the auto value.
+async function refreshTripActivityRate(tripId, dayIdx, actIdx){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
+  const d = tr.days[dayIdx], a = d.activities[actIdx];
+  if(!a.currency || a.currency === 'THB'){ a.rate = 1; a.rateDate = d.date; a.rateCurrency = 'THB'; a.rateSource = ''; a.fxError=''; saveState(); render(); return; }
+  const wantedCurrency = a.currency;
+  a.fxLoading = true; a.fxError = ''; render();
+  try{
+    const rate = await fetchTripFxRate(d.date, wantedCurrency);
+    // Only commit if currency/day haven't changed again while this fetch was in flight — and
+    // rateCurrency is set alongside rate/rateDate precisely so a rate fetched for a *previous*
+    // currency (e.g. USD) is never displayed/used as though it were the new one's (e.g. EUR) —
+    // rateKnown below checks all three together, so a stale mismatch just reads as "not yet converted".
+    if(a.currency === wantedCurrency){ a.rate = rate; a.rateDate = d.date; a.rateCurrency = wantedCurrency; a.rateSource = 'auto'; }
+  }catch(err){
+    if(a.currency === wantedCurrency) a.fxError = err.message || 'ดึงอัตราแลกเปลี่ยนไม่สำเร็จ';
+  }
+  a.fxLoading = false;
+  saveState(); render();
+}
+// Manual override — e.g. offline, or Milk wants to use the rate they actually got at a money
+// changer/ATM rather than the ECB reference rate. Also seeds the shared fxCache with it so any
+// other activity on the same day+currency picks up the same manual number automatically.
+function setTripActivityManualRate(tripId, dayIdx, actIdx, value){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
+  const d = tr.days[dayIdx], a = d.activities[actIdx];
+  const rate = parseFloat(value);
+  if(!(rate > 0)) return;
+  a.rate = rate; a.rateDate = d.date; a.rateCurrency = a.currency||'THB'; a.rateSource = 'manual'; a.fxError = '';
+  if(!state.trips.fxCache) state.trips.fxCache = {};
+  state.trips.fxCache[d.date + '_' + (a.currency||'THB')] = rate;
+  saveState(); render();
+}
 function renderTripCard(tr){
   const totalExpense = tripTotalExpense(tr);
   const catTotals = tripCategoryTotals(tr);
@@ -1668,16 +1785,32 @@ function renderTripCard(tr){
             </div>
             <div style="margin:8px 0 0 0; padding-left:10px; border-left:2px solid var(--line)">
               <div class="muted" style="margin-bottom:4px">กิจกรรม/ค่าใช้จ่ายวันนี้${dayActivitiesTotal(d) ? (' — รวม ฿'+fmtMoney(dayActivitiesTotal(d))) : ''}</div>
-              ${(d.activities||[]).map((a,ai)=>`
-                <div class="form-row" style="align-items:center; margin-bottom:5px">
-                  <input type="text" value="${escapeHtml(a.place||'')}" placeholder="กิจกรรม/สถานที่ เช่น รถไฟ, โรงแรม" onchange="updateTripActivity('${tr.id}',${i},${ai},'place',this.value)">
-                  <select onchange="updateTripActivity('${tr.id}',${i},${ai},'category',this.value)" style="max-width:100px">
-                    ${TRIP_ACTIVITY_CATEGORIES.map(c=>`<option value="${c}" ${a.category===c?'selected':''}>${c}</option>`).join('')}
-                  </select>
-                  <input type="number" value="${a.cost||''}" placeholder="บาท" style="max-width:95px" onchange="updateTripActivity('${tr.id}',${i},${ai},'cost',this.value)">
-                  <button class="task-del" onclick="delTripActivity('${tr.id}',${i},${ai})">✕</button>
+              ${(d.activities||[]).map((a,ai)=>{
+                const currency = a.currency || 'THB';
+                const isForeign = currency !== 'THB';
+                const rateKnown = !isForeign || (Number(a.rate) > 0 && a.rateDate === d.date && a.rateCurrency === currency);
+                return `
+                <div style="margin-bottom:7px">
+                  <div class="form-row" style="align-items:center">
+                    <input type="text" value="${escapeHtml(a.place||'')}" placeholder="กิจกรรม/สถานที่ เช่น รถไฟ, โรงแรม" onchange="updateTripActivity('${tr.id}',${i},${ai},'place',this.value)">
+                    <input type="text" list="tripCategoryList" value="${escapeHtml(a.category||'อื่นๆ')}" placeholder="หมวด (พิมพ์เพิ่มเองได้)" style="max-width:120px" onchange="updateTripActivity('${tr.id}',${i},${ai},'category',this.value)">
+                    <input type="number" value="${a.cost||''}" placeholder="จำนวนเงิน" style="max-width:95px" onchange="updateTripActivity('${tr.id}',${i},${ai},'cost',this.value)">
+                    <input type="text" list="tripCurrencyList" value="${escapeHtml(currency)}" placeholder="สกุลเงิน" title="สกุลเงินของรายการนี้ เช่น THB, USD, JPY" style="max-width:64px" onchange="updateTripActivity('${tr.id}',${i},${ai},'currency',this.value)">
+                    <button class="task-del" onclick="delTripActivity('${tr.id}',${i},${ai})">✕</button>
+                  </div>
+                  ${isForeign ? `
+                    <div class="muted" style="font-size:11px; margin:3px 0 0 2px; display:flex; flex-wrap:wrap; align-items:center; gap:6px">
+                      ${a.fxLoading
+                        ? 'กำลังดึงอัตราแลกเปลี่ยน…'
+                        : rateKnown
+                          ? `≈ ฿${fmtMoney(activityCostTHB(a))} (1 ${escapeHtml(currency)} = ฿${(Number(a.rate)||0).toLocaleString('th-TH',{maximumFractionDigits:4})} ณ ${fmtDate(a.rateDate)}${a.rateSource==='manual' ? ' · ใส่เอง' : ''})`
+                          : (a.fxError ? `⚠ ${escapeHtml(a.fxError)}` : 'ยังไม่ได้แปลงเป็นบาท')}
+                      <button class="btn btn-ghost btn-sm" style="padding:1px 6px" onclick="refreshTripActivityRate('${tr.id}',${i},${ai})" ${a.fxLoading?'disabled':''}>⟳ อัปเดตเรท</button>
+                      <input type="number" step="0.0001" placeholder="ใส่เรทเอง" title="ใส่อัตราแลกเปลี่ยนเอง (1 ${escapeHtml(currency)} = ? บาท)" style="max-width:80px" onchange="setTripActivityManualRate('${tr.id}',${i},${ai},this.value); this.value=''">
+                    </div>
+                  ` : ''}
                 </div>
-              `).join('') || ''}
+              `;}).join('') || ''}
               <button class="btn btn-ghost btn-sm" onclick="addTripActivity('${tr.id}',${i})">+ กิจกรรม</button>
             </div>
           </div>
@@ -1808,13 +1941,21 @@ function normalizeImportedTrip(tr){
       date: d.date || todayISO(),
       place: d.place || '',
       notes: d.notes || '',
-      activities: Array.isArray(d.activities) ? d.activities.map(a=>({
-        id: a.id || uid(),
-        place: a.place || '',
-        category: a.category || 'อื่นๆ',
-        cost: Number(a.cost) || 0,
-        note: a.note || ''
-      })) : []
+      activities: Array.isArray(d.activities) ? d.activities.map(a=>{
+        const currency = (a.currency || 'THB').toUpperCase();
+        return {
+          id: a.id || uid(),
+          place: a.place || '',
+          category: a.category || 'อื่นๆ',
+          cost: Number(a.cost) || 0,
+          currency,
+          rate: Number(a.rate) || (currency === 'THB' ? 1 : 0),
+          rateDate: a.rateDate || (currency === 'THB' ? (d.date || todayISO()) : null),
+          rateCurrency: a.rateCurrency || (currency === 'THB' ? 'THB' : (Number(a.rate) > 0 ? currency : null)),
+          rateSource: a.rateSource || '',
+          note: a.note || ''
+        };
+      }) : []
     })).sort((a,b)=> String(a.date).localeCompare(String(b.date))),
     expenses: Array.isArray(tr.expenses) ? tr.expenses : [],
     participants: Array.isArray(tr.participants) ? tr.participants : [],
@@ -1848,6 +1989,9 @@ function importTripsJson(evt){
       let added = 0, updated = 0;
       list.forEach(raw=>{
         const tr = normalizeImportedTrip(raw);
+        // Any category/currency the imported file uses becomes an autocomplete choice too,
+        // same as if it had been typed into the form directly.
+        tr.days.forEach(d=>(d.activities||[]).forEach(a=>{ rememberTripCategory(a.category); rememberTripCurrency(a.currency); }));
         const idx = state.trips.list.findIndex(t=>t.id===tr.id);
         if(idx >= 0){ state.trips.list[idx] = tr; updated++; }
         else { state.trips.list.push(tr); added++; }
@@ -1895,7 +2039,7 @@ function addTripActivity(tripId, dayIdx){
   const tr = state.trips.list.find(t=>t.id===tripId);
   if(!tr || !tr.days[dayIdx]) return;
   if(!tr.days[dayIdx].activities) tr.days[dayIdx].activities = [];
-  tr.days[dayIdx].activities.push({id:uid(), place:'', category:'อื่นๆ', cost:0, note:''});
+  tr.days[dayIdx].activities.push({id:uid(), place:'', category:'อื่นๆ', cost:0, currency:'THB', rate:1, rateDate:null, rateCurrency:'THB', rateSource:'', note:''});
   saveState(); render();
 }
 function delTripActivity(tripId, dayIdx, actIdx){
@@ -1904,10 +2048,26 @@ function delTripActivity(tripId, dayIdx, actIdx){
   tr.days[dayIdx].activities.splice(actIdx,1);
   saveState(); render();
 }
+// category/currency are free-text (with a <datalist> of remembered choices — see
+// rememberTripCategory/rememberTripCurrency) rather than a fixed <select>, so any value Milk
+// types is accepted and saved as-is. Changing currency away from THB kicks off an automatic
+// fetch of that day's THB rate (refreshTripActivityRate); switching back to THB just resets the
+// rate to 1 with nothing to fetch.
 function updateTripActivity(tripId, dayIdx, actIdx, field, value){
   const tr = state.trips.list.find(t=>t.id===tripId);
   if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
-  tr.days[dayIdx].activities[actIdx][field] = field==='cost' ? (parseFloat(value)||0) : value;
+  const d = tr.days[dayIdx], a = d.activities[actIdx];
+  if(field === 'cost'){ a.cost = parseFloat(value)||0; saveState(); render(); return; }
+  if(field === 'category'){ a.category = (value||'').trim() || 'อื่นๆ'; rememberTripCategory(a.category); saveState(); render(); return; }
+  if(field === 'currency'){
+    const cur = (value||'THB').trim().toUpperCase() || 'THB';
+    a.currency = cur;
+    rememberTripCurrency(cur);
+    if(cur === 'THB'){ a.rate = 1; a.rateDate = d.date; a.rateCurrency = 'THB'; a.rateSource = ''; a.fxError = ''; saveState(); render(); }
+    else refreshTripActivityRate(tripId, dayIdx, actIdx);
+    return;
+  }
+  a[field] = value;
   saveState(); render();
 }
 // Bill-split participants + shared expenses (see tripSettlement() for the payoff math).
