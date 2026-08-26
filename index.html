@@ -177,6 +177,37 @@ a{color:inherit;}
 /* Assets / portfolio chart */
 .portfolio-chart{width:100%; height:170px; overflow:visible;}
 .portfolio-chart-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-soft); margin-top:4px;}
+
+/* Reminder bell (topbar) + popup modal */
+.bell-btn{position:relative; width:38px; height:38px; border-radius:50%; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-sm); display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; flex-shrink:0; transition:transform .12s ease, box-shadow .12s ease;}
+.bell-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow-card-hover);}
+.bell-badge{position:absolute; top:-3px; right:-3px; min-width:16px; height:16px; padding:0 4px; border-radius:99px; background:var(--coral); color:#fff; font-size:9.5px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--panel);}
+.modal-overlay{position:fixed; inset:0; background:rgba(29,34,51,.42); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;}
+.modal-box{background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow-card-hover); width:100%; max-width:480px; max-height:86vh; overflow-y:auto; padding:24px;}
+.modal-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:4px;}
+.modal-head h3{font-size:16.5px; font-weight:700;}
+.modal-close{background:none; border:none; font-size:18px; color:var(--ink-soft); cursor:pointer; line-height:1; padding:2px;}
+.modal-close:hover{color:var(--ink);}
+.chip-toggle{display:flex; gap:6px; flex-wrap:wrap; margin:12px 0 14px;}
+.chip{font-size:11px; padding:5px 11px; border-radius:99px; border:1px solid var(--line); background:var(--bg); color:var(--ink-soft); cursor:pointer; font-weight:600; font-family:inherit; transition:background .15s ease, color .15s ease, border-color .15s ease;}
+.chip.on{border-color:transparent; color:#fff;}
+.reminder-list{display:flex; flex-direction:column; gap:2px;}
+.reminder-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
+.reminder-row:last-child{border-bottom:none;}
+.reminder-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.reminder-title{flex:1; font-size:12.5px; font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.reminder-when{font-size:10.5px; color:var(--ink-soft); white-space:nowrap; text-align:right; flex-shrink:0;}
+.reminder-cat{font-size:9.5px; color:var(--ink-soft); white-space:nowrap;}
+
+/* Race goals (กิจกรรม page) */
+.race-card{display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:9px;}
+.race-count{width:52px; height:52px; border-radius:14px; background:var(--green-pale); color:var(--green-deep); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;}
+.race-count .n{font-size:16px; font-weight:700; line-height:1;}
+.race-count .u{font-size:8px; font-weight:600;}
+.race-count.past{background:var(--line); color:var(--ink-soft);}
+.race-info{flex:1; min-width:0;}
+.race-info .name{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.race-info .meta{font-size:11px; color:var(--ink-soft); margin-top:2px;}
 </style>
 </head>
 <body>
@@ -201,9 +232,18 @@ a{color:inherit;}
       <h1 id="greetingText">สวัสดี, Milk</h1>
       <p>ภาพรวมทุกด้านของวันนี้ในที่เดียว</p>
     </div>
-    <div class="date-chip" id="dateChip"></div>
+    <div style="display:flex; align-items:center; gap:10px">
+      <button class="bell-btn" id="bellBtn" onclick="openReminderPopup()" title="นัดหมาย/งานที่ใกล้ถึง">
+        🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span>
+      </button>
+      <div class="date-chip" id="dateChip"></div>
+    </div>
   </div>
   <div id="viewRoot"></div>
+</div>
+
+<div class="modal-overlay" id="reminderOverlay" style="display:none" onclick="if(event.target===this) closeReminderPopup()">
+  <div class="modal-box" id="reminderBox"></div>
 </div>
 
 <script>
@@ -614,30 +654,119 @@ function syncFromMilkHubDirect(){
       ? state.finance.transactions.filter(t=>!t.demo)
       : [];
     let processed = 0;
+    // Rebuilt fresh from Milk Hub's tax-slip tracker on every sync (not merged/upserted like
+    // transactions above) — Milk Hub is the sole source of truth for tax slips, so replacing
+    // the whole thing each time is what keeps this in sync when a slip in Milk Hub is
+    // edited/deleted, not just when a new one is added.
+    const taxByYear = {};
     profiles.forEach(p=>{
       const key = p.id === 'default' ? 'milkhub:money:entries' : 'milkhub:profile:' + p.id + ':money:entries';
       const raw = localStorage.getItem(key);
-      if(!raw) return;
-      let money; try{ money = JSON.parse(raw); }catch(e){ return; }
-      (money||[]).forEach(tx=>{
-        if(!tx.amount) return;
-        upsertTxn({
-          id: 'mh-' + (profiles.length>1?p.id+'-':'') + (tx.id || uid()),
-          date: (tx.date || todayISO()).slice(0,10),
-          type: tx.type === 'income' ? 'income' : 'expense',
-          category: tx.category || 'อื่นๆ',
-          item: tx.item || '',
-          amount: Number(tx.amount) || 0,
-          profile: profiles.length>1 ? (p.name||p.id) : undefined
+      if(raw){
+        let money; try{ money = JSON.parse(raw); }catch(e){ money = null; }
+        (money||[]).forEach(tx=>{
+          if(!tx.amount) return;
+          upsertTxn({
+            id: 'mh-' + (profiles.length>1?p.id+'-':'') + (tx.id || uid()),
+            date: (tx.date || todayISO()).slice(0,10),
+            type: tx.type === 'income' ? 'income' : 'expense',
+            category: tx.category || 'อื่นๆ',
+            item: tx.item || '',
+            amount: Number(tx.amount) || 0,
+            profile: profiles.length>1 ? (p.name||p.id) : undefined
+          });
+          processed++;
         });
-        processed++;
+      }
+      const taxKey = p.id === 'default' ? 'milkhub:tax:data' : 'milkhub:profile:' + p.id + ':tax:data';
+      const taxRaw = localStorage.getItem(taxKey);
+      if(!taxRaw) return;
+      let tax; try{ tax = JSON.parse(taxRaw); }catch(e){ return; }
+      Object.keys(tax||{}).forEach(yr=>{
+        const yd = tax[yr] || {slips:[], ded:{}};
+        if(!taxByYear[yr]) taxByYear[yr] = {slips:[], ded:{}};
+        (yd.slips||[]).forEach(s=> taxByYear[yr].slips.push({...s, profile: profiles.length>1 ? (p.name||p.id) : undefined}));
+        // Deduction inputs (ค่าลดหย่อน) are per-person, not summable across profiles — last
+        // profile with data for that year wins, same as how a single-person tax return works.
+        if(yd.ded && Object.keys(yd.ded).length) taxByYear[yr].ded = yd.ded;
       });
     });
+    if(Object.keys(taxByYear).length) state.finance.taxByYear = taxByYear;
     state.finance.lastImport = new Date().toISOString();
     state.finance.lastImportMode = 'same-origin';
     saveState();
     return processed;
   }catch(e){ return null; }
+}
+
+/* ---------- Thai personal income tax — ported from Milk Hub's own tax tracker so the
+   "current tax rate" figure here always matches what Milk Hub itself would show. Only the
+   calculation is duplicated; the slip data itself is never hand-entered here, only synced. ---------- */
+const DED_IDS = ['spouse','child','parent','life','health','rmf','ssf','tesg','home','erec','travel','donedu','dongen','other'];
+const DED_CAPS = {spouse:60000, life:100000, health:25000, ssf:200000, tesg:300000, home:100000, erec:50000, travel:15000};
+function dedItemsTotal(dd){
+  let t = 0;
+  DED_IDS.forEach(k=>{
+    let v = parseFloat((dd||{})[k])||0;
+    if(DED_CAPS[k]) v = Math.min(v, DED_CAPS[k]);
+    if(k==='donedu') v *= 2;
+    t += v;
+  });
+  return t;
+}
+// ขั้นบันไดภาษีเงินได้บุคคลธรรมดาไทย (เงินได้สุทธิ, อัตรา)
+const TAX_BRACKETS = [[150000,0],[300000,.05],[500000,.10],[750000,.15],[1000000,.20],[2000000,.25],[5000000,.30],[Infinity,.35]];
+function calcThaiTax(net){
+  net = Math.max(0, net||0);
+  let tax = 0, prev = 0;
+  for(const [cap,rate] of TAX_BRACKETS){
+    if(net<=prev) break;
+    tax += (Math.min(net,cap)-prev)*rate; prev=cap;
+  }
+  return tax;
+}
+// Which bracket net income currently sits in (marginal rate on the "next baht"), plus how
+// far to the next/previous bracket boundary.
+function taxBracketInfo(net){
+  net = Math.max(0, net||0);
+  let floor = 0;
+  for(let i=0;i<TAX_BRACKETS.length;i++){
+    const [cap, rate] = TAX_BRACKETS[i];
+    if(net<=cap){
+      const nextRate = (i+1<TAX_BRACKETS.length) ? TAX_BRACKETS[i+1][1] : null;
+      const prevRate = i>0 ? TAX_BRACKETS[i-1][1] : null;
+      return { rate, floor, cap, toNext: (cap===Infinity) ? null : Math.max(0, cap-net), toLower: prevRate!=null ? Math.max(0, net-floor) : null, nextRate, prevRate };
+    }
+    floor = cap;
+  }
+  const last = TAX_BRACKETS[TAX_BRACKETS.length-1];
+  return {rate:last[1], floor, cap:Infinity, toNext:null, toLower:null, nextRate:null, prevRate:TAX_BRACKETS[TAX_BRACKETS.length-2][1]};
+}
+function currentBEYear(){ return String(new Date().getFullYear()+543); }
+// Full per-year summary (gross income, withheld tax, PVD, tax owed vs. withheld, current
+// bracket) — used by the Finance page's "รายได้ & ภาษีรายปี" panel. Reads only
+// state.finance.taxByYear, which syncFromMilkHubDirect() keeps up to date automatically.
+function taxYearSummary(yr){
+  const yd = state.finance.taxByYear[yr] || {slips:[], ded:{}};
+  const slips = yd.slips || [];
+  const gross = slips.reduce((s,x)=>s+(Number(x.gross)||0),0);
+  const withheld = slips.reduce((s,x)=>s+(Number(x.withheld)||0),0);
+  const sso = Math.min(slips.reduce((s,x)=>s+(Number(x.sso)||0),0), 9000);
+  const pvd = slips.reduce((s,x)=>s+(Number(x.pvd)||0),0);
+  const expense = Math.min(gross*0.5, 100000);
+  const ded = 60000 + sso + pvd + dedItemsTotal(yd.ded);
+  const netIncome = Math.max(0, gross - expense - ded);
+  const taxOwed = calcThaiTax(netIncome);
+  const diff = taxOwed - withheld; // >0 ต้องจ่ายเพิ่ม, <0 ได้เงินคืน
+  const bracket = taxBracketInfo(netIncome);
+  const effectiveRate = netIncome ? taxOwed/netIncome*100 : 0;
+  return {yr, slips, gross, withheld, sso, pvd, expense, ded, netIncome, taxOwed, diff, bracket, effectiveRate};
+}
+function taxYearsAvailable(){
+  const years = Object.keys(state.finance.taxByYear || {});
+  const cur = currentBEYear();
+  if(years.indexOf(cur)===-1) years.push(cur);
+  return years.sort();
 }
 
 function defaultState(){
@@ -646,6 +775,10 @@ function defaultState(){
     finance: {
       monthlyBudget: 30000,
       lastImport: null,
+      // Per-year (Buddhist Era key, e.g. '2569') tax summary synced from Milk Hub's own
+      // tax-slip tracker (milkhub:tax:data) — { slips:[{month,type,gross,withheld,sso,pvd}], ded:{} }.
+      // Only ever written by syncFromMilkHubDirect(); never hand-edited here.
+      taxByYear: {},
       transactions: [
         {id:uid(), date:t, type:'expense', category:'อาหาร', item:'มื้อเที่ยง', amount:120, demo:true},
         {id:uid(), date:t, type:'expense', category:'เดินทาง', item:'BTS', amount:65, demo:true},
@@ -670,7 +803,13 @@ function defaultState(){
         {id:uid(), date:addDays(t,-2), name:'เวทเทรนนิ่ง', distance_km:0, moving_time_min:45, done:true, type:'weights', demo:true},
         {id:uid(), date:addDays(t,-4), name:'วิ่งเทรลเขาใหญ่', distance_km:12, moving_time_min:95, done:true, type:'run_trail', demo:true}
       ],
-      lastSync: null
+      lastSync: null,
+      // Race goals — each one a target race day to count down to. Purely manual (no API for
+      // trail-race calendars), shown on the "กิจกรรม" page, on the Today overview calendar
+      // (as a day marker), and in the reminder popup once a race falls inside the chosen window.
+      races: [
+        {id:uid(), name:'PYT100', date:'2026-10-17', location:'', distanceKm:100, note:'', demo:true}
+      ]
     },
     work: {
       tasks: [
@@ -755,13 +894,21 @@ function defaultState(){
     },
     calendar: {
       events: [
-        {id:uid(), date:t, time:'14:00', title:'ประชุมทีมออกแบบ', demo:true}
+        {id:uid(), date:t, time:'14:00', title:'ประชุมทีมออกแบบ', category:'other', demo:true}
       ]
     },
     settings: {
       intervalsApiKey: '',
       intervalsAthleteId: '0',
-      finnhubApiKey: ''
+      finnhubApiKey: '',
+      // Reminder popup (Today overview) — which categories show, which time window, and
+      // when it last auto-opened so it only pops up once per day rather than on every render.
+      reminderPopup: {
+        enabledCats: {egat:true, doctor:true, other:true, race:true},
+        windowMode: 'week', // 'week' | 'month'
+        lastShownDate: null,
+        autoShow: true
+      }
     }
   };
 }
@@ -780,6 +927,13 @@ function loadState(){
       if(s.work && !s.work.routineCompletions) s.work.routineCompletions = {};
       if(!s.calendar) s.calendar = {events:[]};
       if(!s.calendar.events) s.calendar.events = [];
+      // Backfill: calendar events saved before category tagging (EGAT/doctor/other) existed.
+      s.calendar.events.forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
+      if(!s.finance.taxByYear) s.finance.taxByYear = {};
+      if(!s.settings) s.settings = {};
+      if(!s.settings.reminderPopup) s.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true}, windowMode:'week', lastShownDate:null, autoShow:true};
+      if(!s.settings.reminderPopup.enabledCats) s.settings.reminderPopup.enabledCats = {egat:true,doctor:true,other:true,race:true};
+      if(s.running && !s.running.races) s.running.races = [];
       if(!s.assets) s.assets = {items:[], reports:[]};
       if(!s.assets.items) s.assets.items = [];
       if(!s.assets.reports) s.assets.reports = [];
@@ -962,6 +1116,7 @@ function parseCapture(text){
 let currentView = 'today';
 let lastCaptureResults = null;
 let financeViewYM = todayISO().slice(0,7);
+let financeTaxViewYear = currentBEYear(); // which BE year the Finance page's tax/income panel shows
 let calViewYM = todayISO().slice(0,7); // which month the "Today" overview calendar is showing
 function nav(view){ currentView = view; render(); }
 function selectCalDay(d){ selectedCalDay = d; render(); }
@@ -969,15 +1124,27 @@ function calMonthShift(delta){ calViewYM = shiftYM(calViewYM, delta); selectedCa
 function calGoToday(){ calViewYM = todayISO().slice(0,7); selectedCalDay = todayISO(); render(); }
 
 /* ---------- Custom calendar events (นัด/กิจกรรม คีย์เองในหน้าปฏิทิน) ---------- */
+// Category tagging for นัดหมาย/appointments — drives both the calendar dot color and the
+// reminder popup's filter checkboxes. 'race' isn't chosen here — it's assigned automatically
+// to items pulled from state.running.races (see gatherReminders/dayEvents).
+const CAL_CATEGORIES = [
+  {key:'egat', label:'งาน EGAT', color:'var(--amber)'},
+  {key:'doctor', label:'นัดหมอ', color:'var(--coral)'},
+  {key:'other', label:'นัดหมายอื่นๆ', color:'var(--blue)'}
+];
+const RACE_CATEGORY = {key:'race', label:'ซ้อม/แข่งขัน', color:'var(--green-deep)'};
+function calCategoryMeta(key){ return CAL_CATEGORIES.find(c=>c.key===key) || CAL_CATEGORIES[CAL_CATEGORIES.length-1]; }
 function addCalEvent(){
   const dateEl = document.getElementById('calEvDate');
   const timeEl = document.getElementById('calEvTime');
   const titleEl = document.getElementById('calEvTitle');
+  const catEl = document.getElementById('calEvCategory');
   const date = (dateEl && dateEl.value) || selectedCalDay || todayISO();
   const time = timeEl ? timeEl.value : '';
   const title = titleEl ? titleEl.value.trim() : '';
+  const category = (catEl && catEl.value) || 'other';
   if(!title) return;
-  state.calendar.events.push({id:uid(), date, time, title});
+  state.calendar.events.push({id:uid(), date, time, title, category});
   if(titleEl) titleEl.value = '';
   selectedCalDay = date;
   calViewYM = date.slice(0,7);
@@ -986,6 +1153,139 @@ function addCalEvent(){
 function delCalEvent(id){
   state.calendar.events = state.calendar.events.filter(e=>e.id!==id);
   saveState(); render();
+}
+
+/* ---------- Race goals (กิจกรรม page) ---------- */
+function sortedRaces(){ return [...state.running.races].sort((a,b)=>String(a.date).localeCompare(String(b.date))); }
+function upcomingRaces(){ return sortedRaces().filter(r=>r.date >= todayISO()); }
+function nearestRace(){ return upcomingRaces()[0] || null; }
+function addRace(){
+  const nameEl = document.getElementById('raceName');
+  const dateEl = document.getElementById('raceDate');
+  const locEl = document.getElementById('raceLoc');
+  const distEl = document.getElementById('raceDist');
+  const name = nameEl.value.trim();
+  const date = dateEl.value;
+  if(!name || !date) return;
+  state.running.races.push({id:uid(), name, date, location:(locEl.value||'').trim(), distanceKm: parseFloat(distEl.value)||null, note:''});
+  nameEl.value=''; dateEl.value=''; locEl.value=''; distEl.value='';
+  saveState(); render();
+}
+function delRace(id){ state.running.races = state.running.races.filter(r=>r.id!==id); saveState(); render(); }
+
+/* ---------- Reminder popup — upcoming appointments/tasks/races within a chosen window ---------- */
+// Pulls from every module that has date-bound items: custom calendar events (already
+// categorized), pending EGAT work tasks (always 'egat'), and race goals (always 'race').
+// Returns items with today <= date <= windowEnd, soonest first.
+function reminderWindowEnd(mode){
+  const t = todayISO();
+  if(mode === 'month'){ const ym = t.slice(0,7); const [y,m] = ym.split('-').map(Number); const last = new Date(y, m, 0).getDate(); return ym+'-'+pad2(last); }
+  return addDays(t, 7); // 'week'
+}
+function gatherReminders(mode){
+  const t = todayISO();
+  const end = reminderWindowEnd(mode);
+  const out = [];
+  state.calendar.events.forEach(ev=>{
+    if(ev.date >= t && ev.date <= end){
+      const meta = calCategoryMeta(ev.category);
+      out.push({date:ev.date, time:ev.time||'', title:ev.title, category:meta.key, catLabel:meta.label, color:meta.color});
+    }
+  });
+  state.work.tasks.filter(tk=>!tk.done).forEach(tk=>{
+    const d = (tk.due||'').slice(0,10);
+    if(d && d >= t && d <= end){
+      out.push({date:d, time:(tk.due||'').slice(11,16), title:tk.text, category:'egat', catLabel:'งาน EGAT', color:calCategoryMeta('egat').color});
+    }
+  });
+  state.running.races.forEach(r=>{
+    if(r.date >= t && r.date <= end){
+      out.push({date:r.date, time:'', title:r.name + (r.distanceKm?(' ('+r.distanceKm+'K)'):''), category:'race', catLabel:'ซ้อม/แข่งขัน', color:RACE_CATEGORY.color});
+    }
+  });
+  return out.sort((a,b)=> String(a.date+a.time).localeCompare(String(b.date+b.time)));
+}
+function reminderPopupCount(){
+  const p = state.settings.reminderPopup;
+  return gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]).length;
+}
+function updateBellBadge(){
+  const el = document.getElementById('bellBadge');
+  if(!el) return;
+  const n = reminderPopupCount();
+  el.style.display = n>0 ? 'flex' : 'none';
+  el.textContent = n>9 ? '9+' : String(n);
+}
+function reminderRowHtml(r){
+  const dleft = daysUntil(r.date);
+  const when = dleft===0 ? 'วันนี้' + (r.time?(' '+r.time):'') : dleft===1 ? 'พรุ่งนี้' : 'อีก '+dleft+' วัน';
+  return `<div class="reminder-row">
+    <span class="reminder-dot" style="background:${r.color}"></span>
+    <span class="reminder-title">${escapeHtml(r.title)}</span>
+    <span class="reminder-cat">${escapeHtml(r.catLabel)}</span>
+    <span class="reminder-when">${when}</span>
+  </div>`;
+}
+function renderReminderPopup(){
+  const p = state.settings.reminderPopup;
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY];
+  const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
+  return `
+  <div class="modal-head">
+    <div>
+      <h3>🔔 นัดหมาย/งานที่ใกล้ถึง</h3>
+      <div class="muted" style="margin-top:2px">${p.windowMode==='month' ? 'ภายในเดือนนี้' : 'ภายใน 7 วันข้างหน้า'} · ${items.length} รายการ</div>
+    </div>
+    <button class="modal-close" onclick="closeReminderPopup()">✕</button>
+  </div>
+  <div class="form-row" style="margin:10px 0 2px">
+    <button class="btn btn-sm ${p.windowMode==='week'?'':'btn-ghost'}" onclick="setReminderWindow('week')">สัปดาห์นี้</button>
+    <button class="btn btn-sm ${p.windowMode==='month'?'':'btn-ghost'}" onclick="setReminderWindow('month')">เดือนนี้</button>
+  </div>
+  <div class="chip-toggle">
+    ${cats.map(c=>`<button type="button" class="chip ${p.enabledCats[c.key]?'on':''}" style="${p.enabledCats[c.key]?('background:'+c.color+';'):''}" onclick="toggleReminderCat('${c.key}')">${escapeHtml(c.label)}</button>`).join('')}
+  </div>
+  <div class="reminder-list">
+    ${items.length ? items.map(reminderRowHtml).join('') : '<div class="muted" style="padding:10px 0">ไม่มีรายการในช่วงนี้ 🎉</div>'}
+  </div>
+  <div class="form-row" style="justify-content:space-between; margin-top:16px; margin-bottom:0">
+    <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-soft); cursor:pointer">
+      <input type="checkbox" id="reminderAutoShow" ${p.autoShow?'checked':''} onchange="toggleReminderAutoShow()"> เด้งเตือนอัตโนมัติทุกวัน
+    </label>
+  </div>
+  `;
+}
+function openReminderPopup(){
+  document.getElementById('reminderBox').innerHTML = renderReminderPopup();
+  document.getElementById('reminderOverlay').style.display = 'flex';
+}
+function closeReminderPopup(){
+  document.getElementById('reminderOverlay').style.display = 'none';
+}
+function setReminderWindow(mode){
+  state.settings.reminderPopup.windowMode = mode;
+  saveState(); openReminderPopup(); updateBellBadge();
+}
+function toggleReminderCat(key){
+  const p = state.settings.reminderPopup;
+  p.enabledCats[key] = !p.enabledCats[key];
+  saveState(); openReminderPopup(); updateBellBadge();
+}
+function toggleReminderAutoShow(){
+  state.settings.reminderPopup.autoShow = document.getElementById('reminderAutoShow').checked;
+  saveState();
+}
+// Auto-opens the popup once per calendar day (only if there's something to show and the
+// person hasn't turned auto-show off) — called once from render() on the "today" view.
+function maybeAutoShowReminderPopup(){
+  const p = state.settings.reminderPopup;
+  updateBellBadge();
+  if(!p.autoShow) return;
+  const t = todayISO();
+  if(p.lastShownDate === t) return;
+  p.lastShownDate = t;
+  saveState();
+  if(reminderPopupCount() > 0) openReminderPopup();
 }
 
 function render(){
@@ -999,6 +1299,8 @@ function render(){
   const root = document.getElementById('viewRoot');
   const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, trips:renderTrips, assets:renderAssets, car:renderCar, settings:renderSettings};
   root.innerHTML = (renderers[currentView] || renderToday)();
+  updateBellBadge();
+  if(currentView === 'today') maybeAutoShowReminderPopup();
 }
 
 /* ---------- Today view ---------- */
@@ -1009,7 +1311,9 @@ function renderToday(){
   state.work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10) === t) items.push({time:(tk.due||'').slice(11,16) || '—', label:tk.text, color:'var(--amber)'}); });
   state.running.activities.forEach(a=>{ if(a.date === t) items.push({time:'', label:activityTypeMeta(a.type).label + ' — ' + a.name + (a.distance_km?' ('+a.distance_km+'K)':''), color:activityTypeMeta(a.type).color}); });
   state.trips.list.forEach(tr=> tr.days.forEach(d=>{ if(d.date === t) items.push({time:'', label:'ทริป: ' + d.place, color:'var(--purple)'}); }));
-  state.finance.transactions.forEach(tx=>{ if(tx.date === t) items.push({time:'', label:'฿' + fmtMoney(tx.amount) + ' ' + tx.note, color:'var(--coral)'}); });
+  state.finance.transactions.forEach(tx=>{ if(tx.date === t) items.push({time:'', label:'฿' + fmtMoney(tx.amount) + ' ' + (tx.item||tx.category||''), color:'var(--coral)'}); });
+  state.calendar.events.forEach(ev=>{ if(ev.date === t) items.push({time:ev.time||'', label:ev.title, color:calCategoryMeta(ev.category).color}); });
+  state.running.races.forEach(r=>{ if(r.date === t) items.push({time:'', label:'🏁 วันแข่ง: ' + r.name, color:RACE_CATEGORY.color}); });
 
   const finance = state.finance, running = state.running, work = state.work, trips = state.trips;
   const thisMonth = monthSummary(todayISO().slice(0,7));
@@ -1023,12 +1327,14 @@ function renderToday(){
   const runWeek = runningWeekSummary();
   const netWorth = assetsNetWorth();
   const mom = assetsMoM();
+  const nearRace = nearestRace();
 
   const dayEvents = (d)=>{
     const out = [];
-    state.calendar.events.forEach(ev=>{ if(ev.date===d) out.push({label:(ev.time?ev.time+' ':'')+ev.title, color:'var(--blue)', gcalTitle:ev.title, custom:true, id:ev.id}); });
+    state.calendar.events.forEach(ev=>{ const meta = calCategoryMeta(ev.category); if(ev.date===d) out.push({label:(ev.time?ev.time+' ':'')+ev.title, color:meta.color, gcalTitle:ev.title, custom:true, id:ev.id}); });
     work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10)===d) out.push({label:(tk.done?'✓ ':'')+tk.text, color:'var(--amber)', gcalTitle:tk.text}); });
     trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
+    state.running.races.forEach(r=>{ if(r.date===d) out.push({label:'🏁 '+r.name+(r.distanceKm?(' ('+r.distanceKm+'K)'):''), color:RACE_CATEGORY.color, gcalTitle:'แข่ง: '+r.name}); });
     return out;
   };
   // Which month the calendar grid shows — defaults to the current month, but calMonthShift() lets
@@ -1067,6 +1373,7 @@ function renderToday(){
         <div class="pill pill-teal">${runWeek.pct}% ของเป้าหมาย</div>
       </div>
       <div class="big-stat mono">${runWeek.weekKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม. สัปดาห์นี้</span></div>
+      ${nearRace ? `<div class="stat-note" style="margin-top:-6px">🏁 ${escapeHtml(nearRace.name)} — อีก ${daysUntil(nearRace.date)} วัน</div>` : ''}
       ${running.activities.length ? renderActivityBarChart(buildWeeklyActivityBuckets(currentWeekMondayToSunday())) : '<div class="muted">ยังไม่มีข้อมูล — ไป Sync ที่หน้า "กิจกรรม"</div>'}
     </div>
 
@@ -1146,16 +1453,22 @@ function renderToday(){
         const dayTasks = work.tasks.filter(tk=>!tk.done && (tk.due||'').slice(0,10)===d);
         const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
         const dayEv = state.calendar.events.filter(ev=>ev.date===d);
-        if(dayEv.length) dots.push({color:'var(--blue)'});
+        const dayRaces = state.running.races.filter(r=>r.date===d);
+        // One dot per category actually present that day (custom events grouped by their own
+        // category, plus EGAT tasks/trips/race day) — dedupe categories so a day with three
+        // "other" appointments doesn't get three identical blue dots.
+        const evCats = new Set(dayEv.map(ev=>calCategoryMeta(ev.category).key));
+        evCats.forEach(key=> dots.push({color: calCategoryMeta(key).color}));
         if(dayTasks.length) dots.push({color:'var(--amber)'});
         if(dayTrips.length) dots.push({color:'var(--purple)'});
+        if(dayRaces.length) dots.push({color:RACE_CATEGORY.color});
         return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
           <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
           <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
         </button>`;
       }).join('')}
     </div>
-    <div class="muted" style="margin:10px 0">จุดฟ้า = นัด/กิจกรรมที่คีย์เอง · จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดแดง = นัดหมอ · จุดฟ้า = นัดหมายอื่นๆ · จุดม่วง = วันในทริป · จุดเขียว = วันแข่ง/ซ้อม — คลิกวันที่เพื่อดูรายละเอียด</div>
     <div style="border-top:1px solid var(--line); padding-top:12px">
       <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
       ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
@@ -1170,6 +1483,7 @@ function renderToday(){
       <div class="form-row">
         <input type="date" id="calEvDate" value="${selDay}" style="max-width:150px">
         <input type="time" id="calEvTime" style="max-width:110px">
+        <select id="calEvCategory" style="max-width:150px">${CAL_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
         <input type="text" id="calEvTitle" placeholder='เช่น "นัดหมอฟัน" หรือ "ประชุมลูกค้า"' style="flex:1">
         <button class="btn btn-sm" onclick="addCalEvent()">+ เพิ่ม</button>
       </div>
@@ -1213,7 +1527,7 @@ function renderFinance(){
   const history = lastNMonthsSummary(6);
   return `
   <div class="section-title">การเงิน</div>
-  <div class="section-sub">Import ไฟล์ "ดาวน์โหลด Backup (JSON)" จาก Milk Hub (หน้าตั้งค่า → 💾 สำรอง/ย้ายข้อมูล) เพื่อดึงรายรับ-รายจ่ายทั้งหมดเข้ามา ดูย้อนหลังเป็นรายเดือนได้ด้านล่าง</div>
+  <div class="section-sub">Import ไฟล์ "ดาวน์โหลด Backup (JSON)" จาก Milk Hub (หน้าตั้งค่า → 💾 สำรอง/ย้ายข้อมูล) เพื่อดึงรายรับ-รายจ่ายทั้งหมดเข้ามา ดูย้อนหลังเป็นรายเดือนได้ด้านล่าง — เชื่อม origin เดียวกันจะดึงสลิปเงินเดือน/ภาษีมาสรุปรายปีให้อัตโนมัติด้วย (ดูด้านล่างสุด)</div>
 
   <div class="panel">
     ${milkHubSameOriginAvailable() ? `
@@ -1291,8 +1605,70 @@ function renderFinance(){
       </table>
     </div>
   </div>
+
+  ${renderFinanceTaxPanel()}
   `;
 }
+// รายได้รวมรายปี, ภาษีหัก ณ ที่จ่ายสะสม, เงินสมทบ PVD สะสม และเรทภาษีปัจจุบัน — ดึงมาจากสลิปเงินเดือน
+// ที่บันทึกไว้ในหน้า "ภาษี" ของ Milk Hub โดยตรง (sync อัตโนมัติทุกครั้งที่เปิดหน้านี้ เมื่อเปิดจาก
+// origin เดียวกับ Milk Hub — เหมือนกับรายรับ-รายจ่ายด้านบน)
+function renderFinanceTaxPanel(){
+  const years = taxYearsAvailable();
+  if(years.indexOf(financeTaxViewYear)===-1) financeTaxViewYear = years[years.length-1];
+  const ts = taxYearSummary(financeTaxViewYear);
+  const sortedSlips = [...ts.slips].sort((a,b)=>(a.month||0)-(b.month||0));
+  const THM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `
+  <div class="panel">
+    <div class="form-row" style="justify-content:space-between; align-items:center">
+      <h3 style="margin:0">💰 รายได้ & ภาษีรายปี (จาก Milk Hub)</h3>
+      <select id="financeTaxYearSel" style="max-width:120px" onchange="setFinanceTaxYear(this.value)">
+        ${years.map(y=>`<option value="${y}" ${y===financeTaxViewYear?'selected':''}>ปี ${y}</option>`).join('')}
+      </select>
+    </div>
+    ${ts.slips.length ? '' : `<div class="msg msg-err" style="margin-top:10px">ยังไม่พบสลิปเงินเดือนของปี ${escapeHtml(financeTaxViewYear)} จาก Milk Hub — ไปกรอก/แนบสลิปที่หน้า "ภาษี" ใน Milk Hub ก่อน แล้วกด "🔄 Sync ตอนนี้" ด้านบน</div>`}
+    <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-top:10px">
+      <div class="card" style="padding:12px">
+        <div class="card-sub">รายได้รวมทั้งปี</div>
+        <div class="big-stat mono" style="color:var(--teal)">฿${fmtMoney(ts.gross)}</div>
+        <div class="stat-note" style="margin:0">${ts.slips.length} สลิป</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">ภาษีหัก ณ ที่จ่ายสะสม</div>
+        <div class="big-stat mono" style="color:var(--coral)">฿${fmtMoney(ts.withheld)}</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">สมทบ PVD สะสม</div>
+        <div class="big-stat mono" style="color:var(--indigo)">฿${fmtMoney(ts.pvd)}</div>
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-top:2px">
+      <div class="card" style="padding:12px">
+        <div class="card-sub">ขั้นภาษีปัจจุบัน (Marginal)</div>
+        <div class="big-stat mono">${(ts.bracket.rate*100).toFixed(0)}%</div>
+        <div class="stat-note" style="margin:0">เงินได้สุทธิ ฿${fmtMoney(ts.bracket.floor)} − ${ts.bracket.cap===Infinity?'ขึ้นไป':'฿'+fmtMoney(ts.bracket.cap)}</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">อัตราภาษีเฉลี่ยที่แท้จริง (Effective)</div>
+        <div class="big-stat mono">${ts.effectiveRate.toFixed(2)}%</div>
+        <div class="stat-note" style="margin:0">= ภาษีที่คำนวณ ÷ เงินได้สุทธิ</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">${ts.diff>0?'ประมาณต้องจ่ายเพิ่ม':'ประมาณได้เงินคืน'}</div>
+        <div class="big-stat mono" style="color:${ts.diff>0?'var(--coral)':'var(--teal)'}">฿${fmtMoney(Math.abs(ts.diff))}</div>
+        <div class="stat-note" style="margin:0">ภาษีที่คำนวณได้ ฿${fmtMoney(ts.taxOwed)} − หักไว้แล้ว ฿${fmtMoney(ts.withheld)}</div>
+      </div>
+    </div>
+    ${sortedSlips.length ? `
+    <table class="table" style="margin-top:6px">
+      <tr><th>เดือน</th><th style="text-align:right">รายได้</th><th style="text-align:right">ภาษีหัก</th><th style="text-align:right">PVD</th></tr>
+      ${sortedSlips.map(s=>`<tr><td>${THM[(s.month||1)-1]||''}${s.profile?(' · '+escapeHtml(s.profile)):''}</td><td style="text-align:right" class="mono">฿${fmtMoney(s.gross)}</td><td style="text-align:right" class="mono">฿${fmtMoney(s.withheld)}</td><td style="text-align:right" class="mono">฿${fmtMoney(s.pvd||0)}</td></tr>`).join('')}
+    </table>` : ''}
+    <div class="muted" style="margin-top:10px">ประมาณการเบื้องต้นจากสลิปเงินเดือนที่บันทึกไว้ใน Milk Hub เท่านั้น (หักค่าใช้จ่าย 50% สูงสุด ฿100,000 + ค่าลดหย่อนส่วนตัว ฿60,000 + ประกันสังคม + PVD + ค่าลดหย่อนอื่นที่กรอกไว้ในหน้าภาษีของ Milk Hub) ไม่ใช่คำแนะนำทางภาษี — ยอดจริงอาจต่างจากนี้ ควรตรวจกับหน่วยงานหรือผู้เชี่ยวชาญด้านภาษีอีกครั้ง</div>
+  </div>
+  `;
+}
+function setFinanceTaxYear(y){ financeTaxViewYear = y; render(); }
 function financeMonthShift(delta){ financeViewYM = shiftYM(financeViewYM, delta); render(); }
 function manualSyncMilkHub(){
   const n = syncFromMilkHubDirect();
@@ -1339,17 +1715,31 @@ function importFinanceJson(evt){
         amount: Number(tx.amount) || 0,
         profile: pid ? (profileName(pid) || undefined) : undefined
       });
+      // Tax slips (สลิปเงินเดือน/ภาษี) — same {year: {slips, ded}} shape as syncFromMilkHubDirect(),
+      // rebuilt fresh from the backup file each import so edits/deletes in Milk Hub carry over.
+      const taxByYear = {};
+      const mergeTaxData = (tax, pid)=>{
+        Object.keys(tax||{}).forEach(yr=>{
+          const yd = tax[yr] || {slips:[], ded:{}};
+          if(!taxByYear[yr]) taxByYear[yr] = {slips:[], ded:{}};
+          (yd.slips||[]).forEach(s=> taxByYear[yr].slips.push({...s, profile: pid ? profileName(pid) : undefined}));
+          if(yd.ded && Object.keys(yd.ded).length) taxByYear[yr].ded = yd.ded;
+        });
+      };
       if(allData && Object.keys(allData).length){
         Object.keys(allData).forEach(pid=>{
           const money = (allData[pid] && allData[pid].money) || [];
           money.forEach(tx=>{ if(!tx.amount) return; upsertTxn(mapTxn(tx, profiles.length>1 ? pid : null)); processed++; });
+          mergeTaxData(allData[pid] && allData[pid].tax, profiles.length>1 ? pid : null);
         });
       } else {
         const list = data.money || (Array.isArray(data) ? data : []);
         list.forEach(tx=>{ if(!tx.amount) return; upsertTxn(mapTxn(tx, null)); processed++; });
+        if(data.tax) mergeTaxData(data.tax, null);
       }
+      if(Object.keys(taxByYear).length) state.finance.taxByYear = taxByYear;
       state.finance.lastImport = new Date().toISOString();
-      document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-ok">Import สำเร็จ — ประมวลผล ${processed} รายการ${profiles.length>1 ? (' จาก ' + profiles.length + ' โปรไฟล์') : ''}</div>`;
+      document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-ok">Import สำเร็จ — ประมวลผล ${processed} รายการ${profiles.length>1 ? (' จาก ' + profiles.length + ' โปรไฟล์') : ''}${Object.keys(taxByYear).length ? (' · สลิปภาษี ' + Object.keys(taxByYear).length + ' ปี') : ''}</div>`;
       saveState(); render();
     }catch(e){
       document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-err">อ่านไฟล์ไม่ได้ — ตรวจสอบว่าเป็นไฟล์ backup JSON จาก Milk Hub (ปุ่ม "ดาวน์โหลด Backup (JSON)" ในหน้าตั้งค่าของ Milk Hub) ข้อผิดพลาด: ${escapeHtml(e.message)}</div>`;
@@ -1411,6 +1801,33 @@ function renderRunning(){
     </div>
     <div class="tag-row" style="margin-top:16px">
       ${ACTIVITY_TYPES.map(t=>`<span class="tag" style="background:${t.color}; color:#fff">${t.label}</span>`).join('')}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>🏁 เป้าหมายการแข่ง (Race Goals)</h3>
+    <div class="muted" style="margin-bottom:12px">ใส่ได้หลายสนาม — นับถอยหลังอัตโนมัติ และดึงไปโชว์ในปฏิทิน + ป๊อปอัพเตือนหน้า "วันนี้" ด้วย</div>
+    ${sortedRaces().length ? sortedRaces().map(r=>{
+      const dleft = daysUntil(r.date);
+      const isPast = dleft < 0;
+      return `<div class="race-card">
+        <div class="race-count ${isPast?'past':''}">
+          <div class="n">${isPast ? '✓' : dleft}</div>
+          <div class="u">${isPast ? 'ผ่านแล้ว' : 'วัน'}</div>
+        </div>
+        <div class="race-info">
+          <div class="name">${escapeHtml(r.name)}</div>
+          <div class="meta">${fmtDate(r.date)} ${(new Date(r.date+'T00:00:00').getFullYear())+543}${r.location?(' · '+escapeHtml(r.location)):''}${r.distanceKm?(' · '+r.distanceKm+' กม.'):''}</div>
+        </div>
+        <button class="task-del" onclick="delRace('${r.id}')">✕</button>
+      </div>`;
+    }).join('') : '<div class="muted">ยังไม่มีสนามที่ตั้งเป้าไว้ — เพิ่มด้านล่าง</div>'}
+    <div class="form-row" style="margin-top:14px">
+      <input type="text" id="raceName" placeholder="ชื่อสนาม เช่น PYT100">
+      <input type="date" id="raceDate" style="max-width:150px">
+      <input type="text" id="raceLoc" placeholder="สถานที่ (ไม่บังคับ)" style="max-width:160px">
+      <input type="number" id="raceDist" placeholder="ระยะ (กม., ไม่บังคับ)" style="max-width:150px">
+      <button class="btn" onclick="addRace()">+ เพิ่มสนาม</button>
     </div>
   </div>
 
@@ -3163,6 +3580,10 @@ function importAllJson(evt){
         if(!it.valueHistory) it.valueHistory = [{date: it.updated || todayISO(), value: Number(it.value)||0}];
       });
       if(!parsed.calendar) parsed.calendar = {events:[]};
+      (parsed.calendar.events||[]).forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
+      if(!parsed.finance.taxByYear) parsed.finance.taxByYear = {};
+      if(parsed.running && !parsed.running.races) parsed.running.races = [];
+      if(!parsed.settings.reminderPopup) parsed.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true}, windowMode:'week', lastShownDate:null, autoShow:true};
       delete parsed.health; // module removed — drop it if an old backup still has it
       const looksValid = required.every(k=>Object.prototype.hasOwnProperty.call(parsed, k));
       if(!looksValid) throw new Error('ไฟล์นี้ไม่ใช่ backup ของ Life OS (โครงสร้างไม่ตรง)');
