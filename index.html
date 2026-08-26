@@ -1226,6 +1226,33 @@ function reminderRowHtml(r){
     <span class="reminder-when">${when}</span>
   </div>`;
 }
+// The "วันนี้" overview page's own hero box — this IS the "popup" the person actually meant:
+// a persistent, always-visible list of what's coming up (not just today), instead of a
+// same-day-only timeline. The 🔔 bell modal (below) is the same data as a quick-glance
+// overlay reachable from any page; both read/write the same state.settings.reminderPopup
+// so toggling the window or a category filter in either place stays in sync with the other.
+function renderUpcomingRibbon(){
+  const p = state.settings.reminderPopup;
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY];
+  const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
+  return `
+  <div class="ribbon">
+    <div class="ribbon-head">
+      <h3>🔔 นัดหมาย/งานที่ใกล้ถึง</h3>
+      <div class="form-row" style="margin:0">
+        <button class="btn btn-sm ${p.windowMode==='week'?'':'btn-ghost'}" onclick="setReminderWindow('week')">สัปดาห์นี้</button>
+        <button class="btn btn-sm ${p.windowMode==='month'?'':'btn-ghost'}" onclick="setReminderWindow('month')">เดือนนี้</button>
+      </div>
+    </div>
+    <div class="chip-toggle" style="margin-top:2px">
+      ${cats.map(c=>`<button type="button" class="chip ${p.enabledCats[c.key]?'on':''}" style="${p.enabledCats[c.key]?('background:'+c.color+';'):''}" onclick="toggleReminderCat('${c.key}')">${escapeHtml(c.label)}</button>`).join('')}
+    </div>
+    <div class="reminder-list">
+      ${items.length ? items.map(reminderRowHtml).join('') : '<div class="tl-empty">ไม่มีนัดหมาย/งาน/วันแข่งในช่วงนี้ — ลองพิมพ์ใน Quick Capture ด้านล่าง 🎉</div>'}
+    </div>
+  </div>
+  `;
+}
 function renderReminderPopup(){
   const p = state.settings.reminderPopup;
   const cats = [...CAL_CATEGORIES, RACE_CATEGORY];
@@ -1262,14 +1289,20 @@ function openReminderPopup(){
 function closeReminderPopup(){
   document.getElementById('reminderOverlay').style.display = 'none';
 }
+// Both of these can be triggered from the bell modal OR the Today page ribbon (they share
+// state.settings.reminderPopup) — re-render the whole page so the ribbon picks up the change,
+// then also refresh the modal body directly if it's the one currently open (render() alone
+// doesn't touch it, since it lives outside #viewRoot).
 function setReminderWindow(mode){
   state.settings.reminderPopup.windowMode = mode;
-  saveState(); openReminderPopup(); updateBellBadge();
+  saveState(); render();
+  if(document.getElementById('reminderOverlay').style.display !== 'none') openReminderPopup();
 }
 function toggleReminderCat(key){
   const p = state.settings.reminderPopup;
   p.enabledCats[key] = !p.enabledCats[key];
-  saveState(); openReminderPopup(); updateBellBadge();
+  saveState(); render();
+  if(document.getElementById('reminderOverlay').style.display !== 'none') openReminderPopup();
 }
 function toggleReminderAutoShow(){
   state.settings.reminderPopup.autoShow = document.getElementById('reminderAutoShow').checked;
@@ -1307,14 +1340,6 @@ function render(){
 let selectedCalDay = null; // transient — which calendar day is expanded below the grid
 function renderToday(){
   const t = todayISO();
-  const items = [];
-  state.work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10) === t) items.push({time:(tk.due||'').slice(11,16) || '—', label:tk.text, color:'var(--amber)'}); });
-  state.running.activities.forEach(a=>{ if(a.date === t) items.push({time:'', label:activityTypeMeta(a.type).label + ' — ' + a.name + (a.distance_km?' ('+a.distance_km+'K)':''), color:activityTypeMeta(a.type).color}); });
-  state.trips.list.forEach(tr=> tr.days.forEach(d=>{ if(d.date === t) items.push({time:'', label:'ทริป: ' + d.place, color:'var(--purple)'}); }));
-  state.finance.transactions.forEach(tx=>{ if(tx.date === t) items.push({time:'', label:'฿' + fmtMoney(tx.amount) + ' ' + (tx.item||tx.category||''), color:'var(--coral)'}); });
-  state.calendar.events.forEach(ev=>{ if(ev.date === t) items.push({time:ev.time||'', label:ev.title, color:calCategoryMeta(ev.category).color}); });
-  state.running.races.forEach(r=>{ if(r.date === t) items.push({time:'', label:'🏁 วันแข่ง: ' + r.name, color:RACE_CATEGORY.color}); });
-
   const finance = state.finance, running = state.running, work = state.work, trips = state.trips;
   const thisMonth = monthSummary(todayISO().slice(0,7));
   const workYm = t.slice(0,7);
@@ -1344,17 +1369,7 @@ function renderToday(){
   const selEvents = dayEvents(selDay);
 
   return `
-  <div class="ribbon">
-    <div class="ribbon-head"><h3>ไทม์ไลน์วันนี้ — รวมทุกด้าน</h3><span>${items.length} รายการ</span></div>
-    <div class="timeline">
-      ${items.length ? items.map(it=>`
-        <div class="tl-item">
-          <div class="tl-time">${it.time}</div>
-          <div class="tl-dot" style="background:${it.color}"></div>
-          <div class="tl-label">${escapeHtml(it.label)}</div>
-        </div>`).join('') : '<div class="tl-empty">ไม่มีรายการวันนี้ — ลองพิมพ์ใน Quick Capture ด้านล่าง</div>'}
-    </div>
-  </div>
+  ${renderUpcomingRibbon()}
 
   <div class="grid">
     <div class="card">
