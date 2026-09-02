@@ -3657,11 +3657,15 @@ async function handleOtherPortfolioPdf(evt, id){
     const holdingsResult = parseDimeMonthlyHoldings(lines);
     const holdings = holdingsResult.holdings.map(h=>{
       const computed = dimeHoldingValueThb(h, {fxRate: holdingsResult.fxRate});
-      return computed ? {symbol: h.symbol, name: h.name, value: computed.valueThb, currency: h.currency} : null;
+      // Keeps cost (ต้นทุน) and units alongside value so the per-person card can show a
+      // cost/current-value/gain breakdown per holding, same numbers as our own portfolio's
+      // holdings review — just without a trend line/sparkline (no valueHistory is kept per
+      // holding here, only the latest snapshot each time a new statement is uploaded).
+      return computed ? {symbol: h.symbol, name: h.name, value: computed.valueThb, cost: computed.costThb, units: h.units, currency: h.currency} : null;
     }).filter(Boolean);
     if(guess != null){
       otherPortfolioPending[id] = {guessedValue: guess, monthDate: holdingsResult.statementDate || todayISO(), holdings};
-      const holdingsNote = holdings.length ? ` · พบโฮลดิ้งรายตัว ${holdings.length} รายการ (จะบันทึกไว้ทำกราฟสัดส่วนของคนนี้ด้วย)` : '';
+      const holdingsNote = holdings.length ? ` · พบโฮลดิ้งรายตัว ${holdings.length} รายการ (จะบันทึกไว้ทำกราฟสัดส่วน + ตารางทุน/มูลค่าของคนนี้ด้วย)` : '';
       resultHtml = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ (${pdf.numPages} หน้า) — เดามูลค่ารวมได้ ฿${fmtMoney(guess)}${holdingsNote} ตรวจสอบแล้วกดยืนยันด้านล่าง</span>`;
     } else {
       resultHtml = `<span style="color:var(--coral)">หา "มูลค่ารวม" ในไฟล์นี้ไม่เจอ — กรอกตัวเลขด้วยมือแทนได้</span>`;
@@ -3692,6 +3696,36 @@ function confirmOtherPortfolioImport(id){
   saveState(); render();
 }
 function cancelOtherPortfolioImport(id){ delete otherPortfolioPending[id]; delete otherPortfolioMsgHtml[id]; render(); }
+// Reordering people in the "พอร์ตเสริม" list — state.assets.otherPortfolios's array ORDER is the
+// display order (no separate sort-index field needed), so reordering just means moving entries
+// within that array. Two ways to do it: native HTML5 drag-and-drop on each card (the ⠿ handle),
+// and ▲/▼ buttons as a reliable fallback for touch/accessibility. Both funnel into the same
+// splice-based move so they always agree.
+let otherPortfolioDragId = null;
+function otherPortfolioDragStart(id){ otherPortfolioDragId = id; }
+function otherPortfolioDragOver(evt){ evt.preventDefault(); } // required so the drop target accepts the drop
+function otherPortfolioDrop(targetId){
+  const fromId = otherPortfolioDragId;
+  otherPortfolioDragId = null;
+  if(!fromId || fromId === targetId) return;
+  const list = state.assets.otherPortfolios || [];
+  const fromIdx = list.findIndex(p=>p.id===fromId);
+  const toIdx = list.findIndex(p=>p.id===targetId);
+  if(fromIdx<0 || toIdx<0) return;
+  const [moved] = list.splice(fromIdx,1);
+  list.splice(toIdx,0,moved);
+  saveState(); render();
+}
+function moveOtherPortfolio(id, dir){ // dir: -1 = up, +1 = down
+  const list = state.assets.otherPortfolios || [];
+  const idx = list.findIndex(p=>p.id===id);
+  if(idx<0) return;
+  const newIdx = idx+dir;
+  if(newIdx<0 || newIdx>=list.length) return;
+  const [moved] = list.splice(idx,1);
+  list.splice(newIdx,0,moved);
+  saveState(); render();
+}
 // Per-person composition donut for the "พอร์ตเสริม" panel — each person's OWN holdings broken
 // down by symbol, parsed from their own uploaded Dime monthly statement's "รายละเอียดการลงทุน"
 // table (same parser as our own portfolio's holdings review, see parseDimeMonthlyHoldings/
@@ -3717,14 +3751,19 @@ function renderOtherPortfolios(){
     <div class="ribbon-head" style="margin-bottom:6px">
       <h3>พอร์ตเสริม (ติดตามพอร์ตคนอื่น)</h3>
     </div>
-    <div class="muted" style="margin-bottom:14px">สำหรับดูตัวเลขพอร์ตของคนอื่น เช่น ลูกหลาน — <b>ไม่ถูกนำไปรวมกับมูลค่าสุทธิ/สินทรัพย์ของเราด้านบนเลย</b> แค่ไว้ติดตามดูเฉยๆ แต่ละคนอัปโหลดรายงาน Dime รายเดือนของเขาเพื่อดึงมูลค่ารวมอัตโนมัติได้ทุกเดือน พร้อมกราฟโดนัทสัดส่วนสินทรัพย์ของคนนั้นแยกเป็นของตัวเอง (จะเจอกล่องถามรหัสผ่านถ้าไฟล์มีรหัส) หรือกรอกตัวเลขด้วยมือก็ได้ เผื่อคนนั้นไม่มีบัญชี Dime (แบบกรอกมือจะมีแค่ยอดรวม ไม่มีกราฟสัดส่วนเพราะไม่รู้รายละเอียดหุ้นแต่ละตัว)</div>
-    ${people.length ? people.map(p=>{
+    <div class="muted" style="margin-bottom:14px">สำหรับดูตัวเลขพอร์ตของคนอื่น เช่น ลูกหลาน — <b>ไม่ถูกนำไปรวมกับมูลค่าสุทธิ/สินทรัพย์ของเราด้านบนเลย</b> แค่ไว้ติดตามดูเฉยๆ แต่ละคนอัปโหลดรายงาน Dime รายเดือนของเขาเพื่อดึงมูลค่ารวมอัตโนมัติได้ทุกเดือน พร้อมกราฟโดนัทสัดส่วน + ตารางต้นทุน/มูลค่าปัจจุบัน/กำไรขาดทุนรายตัว (ไม่มีกราฟเส้นแนวโน้ม) (จะเจอกล่องถามรหัสผ่านถ้าไฟล์มีรหัส) หรือกรอกตัวเลขด้วยมือก็ได้ เผื่อคนนั้นไม่มีบัญชี Dime (แบบกรอกมือจะมีแค่ยอดรวม ไม่มีกราฟ/ตารางเพราะไม่รู้รายละเอียดหุ้นแต่ละตัว) — ลากการ์ด (⠿) หรือกดปุ่ม ▲▼ เพื่อจัดลำดับใครอยู่บนอยู่ล่างได้ตามใจ</div>
+    ${people.length ? people.map((p,idx)=>{
       const pending = otherPortfolioPending[p.id];
       return `
-      <div class="card" style="margin-bottom:12px">
+      <div class="card" style="margin-bottom:12px" draggable="true" ondragstart="otherPortfolioDragStart('${p.id}')" ondragover="otherPortfolioDragOver(event)" ondrop="otherPortfolioDrop('${p.id}')">
         <div class="ribbon-head" style="margin-bottom:4px">
-          <div style="font-weight:600">${escapeHtml(p.name)}</div>
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="cursor:grab; color:var(--ink-soft); font-size:15px" title="ลากเพื่อจัดลำดับ">⠿</span>
+            <div style="font-weight:600">${escapeHtml(p.name)}</div>
+          </div>
           <div style="display:flex; gap:4px">
+            <button class="task-del" onclick="moveOtherPortfolio('${p.id}',-1)" title="ย้ายขึ้น" ${idx===0?'disabled':''}>▲</button>
+            <button class="task-del" onclick="moveOtherPortfolio('${p.id}',1)" title="ย้ายลง" ${idx===people.length-1?'disabled':''}>▼</button>
             <button class="task-del" onclick="renameOtherPortfolio('${p.id}')" title="เปลี่ยนชื่อ">✎</button>
             <button class="task-del" onclick="delOtherPortfolio('${p.id}')" title="ลบออกจากพอร์ตเสริม">✕</button>
           </div>
@@ -3735,6 +3774,21 @@ function renderOtherPortfolios(){
         <div style="margin:10px 0">
           ${renderGenericDonut(otherPortfolioHoldingsDonutEntries(p.holdings), {size:92, centerLabel:p.holdings.length+' ชิ้น', centerSub:'สัดส่วนของ '+escapeHtml(p.name)})}
         </div>
+        <table class="table" style="font-size:12px; margin-bottom:8px">
+          <tr><th>Symbol</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">ต้นทุน</th><th style="text-align:right">มูลค่าปัจจุบัน</th><th style="text-align:right">กำไร/ขาดทุน</th></tr>
+          ${[...p.holdings].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0)).map(h=>{
+            const gain = (Number(h.value)||0) - (Number(h.cost)||0);
+            const gainPct = h.cost ? Math.round(1000*gain/h.cost)/10 : null;
+            const gainColor = gain>=0 ? 'var(--teal)' : 'var(--coral)';
+            return `<tr>
+              <td>${escapeHtml(h.symbol)}${h.name?`<div class="muted" style="font-size:10px">${escapeHtml(h.name)}</div>`:''}</td>
+              <td style="text-align:right" class="mono">${h.units!=null?fmtMoney(h.units):'—'}</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(h.cost)}</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(h.value)}</td>
+              <td style="text-align:right" class="mono"><span style="color:${gainColor}">${gain>=0?'+':''}฿${fmtMoney(gain)}${gainPct!=null?` (${gain>=0?'+':''}${gainPct}%)`:''}</span></td>
+            </tr>`;
+          }).join('')}
+        </table>
         ` : ''}
         <div class="form-row" style="margin-top:10px">
           <input type="file" id="otherPortfolioFile_${p.id}" accept="application/pdf" onchange="handleOtherPortfolioPdf(event,'${p.id}')" style="max-width:220px">
