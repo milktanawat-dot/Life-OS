@@ -3731,15 +3731,22 @@ function renderOtherPortfolios(){
 // one (pdf.js calls onPassword again with reason=2 if the entered password was wrong).
 function loadPdfWithPassword(buf){
   return new Promise((resolve, reject)=>{
-    const loadingTask = window.pdfjsLib.getDocument({
-      data: buf,
-      onPassword: (updatePassword, reason)=>{
-        const msg = reason===2 ? 'รหัสผ่านไม่ถูกต้อง ลองใหม่ (วันเกิด 8 หลัก DDMMYYYY):' : 'ไฟล์นี้มีรหัสผ่าน — กรอกรหัสผ่าน (วันเกิด 8 หลัก DDMMYYYY):';
-        const pw = window.prompt(msg);
-        if(pw == null){ reject(new Error('ยกเลิกการกรอกรหัสผ่าน')); return; }
-        updatePassword(pw);
-      }
-    });
+    const loadingTask = window.pdfjsLib.getDocument({ data: buf });
+    // pdf.js only looks at `loadingTask.onPassword` (a property set on the returned task object) —
+    // it does NOT read an `onPassword` key from the params passed into getDocument(). Passing it in
+    // the params object (as this used to do) is silently ignored, so pdf.js's internal password-
+    // request handler sees `loadingTask.onPassword` as unset and immediately rejects the whole load
+    // with its own generic "No password given" error instead of ever calling this callback — no
+    // prompt ever appears. This is the actual bug behind "อัปโหลดไฟล์แล้วไม่มีอะไรเกิดขึ้นเลย": every
+    // password-protected PDF (monthly statement, confirmation note, พอร์ตเสริม) has been failing this
+    // way from the start; it only became visible once the message-persistence fix above stopped the
+    // resulting error message from being wiped out by the next render().
+    loadingTask.onPassword = (updatePassword, reason)=>{
+      const msg = reason===2 ? 'รหัสผ่านไม่ถูกต้อง ลองใหม่ (วันเกิด 8 หลัก DDMMYYYY):' : 'ไฟล์นี้มีรหัสผ่าน — กรอกรหัสผ่าน (วันเกิด 8 หลัก DDMMYYYY):';
+      const pw = window.prompt(msg);
+      if(pw == null){ reject(new Error('ยกเลิกการกรอกรหัสผ่าน')); return; }
+      updatePassword(pw);
+    };
     loadingTask.promise.then(resolve, reject);
   });
 }
