@@ -464,12 +464,20 @@ function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) ||
 // Portfolios — a second, user-defined way to group asset items (separate from the fixed
 // core/satellite/... category taxonomy above). state.assets.portfolios is a plain array the
 // person can add/remove entries to at any time (see addAssetPortfolio/delAssetPortfolio in the
-// assets view section below); every install always has at least one ('default', "พอร์ตหลัก")
-// so every item — including ones saved before this feature existed — always resolves to a
-// real portfolio via itemPortfolioId() rather than needing every caller to null-check.
+// assets view section below). A fresh install seeds exactly one ('default', "พอร์ตหลัก"), but
+// that one is no longer special beyond being first — ANY portfolio, including this one, can be
+// deleted as long as at least one other remains (delAssetPortfolio enforces that and reassigns
+// its items to whichever portfolio survives). mainPortfolioId() is always "whichever portfolio
+// is first in the array right now" — the de-facto landing spot for items with no explicit
+// portfolio choice — so it automatically points at a different portfolio once the original
+// 'default' one is gone, instead of every fallback site hardcoding that literal id.
 const PORTFOLIO_COLOR_CYCLE = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)','var(--indigo)','var(--sienna)'];
 function nextPortfolioColor(){ return PORTFOLIO_COLOR_CYCLE[(state.assets.portfolios||[]).length % PORTFOLIO_COLOR_CYCLE.length]; }
-function itemPortfolioId(it){ return (it && it.portfolioId) || 'default'; }
+function mainPortfolioId(){
+  const list = state.assets.portfolios || [];
+  return (list[0] && list[0].id) || 'default';
+}
+function itemPortfolioId(it){ return (it && it.portfolioId) || mainPortfolioId(); }
 function assetPortfolioMeta(id){
   const list = state.assets.portfolios || [];
   return list.find(p=>p.id===id) || list[0] || {id:'default', name:'พอร์ตหลัก', color:'var(--teal)'};
@@ -585,9 +593,11 @@ function assetsChartDates(mode){
 }
 function assetsChartSeries(mode){ return assetsChartDates(mode).map(d=>({date:d, value: assetsValueAt(d)})); }
 
-function assetsByAssetDonutEntries(){
+// items defaults to the whole portfolio (state.assets.items) but can be narrowed to e.g. one
+// user-defined portfolio's items — reused for the per-portfolio breakdown donut in renderAssets.
+function assetsByAssetDonutEntries(items){
   const cycle = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)'];
-  const sorted = [...state.assets.items].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0));
+  const sorted = [...(items || state.assets.items)].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0));
   const main = sorted.slice(0,6);
   const rest = sorted.slice(6);
   const entries = main.map((it,i)=>({label:it.name, color:cycle[i%cycle.length], value:Number(it.value)||0}));
@@ -969,7 +979,7 @@ function loadState(){
       // 'default' portfolio and every existing item is assigned to it, so nothing already
       // tracked silently "disappears" from portfolio views.
       if(!s.assets.portfolios || !s.assets.portfolios.length) s.assets.portfolios = [{id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt: todayISO()}];
-      (s.assets.items||[]).forEach(it=>{ if(!it.portfolioId) it.portfolioId = 'default'; });
+      (s.assets.items||[]).forEach(it=>{ if(!it.portfolioId) it.portfolioId = (s.assets.portfolios[0] && s.assets.portfolios[0].id) || 'default'; });
       if(!s.settings) s.settings = {};
       if(s.settings.finnhubApiKey == null) s.settings.finnhubApiKey = '';
       // Backfill currency on items saved before live market-price tracking existed — don't
@@ -3045,7 +3055,7 @@ function renderAssets(){
     <div class="ribbon-head" style="margin-bottom:6px">
       <h3>พอร์ต (แยกติดตามรายพอร์ต)</h3>
     </div>
-    <div class="muted" style="margin-bottom:12px">สร้างพอร์ตเพิ่มได้ไม่จำกัด ตั้งชื่อเอง — ใช้แยกติดตามสินทรัพย์แต่ละกลุ่ม (เช่น พอร์ตหลัก, พอร์ตเก็งกำไร, พอร์ตลูก) กดที่ชื่อพอร์ตด้านล่างเพื่อกรองรายการสินทรัพย์เฉพาะพอร์ตนั้น</div>
+    <div class="muted" style="margin-bottom:12px">สร้างพอร์ตเพิ่มได้ไม่จำกัด ตั้งชื่อเอง — ใช้แยกติดตามสินทรัพย์แต่ละกลุ่ม (เช่น พอร์ตหลัก, พอร์ตเก็งกำไร, พอร์ตลูก) กดที่ชื่อพอร์ตด้านล่างเพื่อกรองรายการสินทรัพย์เฉพาะพอร์ตนั้น (จะขึ้นกราฟสัดส่วนของพอร์ตนั้นให้ดูคู่กับกราฟรวมด้านล่างด้วย) — ลบพอร์ตไหนก็ได้ รวมถึง "พอร์ตหลัก" เดิม ตราบใดที่ยังเหลืออย่างน้อย 1 พอร์ต สินทรัพย์ในพอร์ตที่ถูกลบจะย้ายไปพอร์ตอื่นที่เหลือให้เองอัตโนมัติ ไม่มีอะไรหาย</div>
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px">
       <button class="btn ${assetsPortfolioFilter==='all'?'':'btn-ghost'} btn-sm" onclick="setAssetsPortfolioFilter('all')">ทั้งหมด · ฿${fmtMoney(assetsItemsTotal())}</button>
       ${unsortedItems.length ? `<button class="btn btn-sm" style="background:var(--amber-pale); color:#8a5a00; box-shadow:none" onclick="setAssetsPortfolioFilter('unsorted')">⚠ ยังไม่ได้จัดพอร์ต · ${unsortedItems.length} รายการ</button>` : ''}
@@ -3057,7 +3067,7 @@ function renderAssets(){
             <span style="width:8px; height:8px; border-radius:3px; background:${p.color}; display:inline-block; margin-right:6px"></span>${escapeHtml(p.name)} · ฿${fmtMoney(total)}
           </button>
           <button class="task-del" onclick="renameAssetPortfolio('${p.id}')" title="เปลี่ยนชื่อพอร์ต">✎</button>
-          ${p.id!=='default' ? `<button class="task-del" onclick="delAssetPortfolio('${p.id}')" title="ลบพอร์ตนี้ (สินทรัพย์จะย้ายกลับไปพอร์ตหลัก)">✕</button>` : ''}
+          ${portfolios.length>1 ? `<button class="task-del" onclick="delAssetPortfolio('${p.id}')" title="ลบพอร์ตนี้ (สินทรัพย์จะย้ายไปพอร์ตอื่นที่เหลืออยู่)">✕</button>` : ''}
         </span>`;
       }).join('')}
     </div>
@@ -3065,8 +3075,21 @@ function renderAssets(){
       <input type="text" id="portfolioName" placeholder="ชื่อพอร์ตใหม่ เช่น พอร์ตเก็งกำไร, พอร์ตลูก" onkeydown="if(event.key==='Enter') addAssetPortfolio()">
       <button class="btn" onclick="addAssetPortfolio()">+ สร้างพอร์ต</button>
     </div>
+    ${activePortfolio ? `
+    <div class="two-col">
+      <div>
+        <h3 style="margin-bottom:0">สัดส่วนตามพอร์ต</h3>
+        ${renderGenericDonut(byPortfolio, {emptyText:'ยังไม่มีสินทรัพย์'})}
+      </div>
+      <div>
+        <h3 style="margin-bottom:0">สัดส่วนในพอร์ต "${escapeHtml(activePortfolio.name)}"</h3>
+        ${renderGenericDonut(assetsByAssetDonutEntries(filteredItems), {centerLabel:filteredItems.length+' รายการ', centerSub:activePortfolio.name, emptyText:'พอร์ตนี้ยังไม่มีสินทรัพย์'})}
+      </div>
+    </div>
+    ` : `
     <h3 style="margin-bottom:0">สัดส่วนตามพอร์ต</h3>
     ${renderGenericDonut(byPortfolio, {emptyText:'ยังไม่มีสินทรัพย์'})}
+    `}
   </div>
 
   <div class="panel">
@@ -3109,7 +3132,7 @@ function renderAssets(){
     <div class="form-row" style="margin-top:14px">
       <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
       <select id="assetCategory">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
-      <select id="assetPortfolio" title="เลือกพอร์ตที่จะเพิ่มสินทรัพย์นี้เข้าไป">${portfolios.map(p=>`<option value="${p.id}" ${(activePortfolio?activePortfolio.id:'default')===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+      <select id="assetPortfolio" title="เลือกพอร์ตที่จะเพิ่มสินทรัพย์นี้เข้าไป">${portfolios.map(p=>`<option value="${p.id}" ${(activePortfolio?activePortfolio.id:mainPortfolioId())===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
       <input type="text" id="assetNote" placeholder="รายละเอียด/โน้ต (ไม่บังคับ)" style="max-width:160px">
       <select id="assetCurrency" onchange="onAssetCurrencyChange()" style="max-width:90px">
         <option value="THB">THB (บาท)</option>
@@ -3147,7 +3170,7 @@ function renderAssets(){
 
   <div class="panel">
     <h3>นำเข้ารายงาน Dime (PDF)</h3>
-    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF รายงานที่ Dime ส่งมาทางอีเมลทุกเดือน ระบบจะลองอ่านมูลค่ารวมให้อัตโนมัติ และถ้าเป็นรายงานบัญชีหลักทรัพย์ต่างประเทศ (Offshore) จะลองอ่านตารางโฮลดิ้งรายตัวด้วย — เพื่อให้อัพเดทมูลค่า/จำนวนหน่วยของหุ้นแต่ละตัวได้จากไฟล์นี้ไฟล์เดียว ไม่ต้องอัปโหลดใบยืนยันการซื้อขายทุกรอบ ไฟล์ที่มีรหัสผ่านจะมีกล่องให้กรอกรหัส (วันเกิด 8 หลัก) — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน (โหลดเฉพาะตัวอ่าน PDF จาก cdnjs ตอนใช้ครั้งแรก) เพราะรูปแบบรายงานของ Dime อาจไม่เหมือนที่ระบบเดาไว้ทุกครั้ง <b>ให้ตรวจตัวเลขก่อนกดบันทึก/นำเข้าเสมอ</b></div>
+    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF รายงานที่ Dime ส่งมาทางอีเมลทุกเดือน ระบบจะลองอ่านมูลค่ารวมให้อัตโนมัติ และลองอ่านตารางโฮลดิ้งรายตัวด้วย ทั้งบัญชีหลักทรัพย์ต่างประเทศ (Offshore, USD) และบัญชีหลักทรัพย์ไทย (Thai Securities, THB) — ไม่ว่าจะอยู่คนละไฟล์หรือรวมอยู่ในไฟล์เดียวกันก็อ่านได้ — เพื่อให้อัพเดทมูลค่า/จำนวนหน่วยของหุ้นแต่ละตัวได้จากไฟล์นี้ไฟล์เดียว ไม่ต้องอัปโหลดใบยืนยันการซื้อขายทุกรอบ ไฟล์ที่มีรหัสผ่านจะมีกล่องให้กรอกรหัส (วันเกิด 8 หลัก) — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน (โหลดเฉพาะตัวอ่าน PDF จาก cdnjs ตอนใช้ครั้งแรก) เพราะรูปแบบรายงานของ Dime อาจไม่เหมือนที่ระบบเดาไว้ทุกครั้ง <b>ให้ตรวจตัวเลขก่อนกดบันทึก/นำเข้าเสมอ</b></div>
     <input type="file" id="dimePdfFile" accept="application/pdf" onchange="handleDimePdf(event)">
     <div id="dimeImportMsg" class="muted" style="margin-top:8px">${dimeImportMsgHtml || ''}</div>
     <div class="form-row" style="margin-top:14px">
@@ -3237,9 +3260,11 @@ async function handleDimePdf(evt){
     } else {
       parts.push('หา "มูลค่ารวม" ในเนื้อหาไม่เจอ — กรอกตัวเลขในช่องด้านล่างเองได้เลย');
     }
-    // Also try the per-holding table (KKP Dime offshore statement layout only — see
-    // parseDimeMonthlyHoldings). Uses the same Y/X-coordinate line grouping as the Confirmation
-    // Note importer (extractPdfLines) since a raw item-order join isn't reliable for a table layout.
+    // Also try the per-holding table (KKP Dime Offshore and/or Thai Securities Account statement
+    // layout — see parseDimeMonthlyHoldings). Uses the same Y/X-coordinate line grouping as the
+    // Confirmation Note importer (extractPdfLines) since a raw item-order join isn't reliable for
+    // a table layout. A combined PDF can carry both an Offshore (USD) and a Thai (THB) section —
+    // holdings from either/both come back tagged with their own currency.
     const lines = await extractPdfLines(pdf);
     const holdingsResult = parseDimeMonthlyHoldings(lines);
     if(holdingsResult.holdings.length){
@@ -3250,9 +3275,12 @@ async function handleDimePdf(evt){
         // An item whose note mentions รวมหลายบัญชี (see the seeded IVV holding) is known to combine
         // more than one Dime account — this one monthly statement only ever covers ONE account, so
         // defaulting that row to unchecked (instead of silently overwriting a manually-reconciled
-        // combined total) is the safer default. Everything else defaults checked as usual.
+        // combined total) is the safer default. A USD row also defaults unchecked (and gets
+        // disabled in the review table) when this file has no "1 USD = X THB" line to convert
+        // it with — e.g. a Thai-Securities-only statement with a stray/unrelated USD row.
         const multiAccountNote = !!(item && /บัญชี/.test(item.note||''));
-        return {...h, checked: !multiAccountNote, create: false, multiAccountNote};
+        const missingFx = h.currency==='USD' && holdingsResult.fxRate==null;
+        return {...h, checked: !multiAccountNote && !missingFx, create: false, multiAccountNote, missingFx};
       });
       parts.push(`พบโฮลดิ้งรายตัว ${dimeHoldingsRows.length} รายการ — ตรวจสอบด้านล่างก่อนนำเข้า`);
     }
@@ -3267,19 +3295,46 @@ async function handleDimePdf(evt){
 // labelled total near common Thai/English keywords first, then falls back to
 // the largest currency-looking number on the page. Always shown to the person
 // for confirmation before it's saved (see the "+ บันทึกลงพอร์ต" button).
+//
+// A combined statement (Offshore + Thai Securities account in one PDF, as KKP Dime issues once
+// someone holds both) repeats the exact Thai phrase "มูลค่าเงินลงทุนรวม / Total Balance" once
+// per account section — so every distinct occurrence is summed into a whole-statement grand
+// total, instead of only ever finding the first account. numRe/near-THB matching also tolerates
+// a stray space around the decimal point (e.g. "770 .59") since pdf.js occasionally splits a
+// number's integer/decimal halves into separate text items.
 function guessPortfolioValue(text){
-  const keywords = ['มูลค่าเงินลงทุนรวม','มูลค่ารวม','รวมทั้งหมด','พอร์ตรวม','มูลค่าพอร์ตรวม','total balance','total portfolio value','total value','net asset value','nav รวม','total assets'];
   const numRe = /[\d]{1,3}(?:,\d{3})+(?:\.\d+)?|\d{4,}(?:\.\d+)?/g;
+  const thbNearRe = /([\d,]+)\s*\.?\s*(\d*)\s*THB/gi;
+  const extractNear = (idx)=>{
+    const windowText = text.slice(Math.max(0, idx-80), idx+150);
+    thbNearRe.lastIndex = 0;
+    const m = thbNearRe.exec(windowText);
+    if(m){
+      const raw = m[1].replace(/,/g,'') + (m[2] ? '.'+m[2] : '');
+      const val = parseFloat(raw);
+      if(val>0) return val;
+    }
+    const any = windowText.match(numRe);
+    if(any && any[0]){
+      const val = parseFloat(any[0].replace(/,/g,''));
+      if(val>0) return val;
+    }
+    return null;
+  };
+  const primary = 'มูลค่าเงินลงทุนรวม';
+  let idx = -1, total = 0, hits = 0;
+  while((idx = text.indexOf(primary, idx+1)) >= 0){
+    const val = extractNear(idx);
+    if(val != null){ total += val; hits++; }
+  }
+  if(hits) return Math.round(total);
+  const keywords = ['มูลค่ารวม','รวมทั้งหมด','พอร์ตรวม','มูลค่าพอร์ตรวม','total balance','total portfolio value','total value','net asset value','nav รวม','total assets'];
   const lower = text.toLowerCase();
   for(const kw of keywords){
-    const idx = lower.indexOf(kw);
-    if(idx>=0){
-      const windowText = text.slice(idx, idx+120);
-      const m = windowText.match(numRe);
-      if(m && m.length){
-        const val = parseFloat(m[0].replace(/,/g,''));
-        if(val>0) return Math.round(val);
-      }
+    const kidx = lower.indexOf(kw);
+    if(kidx>=0){
+      const val = extractNear(kidx);
+      if(val != null) return Math.round(val);
     }
   }
   const all = [...text.matchAll(numRe)].map(m=>parseFloat(m[0].replace(/,/g,''))).filter(n=>n>=1000 && n<=500000000);
@@ -3305,13 +3360,21 @@ function confirmDimeImport(){
 function delAssetReport(id){ state.assets.reports = state.assets.reports.filter(r=>r.id!==id); saveState(); render(); }
 
 /* ---------- Per-holding parsing of the Dime monthly statement's own holdings table ----------
-   Verified against a real "Offshore Securities Account Monthly Statement" (KKP Dime): each
-   holding is two consecutive visual lines (from extractPdfLines' Y-coordinate grouping) —
-     SYMBOL  alloc%  shares  avgCostPerShareUSD  priceUSD  ±return%  ±returnUSD  marketValueUSD
-   followed by the company/fund name. Section headers (หุ้นสามัญ = Common Stock, กองทุน = fund/ETF)
-   set a default category per row (still editable before import). Only ever recognizes this one
-   specific layout — returns holdings:[] (not an error) for anything else, so it's purely
-   additive: the existing "มูลค่ารวม" guess above keeps working as-is either way. */
+   Verified against real KKP Dime monthly statements, both the "Offshore Securities Account"
+   layout (USD holdings) and the "Thai Securities Account" layout (THB holdings) — Dime issues
+   both as their own account section, sometimes combined into one PDF once someone holds both
+   (an "As of ..." Thai-year statement date + an optional "1 USD = X THB" line only when an
+   Offshore section is present). Each holding is two consecutive visual lines (from
+   extractPdfLines' Y-coordinate grouping) —
+     SYMBOL  alloc%  shares  avgCostPerShare  price  ±return%  ±return  marketValue
+   followed by the company/fund name. A "สกุลเงิน / Currency USD|THB" line precedes each
+   account section's table and tags every row parsed after it, so a combined statement's rows
+   carry the right currency each — no assumption that the whole file is one currency. Section
+   headers (หุ้นสามัญ = Common Stock, กองทุน = fund/ETF) set a default category per row (still
+   editable before import). Symbols can start with a digit or contain a dot (e.g. "1DIV",
+   "BRK.B") — real tickers seen in these statements. Only ever recognizes this one specific
+   layout — returns holdings:[] (not an error) for anything else, so it's purely additive: the
+   existing "มูลค่ารวม" guess above keeps working as-is either way. */
 const DIME_MONTH_EN = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
 function parseDimeMonthlyHoldings(lines){
   const joined = lines.join('\n');
@@ -3323,12 +3386,17 @@ function parseDimeMonthlyHoldings(lines){
     const mo = DIME_MONTH_EN[dateMatch[2].toLowerCase()];
     if(mo) statementDate = dateMatch[3]+'-'+pad2(mo)+'-'+pad2(parseInt(dateMatch[1],10));
   }
-  if(!fxRate) return {fxRate:null, statementDate, holdings:[]}; // no FX rate = can't convert to THB, bail out cleanly
-  const rowRe = /^([A-Z][A-Z0-9]{1,5})\s+([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([+-])\s*([\d.]+)%\s+([+-])\s*([\d.]+)\s+([\d.]+)\s*$/;
+  // Note: no early bail-out when fxRate is missing — a Thai-Securities-only statement has no
+  // "1 USD = X THB" line at all (nothing in it needs converting), and its holdings are still
+  // fully readable. Only a USD-currency row actually needs fxRate (checked at import time).
+  const rowRe = /^([A-Z0-9][A-Z0-9.]{0,7})\s+([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([+-])\s*([\d.]+)%\s+([+-])\s*([\d.]+)\s+([\d.]+)\s*$/;
   let section = null; // 'stock' | 'etf' — only affects the default category on newly-created items
+  let currency = null; // 'USD' | 'THB' — set per account section by its "Currency USD|THB" line
   const holdings = [];
   for(let i=0;i<lines.length;i++){
     const line = lines[i].trim();
+    const curMatch = line.match(/Currency\s+(USD|THB)/i);
+    if(curMatch){ currency = curMatch[1].toUpperCase(); continue; }
     // These Thai section-header words never appear inside an English holding-name line, so
     // matching on them (rather than the bilingual "Common Stock"/"ETF" phrasing) can't be
     // confused with a stock/ETF name that happens to contain "ETF" or "Common Stock" itself.
@@ -3342,20 +3410,33 @@ function parseDimeMonthlyHoldings(lines){
     holdings.push({
       symbol, name,
       units: parseFloat(sharesRaw),
-      avgCostUsd: parseFloat(avgCostRaw),
-      priceUsd: parseFloat(priceRaw),
-      marketValueUsd: parseFloat(mktValRaw),
+      avgCost: parseFloat(avgCostRaw),
+      price: parseFloat(priceRaw),
+      marketValue: parseFloat(mktValRaw),
+      currency: currency || 'USD', // defensive fallback only — every real statement seen tags this before its table
       category: section==='etf' ? 'core' : 'satellite'
     });
   }
   return {fxRate, statementDate, holdings};
+}
+// Converts one parsed holding row to its THB value/cost, currency-aware: a THB row (Thai
+// Securities account) is already in baht — no conversion needed; a USD row (Offshore account)
+// needs meta.fxRate, and returns null when that's missing (nothing in the file to convert with —
+// see the missingFx flag set in handleDimePdf) rather than silently producing a wrong number.
+function dimeHoldingValueThb(r, meta){
+  if(r.currency === 'THB'){
+    return {valueThb: Math.round(r.marketValue), costThb: Math.round(r.avgCost * r.units)};
+  }
+  if(!meta.fxRate) return null;
+  return {valueThb: Math.round(r.marketValue * meta.fxRate), costThb: Math.round(r.avgCost * r.units * meta.fxRate)};
 }
 // Review-before-save table for the per-holding parse above — same "nothing is written until the
 // person confirms" pattern as renderConfirmationNoteReview. A row matching an existing item's
 // symbol updates that item's value/cost/units/valueHistory in place; an unmatched symbol only
 // gets created as a new item if its "สร้างสินทรัพย์ใหม่" checkbox is explicitly ticked (mirrors
 // the Confirmation Note review below), landing in พอร์ตหลัก + flagged unless a different
-// portfolio is picked right there.
+// portfolio is picked right there. Rows can be a mix of USD (Offshore) and THB (Thai Securities)
+// when the source PDF combines both account sections — each row shows its own currency.
 function renderDimeHoldingsReview(){
   if(!dimeHoldingsRows || !dimeHoldingsRows.length) return '';
   const rows = dimeHoldingsRows;
@@ -3364,15 +3445,18 @@ function renderDimeHoldingsReview(){
   return `
   <div class="panel">
     <h3>ตรวจสอบโฮลดิ้งรายตัวก่อนนำเข้า (${rows.length} รายการ)</h3>
-    <div class="muted" style="margin-bottom:10px">อ้างอิงจากตาราง "รายละเอียดการลงทุน" ในรายงานนี้ ณ ${meta.statementDate?fmtDate(meta.statementDate):'—'} (1 USD = ${meta.fxRate||'—'} THB) — ติ๊กแถวที่จะอัพเดท มูลค่า/ต้นทุน/จำนวนหน่วยของสินทรัพย์ที่มีอยู่แล้วจะถูกแทนที่ด้วยตัวเลขจากรายงานนี้ (ประวัติเก่ายังอยู่ในกราฟแนวโน้ม) ส่วนหุ้น/ETF ตัวใหม่ติ๊ก "สร้างสินทรัพย์ใหม่" เพื่อเพิ่มเข้าระบบพร้อมเลือกพอร์ตได้เลย</div>
+    <div class="muted" style="margin-bottom:10px">อ้างอิงจากตาราง "รายละเอียดการลงทุน" ในรายงานนี้ ณ ${meta.statementDate?fmtDate(meta.statementDate):'—'}${meta.fxRate?` (1 USD = ${meta.fxRate} THB)`:''} — รองรับทั้งบัญชีต่างประเทศ (USD, แปลงด้วยอัตราแลกเปลี่ยนในไฟล์) และบัญชีหลักทรัพย์ไทย (THB, ใช้ตัวเลขตรงจากไฟล์) ในรายงานเดียวกันหรือคนละไฟล์ก็ได้ — ติ๊กแถวที่จะอัพเดท มูลค่า/ต้นทุน/จำนวนหน่วยของสินทรัพย์ที่มีอยู่แล้วจะถูกแทนที่ด้วยตัวเลขจากรายงานนี้ (ประวัติเก่ายังอยู่ในกราฟแนวโน้ม) ส่วนหุ้น/กองทุนตัวใหม่ติ๊ก "สร้างสินทรัพย์ใหม่" เพื่อเพิ่มเข้าระบบพร้อมเลือกพอร์ตได้เลย</div>
     <table class="table">
-      <tr><th></th><th>Symbol</th><th>ชื่อ</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">มูลค่าใหม่</th><th style="text-align:right">ต้นทุนใหม่</th><th>สินทรัพย์</th></tr>
+      <tr><th></th><th>Symbol</th><th>สกุลเงิน</th><th>ชื่อ</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">มูลค่าใหม่</th><th style="text-align:right">ต้นทุนใหม่</th><th>สินทรัพย์</th></tr>
       ${rows.map((r,i)=>{
         const item = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===r.symbol.toUpperCase());
-        const valueThb = Math.round(r.marketValueUsd * meta.fxRate);
-        const costThb = Math.round(r.avgCostUsd * r.units * meta.fxRate);
+        const computed = dimeHoldingValueThb(r, meta);
+        const valueThb = computed ? computed.valueThb : null;
+        const costThb = computed ? computed.costThb : null;
         let statusCell;
-        if(item){
+        if(r.missingFx){
+          statusCell = `<span style="font-size:11px; color:var(--coral)">⚠ ไม่พบอัตราแลกเปลี่ยน (1 USD = ... THB) ในไฟล์นี้ — แปลงเป็นบาทไม่ได้ ข้ามรายการนี้ไปก่อน</span>`;
+        } else if(item){
           const pf = assetPortfolioMeta(itemPortfolioId(item));
           const diff = valueThb - (Number(item.value)||0);
           const diffPct = item.value ? Math.round(1000*diff/item.value)/10 : null;
@@ -3384,17 +3468,18 @@ function renderDimeHoldingsReview(){
             </label>
             <div style="display:flex; gap:4px; flex-wrap:wrap">
               <select id="dhCat_${i}" style="font-size:11px; padding:3px 5px">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===r.category?'selected':''}>${c.label}</option>`).join('')}</select>
-              <select id="dhPortfolio_${i}" style="font-size:11px; padding:3px 5px">${portfolios.map(p=>`<option value="${p.id}" ${p.id==='default'?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+              <select id="dhPortfolio_${i}" style="font-size:11px; padding:3px 5px">${portfolios.map(p=>`<option value="${p.id}" ${p.id===mainPortfolioId()?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
             </div>
             <div class="muted" style="font-size:10px; margin-top:2px">ไม่เลือกพอร์ต = เข้าพอร์ตหลัก + ติดแท็กยังไม่ได้จัดพอร์ต</div>`;
         }
         return `<tr>
-          <td><input type="checkbox" id="dhRow_${i}" ${r.checked?'checked':''}></td>
+          <td><input type="checkbox" id="dhRow_${i}" ${r.checked?'checked':''} ${r.missingFx?'disabled':''}></td>
           <td class="mono">${escapeHtml(r.symbol)}</td>
+          <td><span class="tag">${r.currency}</span></td>
           <td class="muted" style="font-size:11px">${escapeHtml(r.name||'—')}</td>
           <td style="text-align:right" class="mono">${r.units}</td>
-          <td style="text-align:right" class="mono">฿${fmtMoney(valueThb)}</td>
-          <td style="text-align:right" class="mono">฿${fmtMoney(costThb)}</td>
+          <td style="text-align:right" class="mono">${valueThb!=null?'฿'+fmtMoney(valueThb):'—'}</td>
+          <td style="text-align:right" class="mono">${costThb!=null?'฿'+fmtMoney(costThb):'—'}</td>
           <td>${statusCell}</td>
         </tr>`;
       }).join('')}
@@ -3413,8 +3498,9 @@ function confirmDimeHoldingsImport(){
   dimeHoldingsRows.forEach((r,i)=>{
     const cb = document.getElementById('dhRow_'+i);
     if(!cb || !cb.checked) return;
-    const valueThb = Math.round(r.marketValueUsd * meta.fxRate);
-    const costThb = Math.round(r.avgCostUsd * r.units * meta.fxRate);
+    const computed = dimeHoldingValueThb(r, meta);
+    if(!computed){ skipped++; return; } // e.g. a USD row with no fxRate in this file — can't convert safely
+    const {valueThb, costThb} = computed;
     const item = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===r.symbol.toUpperCase());
     if(item){
       item.value = valueThb;
@@ -3434,14 +3520,15 @@ function confirmDimeHoldingsImport(){
     if(createCb && createCb.checked){
       const catEl = document.getElementById('dhCat_'+i);
       const pfEl = document.getElementById('dhPortfolio_'+i);
-      const portfolioId = pfEl ? pfEl.value : 'default';
+      const portfolioId = pfEl ? pfEl.value : mainPortfolioId();
       state.assets.items.push({
         id: uid(), name: r.name ? (r.symbol+' — '+r.name) : r.symbol,
-        assetType: 'หุ้น/ETF ต่างประเทศ (Dime)', category: catEl ? catEl.value : r.category,
-        portfolioId, needsPortfolioReview: portfolioId==='default',
+        assetType: r.currency==='THB' ? 'หุ้น/กองทุนไทย (Dime)' : 'หุ้น/ETF ต่างประเทศ (Dime)',
+        category: catEl ? catEl.value : r.category,
+        portfolioId, needsPortfolioReview: portfolioId===mainPortfolioId(),
         value: valueThb, costBasis: costThb,
         note: 'สร้าง/อัพเดทจากรายงาน Dime รายเดือน', updated: d, dimeSourced: true,
-        symbol: r.symbol, units: r.units, currency: 'USD',
+        symbol: r.symbol, units: r.units, currency: r.currency,
         valueHistory: [{date: d, value: valueThb}], transactions: []
       });
       created++;
@@ -3596,7 +3683,7 @@ function renderConfirmationNoteReview(){
             </label>
             <div style="display:flex; gap:4px; flex-wrap:wrap">
               <select id="cnCat_${i}" style="font-size:11px; padding:3px 5px">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}" ${c.key==='satellite'?'selected':''}>${c.label}</option>`).join('')}</select>
-              <select id="cnPortfolio_${i}" style="font-size:11px; padding:3px 5px">${portfolios.map(p=>`<option value="${p.id}" ${p.id==='default'?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+              <select id="cnPortfolio_${i}" style="font-size:11px; padding:3px 5px">${portfolios.map(p=>`<option value="${p.id}" ${p.id===mainPortfolioId()?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
             </div>
             <div class="muted" style="font-size:10px; margin-top:2px">ไม่เลือกพอร์ต = เข้าพอร์ตหลัก + ติดแท็กยังไม่ได้จัดพอร์ต</div>`;
         }
@@ -3643,11 +3730,11 @@ function confirmConfirmationNoteImport(){
     if(r.side==='buy' && createCb && createCb.checked){
       const catEl = document.getElementById('cnCat_'+i);
       const pfEl = document.getElementById('cnPortfolio_'+i);
-      const portfolioId = pfEl ? pfEl.value : 'default';
+      const portfolioId = pfEl ? pfEl.value : mainPortfolioId();
       state.assets.items.push({
         id: uid(), name: symbol, assetType: 'หุ้น/ETF ต่างประเทศ (Dime)',
         category: catEl ? catEl.value : 'satellite', portfolioId,
-        needsPortfolioReview: portfolioId==='default',
+        needsPortfolioReview: portfolioId===mainPortfolioId(),
         value: r.totalTHB, costBasis: r.totalTHB,
         note: 'สร้างจากใบยืนยันการซื้อขาย (Confirmation Note) — มูลค่าเริ่มต้นมาจากรายการซื้อนี้รายการเดียว ควรตรวจสอบ/อัพเดทมูลค่าจริงเอง',
         updated: today, dimeSourced: true, symbol, units: r.units, currency: r.currency || 'USD',
@@ -3697,7 +3784,7 @@ async function addAssetItem(){
   const name = document.getElementById('assetName').value.trim();
   const category = document.getElementById('assetCategory').value;
   const portfolioEl = document.getElementById('assetPortfolio');
-  const portfolioId = portfolioEl ? portfolioEl.value : 'default';
+  const portfolioId = portfolioEl ? portfolioEl.value : mainPortfolioId();
   const note = document.getElementById('assetNote').value.trim();
   const currency = document.getElementById('assetCurrency').value;
   const rawValue = parseFloat(document.getElementById('assetValue').value);
@@ -3858,15 +3945,22 @@ function renameAssetPortfolio(id){
   p.name = trimmed;
   saveState(); render();
 }
+// Any portfolio — including the original "พอร์ตหลัก" — can be deleted now, as long as at least
+// one other portfolio still exists afterward (there always has to be somewhere for items to
+// belong). Its items are never deleted: they're reassigned to whichever portfolio survives as
+// the new "first" one in the list (see mainPortfolioId), so nothing is lost either way.
 function delAssetPortfolio(id){
-  if(id === 'default') return; // always keep one anchor portfolio so every item has somewhere to belong
-  const p = (state.assets.portfolios||[]).find(x=>x.id===id);
+  const list = state.assets.portfolios || [];
+  if(list.length <= 1){ alert('ต้องมีพอร์ตเหลืออย่างน้อย 1 พอร์ตเสมอ — สร้างพอร์ตใหม่ก่อนถึงจะลบพอร์ตนี้ได้'); return; }
+  const p = list.find(x=>x.id===id);
   if(!p) return;
+  const remaining = list.filter(x=>x.id!==id);
+  const fallback = remaining[0]; // oldest surviving portfolio becomes the new landing spot
   const count = assetPortfolioItemsCount(id);
-  const warn = count ? `สินทรัพย์ ${count} รายการในพอร์ตนี้จะย้ายกลับไปที่ "พอร์ตหลัก" (ไม่ได้ลบสินทรัพย์) ` : '';
+  const warn = count ? `สินทรัพย์ ${count} รายการในพอร์ตนี้จะย้ายไปที่ "${escapeHtml(fallback.name)}" (ไม่ได้ลบสินทรัพย์) ` : '';
   if(!confirm(`ลบพอร์ต "${p.name}"? ${warn}ดำเนินการต่อ?`)) return;
-  state.assets.items.forEach(it=>{ if(itemPortfolioId(it)===id) it.portfolioId = 'default'; });
-  state.assets.portfolios = state.assets.portfolios.filter(x=>x.id!==id);
+  state.assets.items.forEach(it=>{ if(itemPortfolioId(it)===id) it.portfolioId = fallback.id; });
+  state.assets.portfolios = remaining;
   if(assetsPortfolioFilter === id) assetsPortfolioFilter = 'all';
   saveState(); render();
 }
@@ -3975,7 +4069,7 @@ function importAllJson(evt){
         if(!it.category) it.category = 'other';
         if(it.costBasis == null) it.costBasis = 0;
         if(!it.valueHistory) it.valueHistory = [{date: it.updated || todayISO(), value: Number(it.value)||0}];
-        if(!it.portfolioId) it.portfolioId = 'default';
+        if(!it.portfolioId) it.portfolioId = (parsed.assets.portfolios[0] && parsed.assets.portfolios[0].id) || 'default';
       });
       if(!parsed.calendar) parsed.calendar = {events:[]};
       (parsed.calendar.events||[]).forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
