@@ -882,6 +882,14 @@ function defaultState(){
       debts: [
         {id:uid(), name:'ผ่อนคอนโด (คงเหลือ)', amount:1200000, note:'', demo:true}
       ],
+      // "พอร์ตเสริม" — portfolios belonging to OTHER people (e.g. ลูกหลาน) that this person wants
+      // to keep an eye on, entirely separate from their own holdings above. Deliberately NEVER
+      // read by assetsNetWorth/assetsItemsTotal/any donut — purely display-only data, rendered by
+      // its own dedicated "พอร์ตเสริม" panel in renderAssets (see renderOtherPortfolios). Each
+      // entry's value comes either from uploading that person's own Dime monthly statement PDF
+      // (same password flow as the main import — just the guessed total, no per-holding table
+      // since this is "see the number" tracking only, not managed holdings) or typed in by hand.
+      otherPortfolios: [],
       dimeImportV1: true
     },
     trips: {
@@ -975,6 +983,7 @@ function loadState(){
       if(!s.assets.items) s.assets.items = [];
       if(!s.assets.reports) s.assets.reports = [];
       if(!s.assets.debts) s.assets.debts = [];
+      if(!s.assets.otherPortfolios) s.assets.otherPortfolios = []; // "พอร์ตเสริม" — other people's portfolios, never summed into net worth
       // Backfill: portfolios feature added later — every existing install gets a single
       // 'default' portfolio and every existing item is assigned to it, so nothing already
       // tracked silently "disappears" from portfolio views.
@@ -3189,6 +3198,8 @@ function renderAssets(){
     <div id="confirmationNoteMsg" class="muted" style="margin-top:8px">${confirmationNoteMsg || ''}</div>
   </div>
   ${renderConfirmationNoteReview()}
+
+  ${renderOtherPortfolios()}
   ${renderItemChartModal()}
   `;
 }
@@ -3547,6 +3558,156 @@ function confirmDimeHoldingsImport(){
   render();
 }
 function cancelDimeHoldingsImport(){ dimeHoldingsRows = null; dimeHoldingsMeta = null; render(); }
+
+/* ---------- "พอร์ตเสริม" — other people's portfolios (never counted in net worth) ----------
+   Lets this person keep an eye on someone else's portfolio (e.g. ลูกหลาน) without it touching
+   their own net worth/asset totals/donuts anywhere — state.assets.otherPortfolios is a wholly
+   separate array that assetsNetWorth/assetsItemsTotal/every donut function deliberately never
+   reads. Reuses the same password-protected-PDF flow as the main Dime import above
+   (loadPdfWithPassword/ensurePdfJs) and the same "มูลค่ารวม" heuristic (guessPortfolioValue), but
+   deliberately stays at "one total number per person" — no per-holding table — since the point
+   here is just seeing that person's number, not managing their individual holdings. A person
+   with no Dime account at all can just have their number typed in by hand instead. Same "review
+   before save" pattern as everywhere else: an uploaded PDF's guessed value sits in
+   otherPortfolioPending until explicitly confirmed, never auto-saved. */
+let otherPortfolioPending = {}; // {[personId]: {guessedValue, monthDate}} — transient, not persisted until confirmed
+function addOtherPortfolio(){
+  const input = document.getElementById('otherPortfolioName');
+  const name = input ? input.value.trim() : '';
+  if(!name) return;
+  if(!state.assets.otherPortfolios) state.assets.otherPortfolios = [];
+  state.assets.otherPortfolios.push({id: uid(), name, value: 0, source: null, updated: null, valueHistory: [], note: ''});
+  if(input) input.value = '';
+  saveState(); render();
+}
+function renameOtherPortfolio(id){
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  const name = window.prompt('เปลี่ยนชื่อ:', p.name);
+  if(name == null) return;
+  const trimmed = name.trim();
+  if(!trimmed) return;
+  p.name = trimmed;
+  saveState(); render();
+}
+function delOtherPortfolio(id){
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm(`ลบ "${p.name}" ออกจากพอร์ตเสริม? (ไม่กระทบทรัพย์สิน/มูลค่าสุทธิของเราอยู่แล้ว เพราะไม่เคยถูกนับรวมอยู่แล้ว)`)) return;
+  state.assets.otherPortfolios = state.assets.otherPortfolios.filter(x=>x.id!==id);
+  delete otherPortfolioPending[id];
+  saveState(); render();
+}
+function updateOtherPortfolioManual(id){
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  const el = document.getElementById('otherPortfolioManualValue_'+id);
+  const value = el ? parseFloat(el.value) : NaN;
+  if(!value || value<=0) return;
+  const d = todayISO();
+  p.value = Math.round(value);
+  p.source = 'manual';
+  p.updated = d;
+  if(!p.valueHistory) p.valueHistory = [];
+  if(p.valueHistory.length && p.valueHistory[p.valueHistory.length-1].date === d){
+    p.valueHistory[p.valueHistory.length-1].value = p.value;
+  } else {
+    p.valueHistory.push({date: d, value: p.value});
+  }
+  if(el) el.value = '';
+  saveState(); render();
+}
+async function handleOtherPortfolioPdf(evt, id){
+  const file = evt.target.files[0];
+  const msgEl = document.getElementById('otherPortfolioMsg_'+id);
+  delete otherPortfolioPending[id];
+  if(!file) return;
+  if(msgEl) msgEl.innerHTML = '<span class="muted">กำลังอ่านไฟล์...</span>';
+  let resultHtml;
+  try{
+    await ensurePdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await loadPdfWithPassword(buf); // same 8-digit-birthdate password prompt as the main import
+    let text = '';
+    for(let i=1;i<=pdf.numPages;i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it=>it.str).join(' ') + '\n';
+    }
+    const guess = guessPortfolioValue(text);
+    if(guess != null){
+      otherPortfolioPending[id] = {guessedValue: guess, monthDate: todayISO()};
+      resultHtml = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ (${pdf.numPages} หน้า) — เดามูลค่ารวมได้ ฿${fmtMoney(guess)} ตรวจสอบแล้วกดยืนยันด้านล่าง</span>`;
+    } else {
+      resultHtml = `<span style="color:var(--coral)">หา "มูลค่ารวม" ในไฟล์นี้ไม่เจอ — กรอกตัวเลขด้วยมือแทนได้</span>`;
+    }
+  }catch(err){
+    resultHtml = `<span style="color:var(--coral)">อ่านไฟล์ไม่สำเร็จ: ${escapeHtml(err.message)} — กรอกมูลค่าด้วยมือแทนได้</span>`;
+  }
+  if(msgEl) msgEl.innerHTML = resultHtml;
+  render();
+}
+function confirmOtherPortfolioImport(id){
+  const pending = otherPortfolioPending[id];
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!pending || !p) return;
+  const d = pending.monthDate || todayISO();
+  p.value = Math.round(pending.guessedValue);
+  p.source = 'dime-pdf';
+  p.updated = d;
+  if(!p.valueHistory) p.valueHistory = [];
+  if(p.valueHistory.length && p.valueHistory[p.valueHistory.length-1].date === d){
+    p.valueHistory[p.valueHistory.length-1].value = p.value;
+  } else {
+    p.valueHistory.push({date: d, value: p.value});
+  }
+  delete otherPortfolioPending[id];
+  saveState(); render();
+}
+function cancelOtherPortfolioImport(id){ delete otherPortfolioPending[id]; render(); }
+function renderOtherPortfolios(){
+  const people = state.assets.otherPortfolios || [];
+  return `
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:6px">
+      <h3>พอร์ตเสริม (ติดตามพอร์ตคนอื่น)</h3>
+    </div>
+    <div class="muted" style="margin-bottom:14px">สำหรับดูตัวเลขพอร์ตของคนอื่น เช่น ลูกหลาน — <b>ไม่ถูกนำไปรวมกับมูลค่าสุทธิ/สินทรัพย์ของเราด้านบนเลย</b> แค่ไว้ติดตามดูเฉยๆ แต่ละคนอัปโหลดรายงาน Dime รายเดือนของเขาเพื่อดึงมูลค่ารวมอัตโนมัติได้ทุกเดือน (จะเจอกล่องถามรหัสผ่านถ้าไฟล์มีรหัส) หรือกรอกตัวเลขด้วยมือก็ได้ เผื่อคนนั้นไม่มีบัญชี Dime</div>
+    ${people.length ? people.map(p=>{
+      const pending = otherPortfolioPending[p.id];
+      return `
+      <div class="card" style="margin-bottom:12px">
+        <div class="ribbon-head" style="margin-bottom:4px">
+          <div style="font-weight:600">${escapeHtml(p.name)}</div>
+          <div style="display:flex; gap:4px">
+            <button class="task-del" onclick="renameOtherPortfolio('${p.id}')" title="เปลี่ยนชื่อ">✎</button>
+            <button class="task-del" onclick="delOtherPortfolio('${p.id}')" title="ลบออกจากพอร์ตเสริม">✕</button>
+          </div>
+        </div>
+        <div class="big-stat mono">฿${fmtMoney(p.value)}</div>
+        <div class="stat-note">${p.updated ? (p.source==='dime-pdf'?'จากไฟล์ Dime':'กรอกเอง') + ' · อัพเดทล่าสุด ' + fmtDate(p.updated) : 'ยังไม่เคยอัพเดท'}</div>
+        <div class="form-row" style="margin-top:10px">
+          <input type="file" id="otherPortfolioFile_${p.id}" accept="application/pdf" onchange="handleOtherPortfolioPdf(event,'${p.id}')" style="max-width:220px">
+          <input type="number" id="otherPortfolioManualValue_${p.id}" placeholder="หรือกรอกมูลค่าด้วยมือ (บาท)" style="max-width:180px">
+          <button class="btn btn-ghost btn-sm" onclick="updateOtherPortfolioManual('${p.id}')">อัพเดทด้วยมือ</button>
+        </div>
+        <div id="otherPortfolioMsg_${p.id}" class="muted" style="margin-top:6px"></div>
+        ${pending ? `
+        <div class="muted" style="margin-top:6px; padding:8px; border:1px solid var(--line); border-radius:8px">
+          พบมูลค่า ฿${fmtMoney(pending.guessedValue)} จากไฟล์ — ตรวจสอบแล้วกดยืนยันเพื่อบันทึกทับตัวเลขเดิม
+          <div class="form-row" style="margin-top:6px">
+            <button class="btn btn-sm" onclick="confirmOtherPortfolioImport('${p.id}')">ยืนยันบันทึก</button>
+            <button class="btn btn-ghost btn-sm" onclick="cancelOtherPortfolioImport('${p.id}')">ยกเลิก</button>
+          </div>
+        </div>` : ''}
+      </div>`;
+    }).join('') : `<div class="muted" style="margin-bottom:14px">ยังไม่มีใครอยู่ในพอร์ตเสริม — เพิ่มด้านล่างได้เลย</div>`}
+    <div class="form-row">
+      <input type="text" id="otherPortfolioName" placeholder="ชื่อคน เช่น ลูกคนโต, หลานชาย" onkeydown="if(event.key==='Enter') addOtherPortfolio()">
+      <button class="btn" onclick="addOtherPortfolio()">+ เพิ่มคน</button>
+    </div>
+  </div>`;
+}
 
 /* ---------- Confirmation Note (ใบยืนยันการซื้อขาย) PDF import ----------
    Mirrors the safety pattern of the monthly Dime statement import above (handleDimePdf/
@@ -4064,6 +4225,7 @@ function importAllJson(evt){
       const required = ['finance','running','work','trips','settings'];
       if(!parsed.assets) parsed.assets = {items:[], reports:[]}; // older backups won't have this yet
       if(!parsed.assets.debts) parsed.assets.debts = []; // older backups predate liabilities tracking
+      if(!parsed.assets.otherPortfolios) parsed.assets.otherPortfolios = []; // older backups predate "พอร์ตเสริม"
       if(!parsed.assets.portfolios || !parsed.assets.portfolios.length) parsed.assets.portfolios = [{id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt: todayISO()}]; // older backups predate portfolios
       (parsed.assets.items||[]).forEach(it=>{
         if(!it.category) it.category = 'other';
