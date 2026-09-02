@@ -461,6 +461,20 @@ const ASSET_CATEGORIES = [
 ];
 function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) || ASSET_CATEGORIES[ASSET_CATEGORIES.length-1]; }
 
+// Portfolios — a second, user-defined way to group asset items (separate from the fixed
+// core/satellite/... category taxonomy above). state.assets.portfolios is a plain array the
+// person can add/remove entries to at any time (see addAssetPortfolio/delAssetPortfolio in the
+// assets view section below); every install always has at least one ('default', "พอร์ตหลัก")
+// so every item — including ones saved before this feature existed — always resolves to a
+// real portfolio via itemPortfolioId() rather than needing every caller to null-check.
+const PORTFOLIO_COLOR_CYCLE = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)','var(--indigo)','var(--sienna)'];
+function nextPortfolioColor(){ return PORTFOLIO_COLOR_CYCLE[(state.assets.portfolios||[]).length % PORTFOLIO_COLOR_CYCLE.length]; }
+function itemPortfolioId(it){ return (it && it.portfolioId) || 'default'; }
+function assetPortfolioMeta(id){
+  const list = state.assets.portfolios || [];
+  return list.find(p=>p.id===id) || list[0] || {id:'default', name:'พอร์ตหลัก', color:'var(--teal)'};
+}
+
 // Real trade-confirmation-note history, parsed once from the user's actual Dime
 // "Confirmation Note" (ใบยืนยันการซื้อขาย) PDF emails — one entry per executed trade,
 // keyed by symbol. Every entry here is a real BUY (no SELL confirmations were found in
@@ -583,6 +597,13 @@ function assetsByAssetDonutEntries(){
 function assetsByCategoryDonutEntries(){
   return ASSET_CATEGORIES.map(c=>({label:c.label, color:c.color, value: state.assets.items.filter(it=>(it.category||'other')===c.key).reduce((s,it)=>s+(Number(it.value)||0),0)}));
 }
+// Same idea as assetsByCategoryDonutEntries but grouped by the user's own portfolios instead
+// of the fixed category taxonomy — automatically picks up any portfolio just created (it'll
+// show as a 0% slice, filtered out by renderGenericDonut, until an item is assigned to it).
+function assetsByPortfolioDonutEntries(){
+  return (state.assets.portfolios||[]).map(p=>({label:p.name, color:p.color, value: state.assets.items.filter(it=>itemPortfolioId(it)===p.id).reduce((s,it)=>s+(Number(it.value)||0),0)}));
+}
+function assetPortfolioItemsTotal(id){ return state.assets.items.filter(it=>itemPortfolioId(it)===id).reduce((s,it)=>s+(Number(it.value)||0),0); }
 // Generic conic-gradient donut — same technique as renderActivityDonut, generalized to take
 // arbitrary {label,color,value} entries so it can be reused for the assets "by holding" /
 // "by category" breakdowns without a second charting approach.
@@ -822,6 +843,12 @@ function defaultState(){
       routineCompletions: {} // { 'YYYY-MM': { routineId: true } }
     },
     assets: {
+      // User-defined portfolios (separate from the ASSET_CATEGORIES taxonomy) — lets holdings be
+      // tracked apart from each other (e.g. "พอร์ตหลัก" vs "พอร์ตเก็งกำไร" vs "พอร์ตลูก"). 'default'
+      // always exists and can't be deleted, so every item always has somewhere to belong.
+      portfolios: [
+        {id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt:t}
+      ],
       // Manually-tracked assets (property, cash, stocks, crypto, ฯลฯ) — anything not covered by a Dime import.
       // category is the core/satellite/bond/cash/other investment bucket (see ASSET_CATEGORIES);
       // assetType keeps the old free-text description; valueHistory tracks manual "อัพเดทมูลค่า" snapshots.
@@ -938,6 +965,11 @@ function loadState(){
       if(!s.assets.items) s.assets.items = [];
       if(!s.assets.reports) s.assets.reports = [];
       if(!s.assets.debts) s.assets.debts = [];
+      // Backfill: portfolios feature added later — every existing install gets a single
+      // 'default' portfolio and every existing item is assigned to it, so nothing already
+      // tracked silently "disappears" from portfolio views.
+      if(!s.assets.portfolios || !s.assets.portfolios.length) s.assets.portfolios = [{id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt: todayISO()}];
+      (s.assets.items||[]).forEach(it=>{ if(!it.portfolioId) it.portfolioId = 'default'; });
       if(!s.settings) s.settings = {};
       if(s.settings.finnhubApiKey == null) s.settings.finnhubApiKey = '';
       // Backfill currency on items saved before live market-price tracking existed — don't
@@ -2911,7 +2943,9 @@ function renderItemTransactionsBlock(item){
 let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
 let livePriceMsg = null; // {ok:bool, html:string} — last refreshLivePrices() result, shown near the refresh button
 let assetAddMsg = null; // {ok:bool, html:string} — last addAssetItem() USD→THB conversion status, shown near the add-asset form
+let assetsPortfolioFilter = 'all'; // 'all' or a portfolio id — filters the "รายการสินทรัพย์" list on the "ทรัพย์สิน" page
 function setAssetsChartMode(mode){ assetsChartMode = mode; render(); }
+function setAssetsPortfolioFilter(id){ assetsPortfolioFilter = id; render(); }
 
 // Item chart modal — clicking a holding's inline sparkline opens a larger version of the
 // same chart. Transient UI state only (not persisted), looked up by id at render time so it
@@ -2949,6 +2983,10 @@ function renderAssets(){
   const series = assetsChartSeries(assetsChartMode);
   const byAsset = assetsByAssetDonutEntries();
   const byCategory = assetsByCategoryDonutEntries();
+  const byPortfolio = assetsByPortfolioDonutEntries();
+  const portfolios = a.portfolios || [];
+  const filteredItems = assetsPortfolioFilter==='all' ? a.items : a.items.filter(it=>itemPortfolioId(it)===assetsPortfolioFilter);
+  const activePortfolio = assetsPortfolioFilter==='all' ? null : assetPortfolioMeta(assetsPortfolioFilter);
 
   return `
   <div class="section-title">ทรัพย์สิน</div>
@@ -3001,13 +3039,41 @@ function renderAssets(){
 
   <div class="panel">
     <div class="ribbon-head" style="margin-bottom:6px">
-      <h3>รายการสินทรัพย์ (แยกรายชิ้น)</h3>
+      <h3>พอร์ต (แยกติดตามรายพอร์ต)</h3>
+    </div>
+    <div class="muted" style="margin-bottom:12px">สร้างพอร์ตเพิ่มได้ไม่จำกัด ตั้งชื่อเอง — ใช้แยกติดตามสินทรัพย์แต่ละกลุ่ม (เช่น พอร์ตหลัก, พอร์ตเก็งกำไร, พอร์ตลูก) กดที่ชื่อพอร์ตด้านล่างเพื่อกรองรายการสินทรัพย์เฉพาะพอร์ตนั้น</div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px">
+      <button class="btn ${assetsPortfolioFilter==='all'?'':'btn-ghost'} btn-sm" onclick="setAssetsPortfolioFilter('all')">ทั้งหมด · ฿${fmtMoney(assetsItemsTotal())}</button>
+      ${portfolios.map(p=>{
+        const total = assetPortfolioItemsTotal(p.id);
+        const count = assetPortfolioItemsCount(p.id);
+        return `<span style="display:inline-flex; align-items:center; gap:2px">
+          <button class="btn ${assetsPortfolioFilter===p.id?'':'btn-ghost'} btn-sm" onclick="setAssetsPortfolioFilter('${p.id}')" title="${count} รายการ">
+            <span style="width:8px; height:8px; border-radius:3px; background:${p.color}; display:inline-block; margin-right:6px"></span>${escapeHtml(p.name)} · ฿${fmtMoney(total)}
+          </button>
+          <button class="task-del" onclick="renameAssetPortfolio('${p.id}')" title="เปลี่ยนชื่อพอร์ต">✎</button>
+          ${p.id!=='default' ? `<button class="task-del" onclick="delAssetPortfolio('${p.id}')" title="ลบพอร์ตนี้ (สินทรัพย์จะย้ายกลับไปพอร์ตหลัก)">✕</button>` : ''}
+        </span>`;
+      }).join('')}
+    </div>
+    <div class="form-row" style="margin-bottom:18px">
+      <input type="text" id="portfolioName" placeholder="ชื่อพอร์ตใหม่ เช่น พอร์ตเก็งกำไร, พอร์ตลูก" onkeydown="if(event.key==='Enter') addAssetPortfolio()">
+      <button class="btn" onclick="addAssetPortfolio()">+ สร้างพอร์ต</button>
+    </div>
+    <h3 style="margin-bottom:0">สัดส่วนตามพอร์ต</h3>
+    ${renderGenericDonut(byPortfolio, {emptyText:'ยังไม่มีสินทรัพย์'})}
+  </div>
+
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:6px">
+      <h3>รายการสินทรัพย์ (แยกรายชิ้น)${activePortfolio ? ' — กำลังดูเฉพาะพอร์ต "'+escapeHtml(activePortfolio.name)+'"' : ''}</h3>
       <button class="btn btn-ghost btn-sm" onclick="refreshLivePrices()">📈 รีเฟรชราคาตลาด</button>
     </div>
     <div id="livePriceMsg">${livePriceMsg ? livePriceMsg.html : ''}</div>
-    <div class="muted" style="margin-bottom:10px">เรียงตามมูลค่าปัจจุบันมากไปน้อย — กด "อัพเดทมูลค่า" ต่อรายการเพื่อบันทึกมูลค่าเอง หรือรายการที่มีแท็ก 📈 ใส่ symbol/units ไว้แล้วสามารถกด "รีเฟรชราคาตลาด" ด้านบนเพื่อดึงราคาจริงได้ (ต้องตั้งค่า Finnhub API key ที่หน้า "ตั้งค่า" ก่อน — เฉพาะหุ้น/ETF ต่างประเทศเท่านั้น) ระบบจะเก็บประวัติไว้ทำกราฟ sparkline และเส้นพอร์ตรวมด้านบน</div>
-    ${a.items.length ? [...a.items].sort((x,y)=>(Number(y.value)||0)-(Number(x.value)||0)).map(it=>{
+    <div class="muted" style="margin-bottom:10px">เรียงตามมูลค่าปัจจุบันมากไปน้อย — กด "อัพเดทมูลค่า" ต่อรายการเพื่อบันทึกมูลค่าเอง หรือรายการที่มีแท็ก 📈 ใส่ symbol/units ไว้แล้วสามารถกด "รีเฟรชราคาตลาด" ด้านบนเพื่อดึงราคาจริงได้ (ต้องตั้งค่า Finnhub API key ที่หน้า "ตั้งค่า" ก่อน — เฉพาะหุ้น/ETF ต่างประเทศเท่านั้น) ระบบจะเก็บประวัติไว้ทำกราฟ sparkline และเส้นพอร์ตรวมด้านบน${activePortfolio ? ' (กด "ทั้งหมด" ด้านบนเพื่อดูทุกพอร์ตอีกครั้ง)' : ''}</div>
+    ${filteredItems.length ? [...filteredItems].sort((x,y)=>(Number(y.value)||0)-(Number(x.value)||0)).map(it=>{
       const cat = assetCategoryMeta(it.category);
+      const pf = assetPortfolioMeta(itemPortfolioId(it));
       const gain = (Number(it.value)||0) - (Number(it.costBasis)||0);
       const gainPct = it.costBasis ? Math.round(1000*gain/it.costBasis)/10 : null;
       const gainColor = gain>=0 ? 'var(--teal)' : 'var(--coral)';
@@ -3016,7 +3082,7 @@ function renderAssets(){
         <span style="width:34px; height:34px; border-radius:10px; background:${cat.color}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0">${escapeHtml((it.name||'?').slice(0,1))}</span>
         <div style="min-width:150px; flex:1">
           <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}${(it.currency==='USD' && it.originalAmount!=null) ? ' <span class="tag" style="background:var(--indigo-pale); color:var(--indigo)" title="แปลงจาก USD อัตโนมัติตอนบันทึก (rate '+it.fxRateUsed+')">$'+fmtMoney(it.originalAmount)+'</span>' : ''}</div>
-          <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}</div>
+          <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''} · <span style="color:${pf.color}">${escapeHtml(pf.name)}</span></div>
         </div>
         <div style="min-width:72px; cursor:pointer" onclick="openItemChart('${it.id}')" title="ดูกราฟแนวโน้มแบบเต็ม">${renderSparkline(it.valueHistory)}</div>
         <div style="text-align:right; min-width:100px">
@@ -3031,10 +3097,11 @@ function renderAssets(){
         <button class="btn btn-ghost btn-sm" onclick="updateAssetItemValue('${it.id}')">อัพเดทมูลค่า</button>
         <button class="task-del" onclick="delAssetItem('${it.id}')">✕</button>
       </div>`;
-    }).join('') : '<div class="muted">ยังไม่มีสินทรัพย์อื่น</div>'}
+    }).join('') : `<div class="muted">${activePortfolio ? 'พอร์ตนี้ยังไม่มีสินทรัพย์ — เพิ่มด้านล่างแล้วเลือกพอร์ตนี้ในช่อง "พอร์ต"' : 'ยังไม่มีสินทรัพย์อื่น'}</div>`}
     <div class="form-row" style="margin-top:14px">
       <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
       <select id="assetCategory">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
+      <select id="assetPortfolio" title="เลือกพอร์ตที่จะเพิ่มสินทรัพย์นี้เข้าไป">${portfolios.map(p=>`<option value="${p.id}" ${(activePortfolio?activePortfolio.id:'default')===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
       <input type="text" id="assetNote" placeholder="รายละเอียด/โน้ต (ไม่บังคับ)" style="max-width:160px">
       <select id="assetCurrency" onchange="onAssetCurrencyChange()" style="max-width:90px">
         <option value="THB">THB (บาท)</option>
@@ -3366,6 +3433,8 @@ function onAssetCurrencyChange(){
 async function addAssetItem(){
   const name = document.getElementById('assetName').value.trim();
   const category = document.getElementById('assetCategory').value;
+  const portfolioEl = document.getElementById('assetPortfolio');
+  const portfolioId = portfolioEl ? portfolioEl.value : 'default';
   const note = document.getElementById('assetNote').value.trim();
   const currency = document.getElementById('assetCurrency').value;
   const rawValue = parseFloat(document.getElementById('assetValue').value);
@@ -3394,7 +3463,7 @@ async function addAssetItem(){
   }
 
   const today = todayISO();
-  state.assets.items.push({id:uid(), name, category, assetType:'', value, costBasis, note, updated: today, transactions:[], valueHistory:[{date:today, value}], ...extra});
+  state.assets.items.push({id:uid(), name, category, portfolioId, assetType:'', value, costBasis, note, updated: today, transactions:[], valueHistory:[{date:today, value}], ...extra});
   document.getElementById('assetName').value = '';
   document.getElementById('assetValue').value = '';
   document.getElementById('assetCostBasis').value = '';
@@ -3502,6 +3571,44 @@ function addDebt(){
 }
 function delDebt(id){ state.assets.debts = state.assets.debts.filter(d=>d.id!==id); saveState(); render(); }
 
+// Portfolios — user-created groupings of asset items (see PORTFOLIO_COLOR_CYCLE /
+// itemPortfolioId / assetPortfolioMeta near ASSET_CATEGORIES). Purely organizational: creating,
+// renaming or deleting one never changes any item's value or the overall net worth figures.
+function addAssetPortfolio(){
+  const input = document.getElementById('portfolioName');
+  const name = input ? input.value.trim() : '';
+  if(!name) return;
+  if(!state.assets.portfolios) state.assets.portfolios = [];
+  const created = {id:uid(), name, color: nextPortfolioColor(), createdAt: todayISO()};
+  state.assets.portfolios.push(created);
+  assetsPortfolioFilter = created.id; // jump straight to the new (empty) portfolio so adding assets into it is one less click
+  if(input) input.value = '';
+  saveState(); render();
+}
+function renameAssetPortfolio(id){
+  const p = (state.assets.portfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  const name = window.prompt('เปลี่ยนชื่อพอร์ต:', p.name);
+  if(name == null) return;
+  const trimmed = name.trim();
+  if(!trimmed) return;
+  p.name = trimmed;
+  saveState(); render();
+}
+function delAssetPortfolio(id){
+  if(id === 'default') return; // always keep one anchor portfolio so every item has somewhere to belong
+  const p = (state.assets.portfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  const count = assetPortfolioItemsCount(id);
+  const warn = count ? `สินทรัพย์ ${count} รายการในพอร์ตนี้จะย้ายกลับไปที่ "พอร์ตหลัก" (ไม่ได้ลบสินทรัพย์) ` : '';
+  if(!confirm(`ลบพอร์ต "${p.name}"? ${warn}ดำเนินการต่อ?`)) return;
+  state.assets.items.forEach(it=>{ if(itemPortfolioId(it)===id) it.portfolioId = 'default'; });
+  state.assets.portfolios = state.assets.portfolios.filter(x=>x.id!==id);
+  if(assetsPortfolioFilter === id) assetsPortfolioFilter = 'all';
+  saveState(); render();
+}
+function assetPortfolioItemsCount(id){ return state.assets.items.filter(it=>itemPortfolioId(it)===id).length; }
+
 /* ---------- Settings view ---------- */
 function renderSettings(){
   const s = state.settings;
@@ -3589,10 +3696,12 @@ function importAllJson(evt){
       const required = ['finance','running','work','trips','settings'];
       if(!parsed.assets) parsed.assets = {items:[], reports:[]}; // older backups won't have this yet
       if(!parsed.assets.debts) parsed.assets.debts = []; // older backups predate liabilities tracking
+      if(!parsed.assets.portfolios || !parsed.assets.portfolios.length) parsed.assets.portfolios = [{id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt: todayISO()}]; // older backups predate portfolios
       (parsed.assets.items||[]).forEach(it=>{
         if(!it.category) it.category = 'other';
         if(it.costBasis == null) it.costBasis = 0;
         if(!it.valueHistory) it.valueHistory = [{date: it.updated || todayISO(), value: Number(it.value)||0}];
+        if(!it.portfolioId) it.portfolioId = 'default';
       });
       if(!parsed.calendar) parsed.calendar = {events:[]};
       (parsed.calendar.events||[]).forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
