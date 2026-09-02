@@ -3578,7 +3578,7 @@ function addOtherPortfolio(){
   const name = input ? input.value.trim() : '';
   if(!name) return;
   if(!state.assets.otherPortfolios) state.assets.otherPortfolios = [];
-  state.assets.otherPortfolios.push({id: uid(), name, value: 0, source: null, updated: null, valueHistory: [], note: ''});
+  state.assets.otherPortfolios.push({id: uid(), name, value: 0, source: null, updated: null, valueHistory: [], note: '', holdings: []});
   if(input) input.value = '';
   saveState(); render();
 }
@@ -3611,6 +3611,9 @@ function updateOtherPortfolioManual(id){
   p.value = Math.round(value);
   p.source = 'manual';
   p.updated = d;
+  // A manual number carries no per-holding breakdown — clear any composition donut left over
+  // from a previous PDF import, since it would otherwise misrepresent this new total.
+  p.holdings = [];
   if(!p.valueHistory) p.valueHistory = [];
   if(p.valueHistory.length && p.valueHistory[p.valueHistory.length-1].date === d){
     p.valueHistory[p.valueHistory.length-1].value = p.value;
@@ -3646,9 +3649,20 @@ async function handleOtherPortfolioPdf(evt, id){
       text += content.items.map(it=>it.str).join(' ') + '\n';
     }
     const guess = guessPortfolioValue(text);
+    // Also parse the per-holding "รายละเอียดการลงทุน" table (same parser as our own monthly-
+    // statement import) so this person gets their OWN composition donut, not just a single total.
+    // Uses extractPdfLines (Y/X-coordinate row reconstruction) since guessPortfolioValue's raw
+    // item-order join isn't reliable for a table layout — see parseDimeMonthlyHoldings.
+    const lines = await extractPdfLines(pdf);
+    const holdingsResult = parseDimeMonthlyHoldings(lines);
+    const holdings = holdingsResult.holdings.map(h=>{
+      const computed = dimeHoldingValueThb(h, {fxRate: holdingsResult.fxRate});
+      return computed ? {symbol: h.symbol, name: h.name, value: computed.valueThb, currency: h.currency} : null;
+    }).filter(Boolean);
     if(guess != null){
-      otherPortfolioPending[id] = {guessedValue: guess, monthDate: todayISO()};
-      resultHtml = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ (${pdf.numPages} หน้า) — เดามูลค่ารวมได้ ฿${fmtMoney(guess)} ตรวจสอบแล้วกดยืนยันด้านล่าง</span>`;
+      otherPortfolioPending[id] = {guessedValue: guess, monthDate: holdingsResult.statementDate || todayISO(), holdings};
+      const holdingsNote = holdings.length ? ` · พบโฮลดิ้งรายตัว ${holdings.length} รายการ (จะบันทึกไว้ทำกราฟสัดส่วนของคนนี้ด้วย)` : '';
+      resultHtml = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ (${pdf.numPages} หน้า) — เดามูลค่ารวมได้ ฿${fmtMoney(guess)}${holdingsNote} ตรวจสอบแล้วกดยืนยันด้านล่าง</span>`;
     } else {
       resultHtml = `<span style="color:var(--coral)">หา "มูลค่ารวม" ในไฟล์นี้ไม่เจอ — กรอกตัวเลขด้วยมือแทนได้</span>`;
     }
@@ -3666,6 +3680,7 @@ function confirmOtherPortfolioImport(id){
   p.value = Math.round(pending.guessedValue);
   p.source = 'dime-pdf';
   p.updated = d;
+  p.holdings = pending.holdings || []; // per-symbol breakdown for this person's own composition donut
   if(!p.valueHistory) p.valueHistory = [];
   if(p.valueHistory.length && p.valueHistory[p.valueHistory.length-1].date === d){
     p.valueHistory[p.valueHistory.length-1].value = p.value;
@@ -3677,33 +3692,32 @@ function confirmOtherPortfolioImport(id){
   saveState(); render();
 }
 function cancelOtherPortfolioImport(id){ delete otherPortfolioPending[id]; delete otherPortfolioMsgHtml[id]; render(); }
-// Donut for the "พอร์ตเสริม" panel only — proportion of each tracked person's portfolio value
-// relative to the others tracked here. Entirely local to this panel: it never reads from or
-// feeds into state.assets.items/portfolios, assetsNetWorth(), or any of our own donuts above —
-// same isolation guarantee as the rest of this feature. Uses a cycling palette (like
-// assetsByAssetDonutEntries) since these entries don't carry their own stored .color the way
-// our own portfolios do.
-function otherPortfoliosDonutEntries(){
+// Per-person composition donut for the "พอร์ตเสริม" panel — each person's OWN holdings broken
+// down by symbol, parsed from their own uploaded Dime monthly statement's "รายละเอียดการลงทุน"
+// table (same parser as our own portfolio's holdings review, see parseDimeMonthlyHoldings/
+// dimeHoldingValueThb in handleOtherPortfolioPdf). A person entered by hand (no PDF, so no
+// holdings table) simply has no donut here — there's nothing to break down, only a total.
+// Entirely local to each person: never reads from or feeds into state.assets.items/portfolios,
+// assetsNetWorth(), or any of our own donuts above — same isolation guarantee as the rest of
+// this feature. Same top-6-then-"อื่นๆ" grouping as assetsByAssetDonutEntries, adapted for the
+// simpler {symbol,name,value} holding objects stored per person instead of full asset items.
+function otherPortfolioHoldingsDonutEntries(holdings){
   const cycle = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)'];
-  const list = state.assets.otherPortfolios || [];
-  return list.map((p,i)=>({label:p.name, color:cycle[i%cycle.length], value:Number(p.value)||0}));
+  const sorted = [...(holdings||[])].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0));
+  const main = sorted.slice(0,6);
+  const rest = sorted.slice(6);
+  const entries = main.map((h,i)=>({label:h.name||h.symbol, color:cycle[i%cycle.length], value:Number(h.value)||0}));
+  if(rest.length) entries.push({label:'อื่นๆ ('+rest.length+')', color:'var(--coral-pale)', value: rest.reduce((s,h)=>s+(Number(h.value)||0),0)});
+  return entries;
 }
 function renderOtherPortfolios(){
   const people = state.assets.otherPortfolios || [];
-  const donutEntries = otherPortfoliosDonutEntries();
-  const donutTotal = donutEntries.reduce((s,e)=>s+(Number(e.value)||0),0);
   return `
   <div class="panel">
     <div class="ribbon-head" style="margin-bottom:6px">
       <h3>พอร์ตเสริม (ติดตามพอร์ตคนอื่น)</h3>
     </div>
-    <div class="muted" style="margin-bottom:14px">สำหรับดูตัวเลขพอร์ตของคนอื่น เช่น ลูกหลาน — <b>ไม่ถูกนำไปรวมกับมูลค่าสุทธิ/สินทรัพย์ของเราด้านบนเลย</b> แค่ไว้ติดตามดูเฉยๆ แต่ละคนอัปโหลดรายงาน Dime รายเดือนของเขาเพื่อดึงมูลค่ารวมอัตโนมัติได้ทุกเดือน (จะเจอกล่องถามรหัสผ่านถ้าไฟล์มีรหัส) หรือกรอกตัวเลขด้วยมือก็ได้ เผื่อคนนั้นไม่มีบัญชี Dime</div>
-    ${donutTotal > 0 ? `
-    <div style="margin-bottom:18px">
-      <h3 style="margin-bottom:0">สัดส่วนตามพอร์ตเสริม</h3>
-      ${renderGenericDonut(donutEntries, {centerLabel:'฿'+fmtMoney(donutTotal), centerSub:people.length+' คน', emptyText:'ยังไม่มีตัวเลข'})}
-    </div>
-    ` : ''}
+    <div class="muted" style="margin-bottom:14px">สำหรับดูตัวเลขพอร์ตของคนอื่น เช่น ลูกหลาน — <b>ไม่ถูกนำไปรวมกับมูลค่าสุทธิ/สินทรัพย์ของเราด้านบนเลย</b> แค่ไว้ติดตามดูเฉยๆ แต่ละคนอัปโหลดรายงาน Dime รายเดือนของเขาเพื่อดึงมูลค่ารวมอัตโนมัติได้ทุกเดือน พร้อมกราฟโดนัทสัดส่วนสินทรัพย์ของคนนั้นแยกเป็นของตัวเอง (จะเจอกล่องถามรหัสผ่านถ้าไฟล์มีรหัส) หรือกรอกตัวเลขด้วยมือก็ได้ เผื่อคนนั้นไม่มีบัญชี Dime (แบบกรอกมือจะมีแค่ยอดรวม ไม่มีกราฟสัดส่วนเพราะไม่รู้รายละเอียดหุ้นแต่ละตัว)</div>
     ${people.length ? people.map(p=>{
       const pending = otherPortfolioPending[p.id];
       return `
@@ -3717,6 +3731,11 @@ function renderOtherPortfolios(){
         </div>
         <div class="big-stat mono">฿${fmtMoney(p.value)}</div>
         <div class="stat-note">${p.updated ? (p.source==='dime-pdf'?'จากไฟล์ Dime':'กรอกเอง') + ' · อัพเดทล่าสุด ' + fmtDate(p.updated) : 'ยังไม่เคยอัพเดท'}</div>
+        ${(p.holdings && p.holdings.length) ? `
+        <div style="margin:10px 0">
+          ${renderGenericDonut(otherPortfolioHoldingsDonutEntries(p.holdings), {size:92, centerLabel:p.holdings.length+' ชิ้น', centerSub:'สัดส่วนของ '+escapeHtml(p.name)})}
+        </div>
+        ` : ''}
         <div class="form-row" style="margin-top:10px">
           <input type="file" id="otherPortfolioFile_${p.id}" accept="application/pdf" onchange="handleOtherPortfolioPdf(event,'${p.id}')" style="max-width:220px">
           <input type="number" id="otherPortfolioManualValue_${p.id}" placeholder="หรือกรอกมูลค่าด้วยมือ (บาท)" style="max-width:180px">
@@ -3725,7 +3744,7 @@ function renderOtherPortfolios(){
         <div id="otherPortfolioMsg_${p.id}" class="muted" style="margin-top:6px">${otherPortfolioMsgHtml[p.id] || ''}</div>
         ${pending ? `
         <div class="muted" style="margin-top:6px; padding:8px; border:1px solid var(--line); border-radius:8px">
-          พบมูลค่า ฿${fmtMoney(pending.guessedValue)} จากไฟล์ — ตรวจสอบแล้วกดยืนยันเพื่อบันทึกทับตัวเลขเดิม
+          พบมูลค่า ฿${fmtMoney(pending.guessedValue)} จากไฟล์${pending.holdings && pending.holdings.length ? ` (${pending.holdings.length} โฮลดิ้ง: ${pending.holdings.slice(0,5).map(h=>escapeHtml(h.symbol)).join(', ')}${pending.holdings.length>5?', …':''})` : ''} — ตรวจสอบแล้วกดยืนยันเพื่อบันทึกทับตัวเลขเดิม
           <div class="form-row" style="margin-top:6px">
             <button class="btn btn-sm" onclick="confirmOtherPortfolioImport('${p.id}')">ยืนยันบันทึก</button>
             <button class="btn btn-ghost btn-sm" onclick="cancelOtherPortfolioImport('${p.id}')">ยกเลิก</button>
