@@ -3571,6 +3571,8 @@ function cancelDimeHoldingsImport(){ dimeHoldingsRows = null; dimeHoldingsMeta =
    before save" pattern as everywhere else: an uploaded PDF's guessed value sits in
    otherPortfolioPending until explicitly confirmed, never auto-saved. */
 let otherPortfolioPending = {}; // {[personId]: {guessedValue, monthDate}} — transient, not persisted until confirmed
+let otherPortfolioMsgHtml = {}; // {[personId]: html} — status/error message from the last upload attempt, must
+                                 // survive the render() call right after it's set (see handleOtherPortfolioPdf)
 function addOtherPortfolio(){
   const input = document.getElementById('otherPortfolioName');
   const name = input ? input.value.trim() : '';
@@ -3596,6 +3598,7 @@ function delOtherPortfolio(id){
   if(!confirm(`ลบ "${p.name}" ออกจากพอร์ตเสริม? (ไม่กระทบทรัพย์สิน/มูลค่าสุทธิของเราอยู่แล้ว เพราะไม่เคยถูกนับรวมอยู่แล้ว)`)) return;
   state.assets.otherPortfolios = state.assets.otherPortfolios.filter(x=>x.id!==id);
   delete otherPortfolioPending[id];
+  delete otherPortfolioMsgHtml[id];
   saveState(); render();
 }
 function updateOtherPortfolioManual(id){
@@ -3615,6 +3618,8 @@ function updateOtherPortfolioManual(id){
     p.valueHistory.push({date: d, value: p.value});
   }
   if(el) el.value = '';
+  delete otherPortfolioPending[id];
+  otherPortfolioMsgHtml[id] = `<span style="color:var(--teal)">บันทึกแล้ว ฿${fmtMoney(p.value)}</span>`;
   saveState(); render();
 }
 async function handleOtherPortfolioPdf(evt, id){
@@ -3622,6 +3627,12 @@ async function handleOtherPortfolioPdf(evt, id){
   const msgEl = document.getElementById('otherPortfolioMsg_'+id);
   delete otherPortfolioPending[id];
   if(!file) return;
+  // Written directly to the DOM for the *immediate* "reading file..." feedback (there's no render()
+  // in between yet). Everything after this must go through otherPortfolioMsgHtml[id] instead of the
+  // DOM node directly — render() (called at the end, and possibly by something else in between on a
+  // slow parse) fully replaces this element, which would otherwise silently wipe out any error or
+  // "not found" message the instant it was shown (this was the bug: a failed/not-found parse looked
+  // like nothing happened at all, because the message flashed then was immediately erased).
   if(msgEl) msgEl.innerHTML = '<span class="muted">กำลังอ่านไฟล์...</span>';
   let resultHtml;
   try{
@@ -3644,7 +3655,7 @@ async function handleOtherPortfolioPdf(evt, id){
   }catch(err){
     resultHtml = `<span style="color:var(--coral)">อ่านไฟล์ไม่สำเร็จ: ${escapeHtml(err.message)} — กรอกมูลค่าด้วยมือแทนได้</span>`;
   }
-  if(msgEl) msgEl.innerHTML = resultHtml;
+  otherPortfolioMsgHtml[id] = resultHtml;
   render();
 }
 function confirmOtherPortfolioImport(id){
@@ -3662,9 +3673,10 @@ function confirmOtherPortfolioImport(id){
     p.valueHistory.push({date: d, value: p.value});
   }
   delete otherPortfolioPending[id];
+  otherPortfolioMsgHtml[id] = `<span style="color:var(--teal)">บันทึกแล้ว ฿${fmtMoney(p.value)}</span>`;
   saveState(); render();
 }
-function cancelOtherPortfolioImport(id){ delete otherPortfolioPending[id]; render(); }
+function cancelOtherPortfolioImport(id){ delete otherPortfolioPending[id]; delete otherPortfolioMsgHtml[id]; render(); }
 function renderOtherPortfolios(){
   const people = state.assets.otherPortfolios || [];
   return `
@@ -3691,7 +3703,7 @@ function renderOtherPortfolios(){
           <input type="number" id="otherPortfolioManualValue_${p.id}" placeholder="หรือกรอกมูลค่าด้วยมือ (บาท)" style="max-width:180px">
           <button class="btn btn-ghost btn-sm" onclick="updateOtherPortfolioManual('${p.id}')">อัพเดทด้วยมือ</button>
         </div>
-        <div id="otherPortfolioMsg_${p.id}" class="muted" style="margin-top:6px"></div>
+        <div id="otherPortfolioMsg_${p.id}" class="muted" style="margin-top:6px">${otherPortfolioMsgHtml[p.id] || ''}</div>
         ${pending ? `
         <div class="muted" style="margin-top:6px; padding:8px; border:1px solid var(--line); border-radius:8px">
           พบมูลค่า ฿${fmtMoney(pending.guessedValue)} จากไฟล์ — ตรวจสอบแล้วกดยืนยันเพื่อบันทึกทับตัวเลขเดิม
