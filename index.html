@@ -3138,6 +3138,32 @@ function renderAssets(){
         <button class="task-del" onclick="delAssetItem('${it.id}')">✕</button>
       </div>`;
     }).join('') : `<div class="muted">${activePortfolio ? 'พอร์ตนี้ยังไม่มีสินทรัพย์ — เพิ่มด้านล่างแล้วเลือกพอร์ตนี้ในช่อง "พอร์ต" หรือย้ายของเดิมมาจากช่อง "พอร์ต" ท้ายแต่ละรายการ' : viewingUnsorted ? 'ไม่มีสินทรัพย์ที่ยังไม่ได้จัดพอร์ต' : 'ยังไม่มีสินทรัพย์อื่น'}</div>`}
+    ${filteredItems.length ? (()=>{
+      // Bottom summary bar for whichever slice of our own portfolio is currently shown (one
+      // named portfolio via the filter, "ทั้งหมด" = everything, or the unsorted view) — total
+      // item count, total value, total cost, total gain/loss. Column widths match the item rows
+      // above so it visually reads as a footer/total row under the list.
+      const totalValue = filteredItems.reduce((s,it)=>s+(Number(it.value)||0),0);
+      const totalCost = filteredItems.reduce((s,it)=>s+(Number(it.costBasis)||0),0);
+      const totalGain = totalValue - totalCost;
+      const totalGainPct = totalCost ? Math.round(1000*totalGain/totalCost)/10 : null;
+      const gainColor = totalGain>=0 ? 'var(--teal)' : 'var(--coral)';
+      const scopeLabel = activePortfolio ? `ในพอร์ต "${escapeHtml(activePortfolio.name)}"` : viewingUnsorted ? '(ยังไม่ได้จัดพอร์ต)' : 'ทุกพอร์ตรวมกัน';
+      return `
+      <div class="form-row" style="align-items:center; padding:10px 0; margin-top:2px; border-top:2px solid var(--line); font-weight:600">
+        <span style="width:34px; flex-shrink:0"></span>
+        <div style="min-width:150px; flex:1">รวม ${filteredItems.length} รายการ<div class="muted" style="font-weight:400">${scopeLabel}</div></div>
+        <div style="min-width:72px"></div>
+        <div style="text-align:right; min-width:100px">
+          <div class="mono" style="font-size:12.5px">฿${fmtMoney(totalValue)}</div>
+          <div class="muted" style="font-weight:400">ทุน ฿${fmtMoney(totalCost)}</div>
+        </div>
+        <div style="text-align:right; min-width:90px; color:${gainColor}">
+          <div class="mono" style="font-size:12.5px">${totalGain>=0?'+':''}฿${fmtMoney(totalGain)}</div>
+          <div style="font-size:11px; font-weight:400">${totalGainPct!=null ? (totalGain>=0?'+':'')+totalGainPct+'%' : '—'}</div>
+        </div>
+      </div>`;
+    })() : ''}
     <div class="form-row" style="margin-top:14px">
       <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
       <select id="assetCategory">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
@@ -3788,6 +3814,22 @@ function renderOtherPortfolios(){
               <td style="text-align:right" class="mono"><span style="color:${gainColor}">${gain>=0?'+':''}฿${fmtMoney(gain)}${gainPct!=null?` (${gain>=0?'+':''}${gainPct}%)`:''}</span></td>
             </tr>`;
           }).join('')}
+          ${(()=>{
+            // "รวม" total footer for this person's holdings table — total value, total cost,
+            // total gain/loss (color-coded), same convention as the per-holding rows above.
+            const totalValue = p.holdings.reduce((s,h)=>s+(Number(h.value)||0),0);
+            const totalCost = p.holdings.reduce((s,h)=>s+(Number(h.cost)||0),0);
+            const totalGain = totalValue - totalCost;
+            const totalGainPct = totalCost ? Math.round(1000*totalGain/totalCost)/10 : null;
+            const totalGainColor = totalGain>=0 ? 'var(--teal)' : 'var(--coral)';
+            return `<tr style="font-weight:600; border-top:2px solid var(--line)">
+              <td>รวม ${p.holdings.length} รายการ</td>
+              <td style="text-align:right" class="mono">—</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(totalCost)}</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(totalValue)}</td>
+              <td style="text-align:right" class="mono"><span style="color:${totalGainColor}">${totalGain>=0?'+':''}฿${fmtMoney(totalGain)}${totalGainPct!=null?` (${totalGain>=0?'+':''}${totalGainPct}%)`:''}</span></td>
+            </tr>`;
+          })()}
         </table>
         ` : ''}
         <div class="form-row" style="margin-top:10px">
