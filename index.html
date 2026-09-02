@@ -3677,14 +3677,33 @@ function confirmOtherPortfolioImport(id){
   saveState(); render();
 }
 function cancelOtherPortfolioImport(id){ delete otherPortfolioPending[id]; delete otherPortfolioMsgHtml[id]; render(); }
+// Donut for the "พอร์ตเสริม" panel only — proportion of each tracked person's portfolio value
+// relative to the others tracked here. Entirely local to this panel: it never reads from or
+// feeds into state.assets.items/portfolios, assetsNetWorth(), or any of our own donuts above —
+// same isolation guarantee as the rest of this feature. Uses a cycling palette (like
+// assetsByAssetDonutEntries) since these entries don't carry their own stored .color the way
+// our own portfolios do.
+function otherPortfoliosDonutEntries(){
+  const cycle = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)'];
+  const list = state.assets.otherPortfolios || [];
+  return list.map((p,i)=>({label:p.name, color:cycle[i%cycle.length], value:Number(p.value)||0}));
+}
 function renderOtherPortfolios(){
   const people = state.assets.otherPortfolios || [];
+  const donutEntries = otherPortfoliosDonutEntries();
+  const donutTotal = donutEntries.reduce((s,e)=>s+(Number(e.value)||0),0);
   return `
   <div class="panel">
     <div class="ribbon-head" style="margin-bottom:6px">
       <h3>พอร์ตเสริม (ติดตามพอร์ตคนอื่น)</h3>
     </div>
     <div class="muted" style="margin-bottom:14px">สำหรับดูตัวเลขพอร์ตของคนอื่น เช่น ลูกหลาน — <b>ไม่ถูกนำไปรวมกับมูลค่าสุทธิ/สินทรัพย์ของเราด้านบนเลย</b> แค่ไว้ติดตามดูเฉยๆ แต่ละคนอัปโหลดรายงาน Dime รายเดือนของเขาเพื่อดึงมูลค่ารวมอัตโนมัติได้ทุกเดือน (จะเจอกล่องถามรหัสผ่านถ้าไฟล์มีรหัส) หรือกรอกตัวเลขด้วยมือก็ได้ เผื่อคนนั้นไม่มีบัญชี Dime</div>
+    ${donutTotal > 0 ? `
+    <div style="margin-bottom:18px">
+      <h3 style="margin-bottom:0">สัดส่วนตามพอร์ตเสริม</h3>
+      ${renderGenericDonut(donutEntries, {centerLabel:'฿'+fmtMoney(donutTotal), centerSub:people.length+' คน', emptyText:'ยังไม่มีตัวเลข'})}
+    </div>
+    ` : ''}
     ${people.length ? people.map(p=>{
       const pending = otherPortfolioPending[p.id];
       return `
