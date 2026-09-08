@@ -18,6 +18,7 @@
   --green:#5CB85C; --green-pale:#E4F4E2; --green-deep:#3E8E3E;
   --sienna:#C97B4A; --sienna-pale:#F5E6DA;
   --indigo:#5B6EF5; --indigo-pale:#E6E9FD;
+  --btc:#F7931A; --btc-pale:#FDEAD1;
   --radius:20px; --radius-sm:14px;
   --shadow-card:0 2px 6px rgba(30,41,79,.04), 0 16px 32px -20px rgba(30,41,79,.20);
   --shadow-card-hover:0 4px 10px rgba(30,41,79,.06), 0 20px 40px -18px rgba(30,41,79,.24);
@@ -457,6 +458,7 @@ const ASSET_CATEGORIES = [
   {key:'deposit', label:'เงินฝาก', color:'var(--indigo)'},
   {key:'pvd', label:'กองทุนสำรองเลี้ยงชีพ (PVD)', color:'var(--green)'},
   {key:'coop', label:'หุ้นสหกรณ์', color:'var(--sienna)'},
+  {key:'crypto', label:'คริปโต (Crypto)', color:'var(--btc)'},
   {key:'other', label:'อื่นๆ', color:'var(--coral)'}
 ];
 function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) || ASSET_CATEGORIES[ASSET_CATEGORIES.length-1]; }
@@ -2962,6 +2964,7 @@ function renderItemTransactionsBlock(item){
 let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
 let livePriceMsg = null; // {ok:bool, html:string} — last refreshLivePrices() result, shown near the refresh button
 let assetAddMsg = null; // {ok:bool, html:string} — last addAssetItem() USD→THB conversion status, shown near the add-asset form
+let btcAddMsgHtml = null; // string|null — last addBtcAsset() result, shown near the BTC quick-add form
 let assetsPortfolioFilter = 'all'; // 'all' or a portfolio id — filters the "รายการสินทรัพย์" list on the "ทรัพย์สิน" page
 function setAssetsChartMode(mode){ assetsChartMode = mode; render(); }
 function setAssetsPortfolioFilter(id){ assetsPortfolioFilter = id; render(); }
@@ -3118,13 +3121,13 @@ function renderAssets(){
       <div class="form-row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--line)">
         <span style="width:34px; height:34px; border-radius:10px; background:${cat.color}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0">${escapeHtml((it.name||'?').slice(0,1))}</span>
         <div style="min-width:150px; flex:1">
-          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}${(it.currency==='USD' && it.originalAmount!=null) ? ' <span class="tag" style="background:var(--indigo-pale); color:var(--indigo)" title="แปลงจาก USD อัตโนมัติตอนบันทึก (rate '+it.fxRateUsed+')">$'+fmtMoney(it.originalAmount)+'</span>' : ''}${it.needsPortfolioReview ? ' <span class="tag" style="background:var(--amber-pale); color:#8a5a00" title="เพิ่มจากใบยืนยันการซื้อขายอัตโนมัติ ยังไม่ได้จัดพอร์ต">⚠ ยังไม่ได้จัดพอร์ต</span>' : ''}</div>
-          <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}</div>
+          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}${(it.currency==='USD' && it.originalAmount!=null) ? ' <span class="tag" style="background:var(--indigo-pale); color:var(--indigo)" title="'+(it.cryptoId ? 'ราคาล่าสุดจาก CoinGecko (rate '+it.fxRateUsed+') — กด &quot;รีเฟรชราคาตลาด&quot; เพื่ออัพเดท' : 'แปลงจาก USD อัตโนมัติตอนบันทึก (rate '+it.fxRateUsed+')')+'">$'+fmtMoney(it.originalAmount)+'</span>' : ''}${it.needsPortfolioReview ? ' <span class="tag" style="background:var(--amber-pale); color:#8a5a00" title="เพิ่มจากใบยืนยันการซื้อขายอัตโนมัติ ยังไม่ได้จัดพอร์ต">⚠ ยังไม่ได้จัดพอร์ต</span>' : ''}</div>
+          <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}${(it.cryptoId && it.units!=null) ? (' · '+it.units+' '+escapeHtml(it.symbol||'')) : ''}</div>
         </div>
         <div style="min-width:72px; cursor:pointer" onclick="openItemChart('${it.id}')" title="ดูกราฟแนวโน้มแบบเต็ม">${renderSparkline(it.valueHistory)}</div>
         <div style="text-align:right; min-width:100px">
           <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}</div>
-          <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}</div>
+          <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}${it.originalCostBasis!=null ? ' ($'+fmtMoney(it.originalCostBasis)+')' : ''}</div>
         </div>
         <div style="text-align:right; min-width:90px; color:${gainColor}">
           <div class="mono" style="font-size:12.5px">${gain>=0?'+':''}฿${fmtMoney(gain)}</div>
@@ -3179,6 +3182,22 @@ function renderAssets(){
     </div>
     <div class="muted" id="assetCurrencyHint" style="margin-top:6px"></div>
     <div id="assetAddMsg">${assetAddMsg ? assetAddMsg.html : ''}</div>
+  </div>
+
+  <div class="panel">
+    <h3>₿ คริปโต — Bitcoin (BTC)</h3>
+    <div class="muted" style="margin-bottom:12px">กรอกจำนวนเหรียญ BTC ที่ถือ + ต้นทุนรวม/จำนวนเงินที่ซื้อ (เลือกได้ว่ากรอกเป็นบาทหรือดอลลาร์) ระบบจะดึงราคา BTC ล่าสุดจาก CoinGecko (ฟรี ไม่ต้องมี API key) มาคำนวณมูลค่าปัจจุบันให้ทั้งสองสกุลทันที แล้วเพิ่มเป็นสินทรัพย์รายการหนึ่งในลิสต์ด้านบนตามปกติ (นับรวมในมูลค่าสุทธิ/กราฟ/โดนัทด้วย) — กด "รีเฟรชราคาตลาด" ที่รายการสินทรัพย์ด้านบนได้ทุกครั้งที่อยากอัพเดทราคา BTC ให้เป็นปัจจุบัน (ไม่ต้องมี Finnhub key เฉพาะส่วนคริปโต)</div>
+    <div class="form-row">
+      <input type="number" id="btcUnits" placeholder="จำนวนเหรียญ BTC" step="0.00000001" min="0" style="max-width:150px">
+      <input type="number" id="btcCostAmount" placeholder="ต้นทุนรวม / จำนวนเงินที่ซื้อ" min="0" style="max-width:190px">
+      <select id="btcCostCurrency" style="max-width:100px">
+        <option value="THB">THB (บาท)</option>
+        <option value="USD">USD (ดอลลาร์)</option>
+      </select>
+      <select id="btcPortfolio" title="เลือกพอร์ตที่จะเพิ่ม BTC เข้าไป">${portfolios.map(p=>`<option value="${p.id}" ${(activePortfolio?activePortfolio.id:mainPortfolioId())===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+      <button class="btn" id="btcAddBtn" onclick="addBtcAsset()">+ เพิ่ม BTC</button>
+    </div>
+    <div id="btcAddMsg" class="muted" style="margin-top:8px">${btcAddMsgHtml || ''}</div>
   </div>
 
   <div class="panel">
@@ -4148,6 +4167,74 @@ async function addAssetItem(){
   saveState(); render();
 }
 function delAssetItem(id){ state.assets.items = state.assets.items.filter(x=>x.id!==id); if(openItemChartId===id) openItemChartId = null; saveState(); render(); }
+// Shared CoinGecko price fetch (free, no API key) for one or more coin ids at once — used both
+// by addBtcAsset() below and by the crypto branch of refreshLivePrices(). Unlike the stock-price
+// path (Finnhub for price + Frankfurter for USD→THB, two separate calls), CoinGecko returns the
+// coin's price directly in both USD and THB in a single request, so no separate FX conversion
+// step is needed for the value itself. Returns null on any failure so callers can show an error/
+// fall back instead of throwing. `ids` is an array of CoinGecko coin ids (e.g. ['bitcoin']).
+async function fetchCoinGeckoPrices(ids){
+  if(!ids || !ids.length) return null;
+  try{
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.map(encodeURIComponent).join(',')}&vs_currencies=usd,thb`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return data || null;
+  }catch(e){ return null; }
+}
+// Adds a Bitcoin holding as a regular asset item (category 'crypto') — appears in the normal
+// "รายการสินทรัพย์" list, counts toward net worth/donuts/charts like anything else. Cost basis can
+// be entered in THB or USD (matching the pattern in addAssetItem() above); the CURRENT value is
+// always computed from CoinGecko's live BTC price in both currencies at add time, using the same
+// USD⇄THB cross-rate implied by that single quote (thbPrice/usdPrice) to convert a USD-entered
+// cost to THB or vice versa — avoids a second network call to Frankfurter just for that. `symbol`
+// + `units` + `cryptoId` are set so this item is picked up by the crypto branch of
+// refreshLivePrices() later (no Finnhub key needed for that part — see there).
+async function addBtcAsset(){
+  const unitsEl = document.getElementById('btcUnits');
+  const costEl = document.getElementById('btcCostAmount');
+  const costCurEl = document.getElementById('btcCostCurrency');
+  const portfolioEl = document.getElementById('btcPortfolio');
+  const units = parseFloat(unitsEl.value);
+  if(!(units>0)){ btcAddMsgHtml = `<span style="color:var(--coral)">กรอกจำนวนเหรียญ BTC ก่อน</span>`; render(); return; }
+  const rawCost = parseFloat(costEl.value) || 0;
+  const costCurrency = costCurEl ? costCurEl.value : 'THB';
+  const portfolioId = portfolioEl ? portfolioEl.value : mainPortfolioId();
+
+  btcAddMsgHtml = `<span class="muted">กำลังดึงราคา BTC ล่าสุดจาก CoinGecko...</span>`;
+  render();
+
+  const prices = await fetchCoinGeckoPrices(['bitcoin']);
+  const quote = prices && prices.bitcoin;
+  if(!quote || !(quote.usd>0) || !(quote.thb>0)){
+    btcAddMsgHtml = `<span style="color:var(--coral)">ดึงราคา BTC ไม่สำเร็จ (เช็คอินเทอร์เน็ต) — ลองกด "+ เพิ่ม BTC" อีกครั้ง</span>`;
+    render();
+    return;
+  }
+  const priceUsd = quote.usd, priceThb = quote.thb;
+  const impliedRate = priceThb / priceUsd; // this quote's own USD→THB cross-rate, for the cost conversion below
+
+  const valueUsd = units * priceUsd;
+  const valueThb = units * priceThb;
+  const costThb = costCurrency === 'USD' ? rawCost * impliedRate : rawCost;
+  const costUsd = costCurrency === 'USD' ? rawCost : (impliedRate ? rawCost / impliedRate : 0);
+
+  const today = todayISO();
+  state.assets.items.push({
+    id: uid(), name: 'Bitcoin (BTC)', category: 'crypto', assetType: '', portfolioId,
+    symbol: 'BTC', cryptoId: 'bitcoin', units,
+    currency: 'USD', // reuses the existing $-badge display convention (see the item-row template)
+    value: Math.round(valueThb), costBasis: Math.round(costThb),
+    originalAmount: Math.round(valueUsd*100)/100, originalCostBasis: rawCost ? Math.round(costUsd*100)/100 : null,
+    fxRateUsed: Math.round(impliedRate*100)/100,
+    note: '', updated: today, transactions: [],
+    valueHistory: [{date: today, value: Math.round(valueThb)}]
+  });
+  unitsEl.value = ''; costEl.value = ''; costCurEl.value = 'THB';
+  btcAddMsgHtml = `<span style="color:var(--teal)">เพิ่ม BTC ${units} เหรียญแล้ว — มูลค่า ฿${fmtMoney(valueThb)} (≈ $${fmtMoney(valueUsd)}) ที่ราคา $${fmtMoney(priceUsd)}/BTC</span>`;
+  saveState(); render();
+}
 // Manual "อัพเดทมูลค่า" action — the only way this app's asset values ever change over
 // time (no live market feed). Overwrites today's valueHistory entry instead of stacking
 // a duplicate if this item was already updated once today.
@@ -4181,21 +4268,22 @@ async function fetchUsdThbRate(){
     return fxData && fxData.rates ? Number(fxData.rates.THB) : null;
   }catch(e){ return null; }
 }
-// Live market-price refresh for stocks/ETFs. Uses Finnhub's free quote endpoint (needs a
-// user-supplied API key, see Settings) for the price and Frankfurter's free no-key FX API
-// for USD→THB, fetched once per batch and reused across all USD items. Only items with both
-// `symbol` and `units` set are eligible — everything else keeps working via the manual
-// "อัพเดทมูลค่า" flow untouched. Mirrors the exact same-day valueHistory de-dup convention as
-// updateAssetItemValue() so history doesn't grow a duplicate entry per refresh in one day.
+// Live market-price refresh for stocks/ETFs AND crypto, in one button/pass. Stocks/ETFs use
+// Finnhub's free quote endpoint (needs a user-supplied API key, see Settings) + Frankfurter's
+// free no-key FX API for USD→THB — unchanged from before. Crypto items (marked by `cryptoId`,
+// see addBtcAsset()) use CoinGecko's free no-key endpoint instead, which returns both USD and
+// THB directly, so no separate FX step is needed for those. The two branches are independent:
+// a missing Finnhub key only skips the stock/ETF branch, it never blocks the crypto refresh
+// (crypto needs no key at all). Only items with both `symbol`/`cryptoId` and `units` set are
+// eligible — everything else keeps working via the manual "อัพเดทมูลค่า" flow untouched. Mirrors
+// the same-day valueHistory de-dup convention as updateAssetItemValue() so history doesn't grow
+// a duplicate entry per refresh in one day.
 async function refreshLivePrices(){
   const key = state.settings.finnhubApiKey;
-  if(!key){
-    livePriceMsg = {ok:false, html:`<div class="msg msg-err">ยังไม่ได้ใส่ Finnhub API key — ไปที่หน้า "ตั้งค่า" ก่อน</div>`};
-    render();
-    return;
-  }
-  const eligible = state.assets.items.filter(it=>it.symbol && it.units);
-  if(!eligible.length){
+  const stockEligible = state.assets.items.filter(it=>it.symbol && it.units && !it.cryptoId);
+  const cryptoEligible = state.assets.items.filter(it=>it.cryptoId && it.units);
+  const total = stockEligible.length + cryptoEligible.length;
+  if(!total){
     livePriceMsg = {ok:false, html:`<div class="muted">ยังไม่มีสินทรัพย์ที่ตั้งค่า symbol/units ไว้สำหรับดึงราคาสด</div>`};
     render();
     return;
@@ -4203,37 +4291,75 @@ async function refreshLivePrices(){
   livePriceMsg = {ok:true, html:`<div class="muted">กำลังดึงราคาตลาด...</div>`};
   render();
 
-  let fxRate = null;
-  if(eligible.some(it=>it.currency==='USD')){
-    fxRate = await fetchUsdThbRate();
-  }
-
   const today = todayISO();
   let ok = 0, fail = 0;
-  for(const it of eligible){
-    try{
-      if(it.currency === 'USD' && !fxRate) throw new Error('no fx rate');
-      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(it.symbol)}&token=${encodeURIComponent(key)}`);
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      const price = Number(data && data.c);
-      if(!(price>0)) throw new Error('no price');
-      const value = Math.round(it.currency === 'USD' ? it.units * price * fxRate : it.units * price);
-      it.value = value;
-      it.updated = today;
-      if(!it.valueHistory) it.valueHistory = [];
-      if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
-        it.valueHistory[it.valueHistory.length-1].value = value;
-      } else {
-        it.valueHistory.push({date: today, value});
-      }
-      ok++;
-    }catch(e){ fail++; }
+  const notes = [];
+
+  // Crypto branch first — CoinGecko needs no API key, so this runs unconditionally whenever
+  // there's an eligible crypto item, independent of whether Finnhub is configured below.
+  if(cryptoEligible.length){
+    const ids = [...new Set(cryptoEligible.map(it=>it.cryptoId))];
+    const prices = await fetchCoinGeckoPrices(ids);
+    if(!prices){
+      fail += cryptoEligible.length;
+      notes.push('ดึงราคาคริปโตไม่สำเร็จ (เช็คอินเทอร์เน็ต)');
+    } else {
+      cryptoEligible.forEach(it=>{
+        const quote = prices[it.cryptoId];
+        if(!quote || !(quote.usd>0) || !(quote.thb>0)){ fail++; return; }
+        const value = Math.round(it.units * quote.thb);
+        it.value = value;
+        it.originalAmount = Math.round(it.units * quote.usd * 100) / 100;
+        it.fxRateUsed = Math.round((quote.thb / quote.usd) * 100) / 100;
+        it.updated = today;
+        if(!it.valueHistory) it.valueHistory = [];
+        if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
+          it.valueHistory[it.valueHistory.length-1].value = value;
+        } else {
+          it.valueHistory.push({date: today, value});
+        }
+        ok++;
+      });
+    }
   }
+
+  // Stock/ETF branch — unchanged behavior, still needs a Finnhub key. Skipped (not blocking)
+  // when there's nothing eligible for it, or when no key is configured yet.
+  if(stockEligible.length){
+    if(!key){
+      fail += stockEligible.length;
+      notes.push('ยังไม่ได้ใส่ Finnhub API key (หน้า "ตั้งค่า") — ข้ามราคาหุ้น/ETF');
+    } else {
+      let fxRate = null;
+      if(stockEligible.some(it=>it.currency==='USD')) fxRate = await fetchUsdThbRate();
+      for(const it of stockEligible){
+        try{
+          if(it.currency === 'USD' && !fxRate) throw new Error('no fx rate');
+          const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(it.symbol)}&token=${encodeURIComponent(key)}`);
+          if(!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          const price = Number(data && data.c);
+          if(!(price>0)) throw new Error('no price');
+          const value = Math.round(it.currency === 'USD' ? it.units * price * fxRate : it.units * price);
+          it.value = value;
+          it.updated = today;
+          if(!it.valueHistory) it.valueHistory = [];
+          if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
+            it.valueHistory[it.valueHistory.length-1].value = value;
+          } else {
+            it.valueHistory.push({date: today, value});
+          }
+          ok++;
+        }catch(e){ fail++; }
+      }
+    }
+  }
+
   saveState();
+  const noteSuffix = notes.length ? ' — ' + notes.join(' · ') : (fail ? ` — ${fail} รายการดึงราคาไม่สำเร็จ` : '');
   livePriceMsg = fail
-    ? {ok:false, html:`<div class="msg msg-err">อัพเดท ${ok}/${eligible.length} รายการ — ${fail} รายการดึงราคาไม่สำเร็จ</div>`}
-    : {ok:true, html:`<div class="msg msg-ok">อัพเดทราคาตลาดสำเร็จ ${ok}/${eligible.length} รายการ</div>`};
+    ? {ok:false, html:`<div class="msg msg-err">อัพเดท ${ok}/${total} รายการ${noteSuffix}</div>`}
+    : {ok:true, html:`<div class="msg msg-ok">อัพเดทราคาตลาดสำเร็จ ${ok}/${total} รายการ</div>`};
   render();
 }
 function addDebt(){
@@ -4332,6 +4458,7 @@ function renderSettings(){
       <input type="text" id="finnhubKey" placeholder="Finnhub API key" value="${escapeHtml(s.finnhubApiKey||'')}">
       <button class="btn" onclick="saveFinnhubSettings()">บันทึก</button>
     </div>
+    <div class="muted" style="margin-top:8px">₿ ราคาคริปโต (BTC) ในปุ่ม "รีเฟรชราคาตลาด" เดียวกันนี้ดึงจาก CoinGecko แทน — ฟรีและไม่ต้องใส่ API key ใดๆ เลย ใช้งานได้ทันทีแม้ไม่ได้ตั้งค่า Finnhub key ด้านบน</div>
   </div>
 
   <div class="panel">
