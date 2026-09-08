@@ -3117,6 +3117,12 @@ function renderAssets(){
       const gain = (Number(it.value)||0) - (Number(it.costBasis)||0);
       const gainPct = it.costBasis ? Math.round(1000*gain/it.costBasis)/10 : null;
       const gainColor = gain>=0 ? 'var(--teal)' : 'var(--coral)';
+      // Per-coin current price (crypto only) — shown in the same "฿X ($Y)" style as the cost
+      // line below, so it's easy to eyeball whether the entered cost basis is in the right
+      // ballpark (a cost-per-coin wildly different from this current price usually means the
+      // cost was typed with an extra digit/zero, not that the app miscalculated anything).
+      const pricePerUnitThb = (it.cryptoId && it.units) ? Math.round(it.value/it.units) : null;
+      const pricePerUnitUsd = (it.cryptoId && it.units && it.originalAmount!=null) ? Math.round((it.originalAmount/it.units)*100)/100 : null;
       return `
       <div class="form-row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--line)">
         <span style="width:34px; height:34px; border-radius:10px; background:${cat.color}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0">${escapeHtml((it.name||'?').slice(0,1))}</span>
@@ -3127,7 +3133,8 @@ function renderAssets(){
         <div style="min-width:72px; cursor:pointer" onclick="openItemChart('${it.id}')" title="ดูกราฟแนวโน้มแบบเต็ม">${renderSparkline(it.valueHistory)}</div>
         <div style="text-align:right; min-width:100px">
           <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}</div>
-          <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}${it.originalCostBasis!=null ? ' ($'+fmtMoney(it.originalCostBasis)+')' : ''}</div>
+          ${pricePerUnitThb!=null ? `<div class="muted" style="font-size:10.5px">ราคา ฿${fmtMoney(pricePerUnitThb)}${pricePerUnitUsd!=null?' ($'+fmtMoney(pricePerUnitUsd)+')':''}/เหรียญ</div>` : ''}
+          <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}${it.originalCostBasis!=null ? ' ($'+fmtMoney(it.originalCostBasis)+')' : ''} <span class="task-del" style="cursor:pointer" onclick="editItemCostBasis('${it.id}')" title="แก้ไขต้นทุน">✎</span></div>
         </div>
         <div style="text-align:right; min-width:90px; color:${gainColor}">
           <div class="mono" style="font-size:12.5px">${gain>=0?'+':''}฿${fmtMoney(gain)}</div>
@@ -4246,6 +4253,13 @@ function updateAssetItemValue(id){
   const it = state.assets.items.find(x=>x.id===id);
   if(!it) return;
   it.value = v;
+  // Keep the $ badge (originalAmount) in sync when this item shows one — otherwise a manual THB
+  // correction here would leave the $ figure stuck at whatever it was from the last live refresh/
+  // add, which is exactly the kind of THB/USD mismatch that looks like a bug (see editItemCostBasis
+  // below for the same reasoning on the cost side).
+  if(it.currency === 'USD' && it.fxRateUsed){
+    it.originalAmount = Math.round((v / it.fxRateUsed) * 100) / 100;
+  }
   it.updated = todayISO();
   if(!it.valueHistory) it.valueHistory = [];
   const today = todayISO();
@@ -4253,6 +4267,25 @@ function updateAssetItemValue(id){
     it.valueHistory[it.valueHistory.length-1].value = v;
   } else {
     it.valueHistory.push({date: today, value: v});
+  }
+  saveState(); render();
+}
+// Lets a wrong cost basis (e.g. an extra zero typed in by mistake — the THB amount and its $
+// equivalent then imply a nonsensical price-per-coin/share, showing as a huge gain/loss in red)
+// be corrected in place instead of deleting and re-adding the whole item (which would also lose
+// its valueHistory/sparkline). Always entered in THB, matching the "อัพเดทมูลค่า" convention —
+// for a USD-currency item (crypto or a USD deposit) with a known fxRateUsed, the $ equivalent is
+// recomputed from that same rate so both figures stay consistent with each other.
+function editItemCostBasis(id){
+  const it = state.assets.items.find(x=>x.id===id);
+  if(!it) return;
+  const input = window.prompt('แก้ไขต้นทุน (บาท):', String(it.costBasis||0));
+  if(input == null) return;
+  const v = parseFloat(input);
+  if(!(v>=0)) return;
+  it.costBasis = Math.round(v);
+  if(it.currency === 'USD' && it.fxRateUsed){
+    it.originalCostBasis = Math.round((v / it.fxRateUsed) * 100) / 100;
   }
   saveState(); render();
 }
