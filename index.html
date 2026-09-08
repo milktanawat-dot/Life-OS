@@ -3117,6 +3117,9 @@ function renderAssets(){
       const gain = (Number(it.value)||0) - (Number(it.costBasis)||0);
       const gainPct = it.costBasis ? Math.round(1000*gain/it.costBasis)/10 : null;
       const gainColor = gain>=0 ? 'var(--teal)' : 'var(--coral)';
+      // Dollar-equivalent gain, alongside the THB one, for any USD-tracked item (crypto included)
+      // that has both a $ value and a $ cost snapshot — same "฿X ($Y)" pairing used for value/cost.
+      const gainUsd = (it.currency==='USD' && it.originalAmount!=null && it.originalCostBasis!=null) ? Math.round((it.originalAmount-it.originalCostBasis)*100)/100 : null;
       // Per-coin current price (crypto only) — shown in the same "฿X ($Y)" style as the cost
       // line below, so it's easy to eyeball whether the entered cost basis is in the right
       // ballpark (a cost-per-coin wildly different from this current price usually means the
@@ -3132,12 +3135,12 @@ function renderAssets(){
         </div>
         <div style="min-width:72px; cursor:pointer" onclick="openItemChart('${it.id}')" title="ดูกราฟแนวโน้มแบบเต็ม">${renderSparkline(it.valueHistory)}</div>
         <div style="text-align:right; min-width:100px">
-          <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}</div>
+          <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}${(it.currency==='USD' && it.originalAmount!=null) ? ' ($'+fmtMoney(it.originalAmount)+')' : ''}</div>
           ${pricePerUnitThb!=null ? `<div class="muted" style="font-size:10.5px">ราคา ฿${fmtMoney(pricePerUnitThb)}${pricePerUnitUsd!=null?' ($'+fmtMoney(pricePerUnitUsd)+')':''}/เหรียญ</div>` : ''}
           <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}${it.originalCostBasis!=null ? ' ($'+fmtMoney(it.originalCostBasis)+')' : ''} <span class="task-del" style="cursor:pointer" onclick="editItemCostBasis('${it.id}')" title="แก้ไขต้นทุน">✎</span></div>
         </div>
         <div style="text-align:right; min-width:90px; color:${gainColor}">
-          <div class="mono" style="font-size:12.5px">${gain>=0?'+':''}฿${fmtMoney(gain)}</div>
+          <div class="mono" style="font-size:12.5px">${gain>=0?'+':''}฿${fmtMoney(gain)}${gainUsd!=null ? ' ('+(gainUsd>=0?'+':'')+'$'+fmtMoney(gainUsd)+')' : ''}</div>
           <div style="font-size:11px">${gainPct!=null ? (gain>=0?'+':'')+gainPct+'%' : '—'}</div>
         </div>
         <select onchange="setItemPortfolio('${it.id}', this.value)" title="ย้ายสินทรัพย์นี้เข้าพอร์ต — เลือกได้เลยโดยไม่ต้องเพิ่มใหม่" style="font-size:11px; padding:5px 8px; max-width:120px; border:1px solid ${it.needsPortfolioReview?'var(--amber)':'var(--line)'}; border-radius:8px; background:var(--bg); color:${pf.color}">
@@ -3193,10 +3196,10 @@ function renderAssets(){
 
   <div class="panel">
     <h3>₿ คริปโต — Bitcoin (BTC)</h3>
-    <div class="muted" style="margin-bottom:12px">กรอกจำนวนเหรียญ BTC ที่ถือ + ต้นทุนรวม/จำนวนเงินที่ซื้อ (เลือกได้ว่ากรอกเป็นบาทหรือดอลลาร์) ระบบจะดึงราคา BTC ล่าสุดจาก CoinGecko (ฟรี ไม่ต้องมี API key) มาคำนวณมูลค่าปัจจุบันให้ทั้งสองสกุลทันที แล้วเพิ่มเป็นสินทรัพย์รายการหนึ่งในลิสต์ด้านบนตามปกติ (นับรวมในมูลค่าสุทธิ/กราฟ/โดนัทด้วย) — กด "รีเฟรชราคาตลาด" ที่รายการสินทรัพย์ด้านบนได้ทุกครั้งที่อยากอัพเดทราคา BTC ให้เป็นปัจจุบัน (ไม่ต้องมี Finnhub key เฉพาะส่วนคริปโต)</div>
+    <div class="muted" style="margin-bottom:12px">กรอกจำนวนเหรียญ BTC ที่ถือ + ราคาทุนเฉลี่ยต่อเหรียญที่ซื้อมา (เฉลี่ยถ่วงน้ำหนักถ้าซื้อหลายรอบ — เลือกได้ว่ากรอกเป็นบาทหรือดอลลาร์ต่อเหรียญ) ระบบจะเอาไปคูณกับจำนวนเหรียญให้เป็นต้นทุนรวมเอง แล้วดึงราคา BTC ล่าสุดจาก CoinGecko (ฟรี ไม่ต้องมี API key) มาคำนวณมูลค่าปัจจุบันให้ทั้งสองสกุลทันที แล้วเพิ่มเป็นสินทรัพย์รายการหนึ่งในลิสต์ด้านบนตามปกติ (นับรวมในมูลค่าสุทธิ/กราฟ/โดนัทด้วย) — กด "รีเฟรชราคาตลาด" ที่รายการสินทรัพย์ด้านบนได้ทุกครั้งที่อยากอัพเดทราคา BTC ให้เป็นปัจจุบัน (ไม่ต้องมี Finnhub key เฉพาะส่วนคริปโต)</div>
     <div class="form-row">
       <input type="number" id="btcUnits" placeholder="จำนวนเหรียญ BTC" step="0.00000001" min="0" style="max-width:150px">
-      <input type="number" id="btcCostAmount" placeholder="ต้นทุนรวม / จำนวนเงินที่ซื้อ" min="0" style="max-width:190px">
+      <input type="number" id="btcAvgCost" placeholder="ราคาทุนเฉลี่ย/เหรียญ (ที่ซื้อมา)" min="0" style="max-width:190px">
       <select id="btcCostCurrency" style="max-width:100px">
         <option value="THB">THB (บาท)</option>
         <option value="USD">USD (ดอลลาร์)</option>
@@ -4198,14 +4201,19 @@ async function fetchCoinGeckoPrices(ids){
 // cost to THB or vice versa — avoids a second network call to Frankfurter just for that. `symbol`
 // + `units` + `cryptoId` are set so this item is picked up by the crypto branch of
 // refreshLivePrices() later (no Finnhub key needed for that part — see there).
+// The cost field is the AVERAGE COST PER COIN (what someone actually knows off the top of their
+// head after buying in over several rounds) — NOT a total. It gets multiplied by `units` here to
+// produce the stored total cost basis. An earlier version treated the field as a total, which
+// silently misread "my average cost was ~2,026 THB/coin" as "I spent 2,026,000 THB total",
+// producing an enormous, nonsensical loss — this is the fix for that.
 async function addBtcAsset(){
   const unitsEl = document.getElementById('btcUnits');
-  const costEl = document.getElementById('btcCostAmount');
+  const costEl = document.getElementById('btcAvgCost');
   const costCurEl = document.getElementById('btcCostCurrency');
   const portfolioEl = document.getElementById('btcPortfolio');
   const units = parseFloat(unitsEl.value);
   if(!(units>0)){ btcAddMsgHtml = `<span style="color:var(--coral)">กรอกจำนวนเหรียญ BTC ก่อน</span>`; render(); return; }
-  const rawCost = parseFloat(costEl.value) || 0;
+  const rawAvgCost = parseFloat(costEl.value) || 0; // per-coin average cost, NOT a total
   const costCurrency = costCurEl ? costCurEl.value : 'THB';
   const portfolioId = portfolioEl ? portfolioEl.value : mainPortfolioId();
 
@@ -4224,8 +4232,11 @@ async function addBtcAsset(){
 
   const valueUsd = units * priceUsd;
   const valueThb = units * priceThb;
-  const costThb = costCurrency === 'USD' ? rawCost * impliedRate : rawCost;
-  const costUsd = costCurrency === 'USD' ? rawCost : (impliedRate ? rawCost / impliedRate : 0);
+  // avg cost per coin -> total cost basis (multiply by units)
+  const avgCostThbPerUnit = costCurrency === 'USD' ? rawAvgCost * impliedRate : rawAvgCost;
+  const avgCostUsdPerUnit = costCurrency === 'USD' ? rawAvgCost : (impliedRate ? rawAvgCost / impliedRate : 0);
+  const costThb = avgCostThbPerUnit * units;
+  const costUsd = avgCostUsdPerUnit * units;
 
   const today = todayISO();
   state.assets.items.push({
@@ -4233,13 +4244,13 @@ async function addBtcAsset(){
     symbol: 'BTC', cryptoId: 'bitcoin', units,
     currency: 'USD', // reuses the existing $-badge display convention (see the item-row template)
     value: Math.round(valueThb), costBasis: Math.round(costThb),
-    originalAmount: Math.round(valueUsd*100)/100, originalCostBasis: rawCost ? Math.round(costUsd*100)/100 : null,
+    originalAmount: Math.round(valueUsd*100)/100, originalCostBasis: rawAvgCost ? Math.round(costUsd*100)/100 : null,
     fxRateUsed: Math.round(impliedRate*100)/100,
     note: '', updated: today, transactions: [],
     valueHistory: [{date: today, value: Math.round(valueThb)}]
   });
   unitsEl.value = ''; costEl.value = ''; costCurEl.value = 'THB';
-  btcAddMsgHtml = `<span style="color:var(--teal)">เพิ่ม BTC ${units} เหรียญแล้ว — มูลค่า ฿${fmtMoney(valueThb)} (≈ $${fmtMoney(valueUsd)}) ที่ราคา $${fmtMoney(priceUsd)}/BTC</span>`;
+  btcAddMsgHtml = `<span style="color:var(--teal)">เพิ่ม BTC ${units} เหรียญแล้ว — มูลค่า ฿${fmtMoney(valueThb)} ($${fmtMoney(valueUsd)}) ที่ราคา $${fmtMoney(priceUsd)}/BTC${rawAvgCost ? ` · ทุนรวม ฿${fmtMoney(costThb)} ($${fmtMoney(costUsd)})` : ''}</span>`;
   saveState(); render();
 }
 // Manual "อัพเดทมูลค่า" action — the only way this app's asset values ever change over
@@ -4273,12 +4284,29 @@ function updateAssetItemValue(id){
 // Lets a wrong cost basis (e.g. an extra zero typed in by mistake — the THB amount and its $
 // equivalent then imply a nonsensical price-per-coin/share, showing as a huge gain/loss in red)
 // be corrected in place instead of deleting and re-adding the whole item (which would also lose
-// its valueHistory/sparkline). Always entered in THB, matching the "อัพเดทมูลค่า" convention —
-// for a USD-currency item (crypto or a USD deposit) with a known fxRateUsed, the $ equivalent is
-// recomputed from that same rate so both figures stay consistent with each other.
+// its valueHistory/sparkline). For a crypto item, this asks for the AVERAGE COST PER COIN (same
+// convention as addBtcAsset()) and multiplies by units — matches how someone actually knows their
+// own cost basis, and avoids re-introducing the total-vs-per-unit mixup this was built to fix.
+// Everything else is entered in THB, matching the "อัพเดทมูลค่า" convention — for a USD-currency
+// item (crypto or a USD deposit) with a known fxRateUsed, the $ equivalent is recomputed from that
+// same rate so both figures stay consistent with each other.
 function editItemCostBasis(id){
   const it = state.assets.items.find(x=>x.id===id);
   if(!it) return;
+  if(it.cryptoId && it.units){
+    const currentAvg = it.units ? (it.costBasis||0) / it.units : 0;
+    const input = window.prompt('แก้ไขราคาทุนเฉลี่ยต่อเหรียญ (บาท/เหรียญ):', String(Math.round(currentAvg)));
+    if(input == null) return;
+    const avg = parseFloat(input);
+    if(!(avg>=0)) return;
+    const total = avg * it.units;
+    it.costBasis = Math.round(total);
+    if(it.currency === 'USD' && it.fxRateUsed){
+      it.originalCostBasis = Math.round((total / it.fxRateUsed) * 100) / 100;
+    }
+    saveState(); render();
+    return;
+  }
   const input = window.prompt('แก้ไขต้นทุน (บาท):', String(it.costBasis||0));
   if(input == null) return;
   const v = parseFloat(input);
