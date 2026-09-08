@@ -3426,7 +3426,14 @@ function parseDimeMonthlyHoldings(lines){
   // Note: no early bail-out when fxRate is missing — a Thai-Securities-only statement has no
   // "1 USD = X THB" line at all (nothing in it needs converting), and its holdings are still
   // fully readable. Only a USD-currency row actually needs fxRate (checked at import time).
-  const rowRe = /^([A-Z0-9][A-Z0-9.]{0,7})\s+([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([+-])\s*([\d.]+)%\s+([+-])\s*([\d.]+)\s+([\d.]+)\s*$/;
+  // Numeric fields use [\d,]+(?:\.\d+)? rather than plain [\d.]+ because Dime formats any of
+  // shares/avg-cost/price/return/market-value with a thousands-separator comma once it crosses
+  // 1,000 (e.g. a high-priced ADR like ASML shows avg cost/price as "1,740.00"/"1,696.01") — the
+  // old digits-and-dot-only pattern silently failed to match the whole line, so that holding's
+  // row was dropped from the table entirely with no error (it just never showed up). Commas are
+  // stripped before parseFloat below.
+  const numPat = '[\\d,]+(?:\\.\\d+)?';
+  const rowRe = new RegExp('^([A-Z0-9][A-Z0-9.]{0,7})\\s+('+numPat+')%\\s+('+numPat+')\\s+('+numPat+')\\s+('+numPat+')\\s+([+-])\\s*('+numPat+')%\\s+([+-])\\s*('+numPat+')\\s+('+numPat+')\\s*$');
   let section = null; // 'stock' | 'etf' — only affects the default category on newly-created items
   let currency = null; // 'USD' | 'THB' — set per account section by its "Currency USD|THB" line
   const holdings = [];
@@ -3435,21 +3442,25 @@ function parseDimeMonthlyHoldings(lines){
     const curMatch = line.match(/Currency\s+(USD|THB)/i);
     if(curMatch){ currency = curMatch[1].toUpperCase(); continue; }
     // These Thai section-header words never appear inside an English holding-name line, so
-    // matching on them (rather than the bilingual "Common Stock"/"ETF" phrasing) can't be
-    // confused with a stock/ETF name that happens to contain "ETF" or "Common Stock" itself.
+    // matching on them (rather than the bilingual "Common Stock"/"ETF"/"ADR" phrasing) can't be
+    // confused with a stock/ETF/ADR name that happens to contain those words itself. "ตราสาร ADR"
+    // (the ADR/depositary-receipt section, e.g. ASML) is treated like an individual stock holding
+    // for the default category, same as "หุ้นสามัญ".
     if(/หุ้นสามัญ/.test(line)){ section = 'stock'; continue; }
+    if(/ตราสาร\s*ADR/.test(line)){ section = 'stock'; continue; }
     if(/กองทุน/.test(line)){ section = 'etf'; continue; }
     const m = line.match(rowRe);
     if(!m) continue;
     const [, symbol, , sharesRaw, avgCostRaw, priceRaw, , , , , mktValRaw] = m;
     const nameLine = (lines[i+1]||'').trim();
     const name = (nameLine && !rowRe.test(nameLine) && !/^รวม|^total/i.test(nameLine)) ? nameLine : '';
+    const denum = s => parseFloat(String(s).replace(/,/g,''));
     holdings.push({
       symbol, name,
-      units: parseFloat(sharesRaw),
-      avgCost: parseFloat(avgCostRaw),
-      price: parseFloat(priceRaw),
-      marketValue: parseFloat(mktValRaw),
+      units: denum(sharesRaw),
+      avgCost: denum(avgCostRaw),
+      price: denum(priceRaw),
+      marketValue: denum(mktValRaw),
       currency: currency || 'USD', // defensive fallback only — every real statement seen tags this before its table
       category: section==='etf' ? 'core' : 'satellite'
     });
