@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- redeploy cache-bust: 2026-09-11 -->
+<!-- redeploy cache-bust: 2026-09-14 -->
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -18,6 +18,7 @@
   --green:#5CB85C; --green-pale:#E4F4E2; --green-deep:#3E8E3E;
   --sienna:#C97B4A; --sienna-pale:#F5E6DA;
   --indigo:#5B6EF5; --indigo-pale:#E6E9FD;
+  --btc:#F7931A; --btc-pale:#FDEAD1;
   --radius:20px; --radius-sm:14px;
   --shadow-card:0 2px 6px rgba(30,41,79,.04), 0 16px 32px -20px rgba(30,41,79,.20);
   --shadow-card-hover:0 4px 10px rgba(30,41,79,.06), 0 20px 40px -18px rgba(30,41,79,.24);
@@ -177,6 +178,37 @@ a{color:inherit;}
 /* Assets / portfolio chart */
 .portfolio-chart{width:100%; height:170px; overflow:visible;}
 .portfolio-chart-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-soft); margin-top:4px;}
+
+/* Reminder bell (topbar) + popup modal */
+.bell-btn{position:relative; width:38px; height:38px; border-radius:50%; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-sm); display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; flex-shrink:0; transition:transform .12s ease, box-shadow .12s ease;}
+.bell-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow-card-hover);}
+.bell-badge{position:absolute; top:-3px; right:-3px; min-width:16px; height:16px; padding:0 4px; border-radius:99px; background:var(--coral); color:#fff; font-size:9.5px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--panel);}
+.modal-overlay{position:fixed; inset:0; background:rgba(29,34,51,.42); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;}
+.modal-box{background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow-card-hover); width:100%; max-width:480px; max-height:86vh; overflow-y:auto; padding:24px;}
+.modal-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:4px;}
+.modal-head h3{font-size:16.5px; font-weight:700;}
+.modal-close{background:none; border:none; font-size:18px; color:var(--ink-soft); cursor:pointer; line-height:1; padding:2px;}
+.modal-close:hover{color:var(--ink);}
+.chip-toggle{display:flex; gap:6px; flex-wrap:wrap; margin:12px 0 14px;}
+.chip{font-size:11px; padding:5px 11px; border-radius:99px; border:1px solid var(--line); background:var(--bg); color:var(--ink-soft); cursor:pointer; font-weight:600; font-family:inherit; transition:background .15s ease, color .15s ease, border-color .15s ease;}
+.chip.on{border-color:transparent; color:#fff;}
+.reminder-list{display:flex; flex-direction:column; gap:2px;}
+.reminder-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
+.reminder-row:last-child{border-bottom:none;}
+.reminder-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.reminder-title{flex:1; font-size:12.5px; font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.reminder-when{font-size:10.5px; color:var(--ink-soft); white-space:nowrap; text-align:right; flex-shrink:0;}
+.reminder-cat{font-size:9.5px; color:var(--ink-soft); white-space:nowrap;}
+
+/* Race goals (กิจกรรม page) */
+.race-card{display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:9px;}
+.race-count{width:52px; height:52px; border-radius:14px; background:var(--green-pale); color:var(--green-deep); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;}
+.race-count .n{font-size:16px; font-weight:700; line-height:1;}
+.race-count .u{font-size:8px; font-weight:600;}
+.race-count.past{background:var(--line); color:var(--ink-soft);}
+.race-info{flex:1; min-width:0;}
+.race-info .name{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.race-info .meta{font-size:11px; color:var(--ink-soft); margin-top:2px;}
 </style>
 </head>
 <body>
@@ -201,9 +233,18 @@ a{color:inherit;}
       <h1 id="greetingText">สวัสดี, Milk</h1>
       <p>ภาพรวมทุกด้านของวันนี้ในที่เดียว</p>
     </div>
-    <div class="date-chip" id="dateChip"></div>
+    <div style="display:flex; align-items:center; gap:10px">
+      <button class="bell-btn" id="bellBtn" onclick="openReminderPopup()" title="นัดหมาย/งานที่ใกล้ถึง">
+        🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span>
+      </button>
+      <div class="date-chip" id="dateChip"></div>
+    </div>
   </div>
   <div id="viewRoot"></div>
+</div>
+
+<div class="modal-overlay" id="reminderOverlay" style="display:none" onclick="if(event.target===this) closeReminderPopup()">
+  <div class="modal-box" id="reminderBox"></div>
 </div>
 
 <script>
@@ -211,6 +252,14 @@ a{color:inherit;}
 const LS_KEY = 'milkLifeOS_v1';
 const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const thaiDays = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+
+// Seed lists only, used to initialize a fresh install (defaultState()) and to backfill older
+// saves (loadState()). The lists a trip form actually offers/remembers are the live,
+// user-extendable state.trips.categories / state.trips.currencies — every custom category or
+// currency Milk types into a trip activity gets appended there (see rememberTripCategory /
+// rememberTripCurrency) so it shows up as a choice again next time, across every trip.
+const DEFAULT_TRIP_CATEGORIES = ['เดินทาง','ที่พัก','อาหาร','อื่นๆ'];
+const DEFAULT_TRIP_CURRENCIES = ['THB','USD','EUR','JPY','GBP','SGD','KRW','CNY','AUD','HKD','TWD','VND','LAK','PHP','IDR','MYR','INR'];
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function pad2(n){ return String(n).padStart(2,'0'); }
@@ -409,9 +458,32 @@ const ASSET_CATEGORIES = [
   {key:'deposit', label:'เงินฝาก', color:'var(--indigo)'},
   {key:'pvd', label:'กองทุนสำรองเลี้ยงชีพ (PVD)', color:'var(--green)'},
   {key:'coop', label:'หุ้นสหกรณ์', color:'var(--sienna)'},
+  {key:'crypto', label:'คริปโต (Crypto)', color:'var(--btc)'},
   {key:'other', label:'อื่นๆ', color:'var(--coral)'}
 ];
 function assetCategoryMeta(key){ return ASSET_CATEGORIES.find(c=>c.key===key) || ASSET_CATEGORIES[ASSET_CATEGORIES.length-1]; }
+
+// Portfolios — a second, user-defined way to group asset items (separate from the fixed
+// core/satellite/... category taxonomy above). state.assets.portfolios is a plain array the
+// person can add/remove entries to at any time (see addAssetPortfolio/delAssetPortfolio in the
+// assets view section below). A fresh install seeds exactly one ('default', "พอร์ตหลัก"), but
+// that one is no longer special beyond being first — ANY portfolio, including this one, can be
+// deleted as long as at least one other remains (delAssetPortfolio enforces that and reassigns
+// its items to whichever portfolio survives). mainPortfolioId() is always "whichever portfolio
+// is first in the array right now" — the de-facto landing spot for items with no explicit
+// portfolio choice — so it automatically points at a different portfolio once the original
+// 'default' one is gone, instead of every fallback site hardcoding that literal id.
+const PORTFOLIO_COLOR_CYCLE = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)','var(--indigo)','var(--sienna)'];
+function nextPortfolioColor(){ return PORTFOLIO_COLOR_CYCLE[(state.assets.portfolios||[]).length % PORTFOLIO_COLOR_CYCLE.length]; }
+function mainPortfolioId(){
+  const list = state.assets.portfolios || [];
+  return (list[0] && list[0].id) || 'default';
+}
+function itemPortfolioId(it){ return (it && it.portfolioId) || mainPortfolioId(); }
+function assetPortfolioMeta(id){
+  const list = state.assets.portfolios || [];
+  return list.find(p=>p.id===id) || list[0] || {id:'default', name:'พอร์ตหลัก', color:'var(--teal)'};
+}
 
 // Real trade-confirmation-note history, parsed once from the user's actual Dime
 // "Confirmation Note" (ใบยืนยันการซื้อขาย) PDF emails — one entry per executed trade,
@@ -523,9 +595,11 @@ function assetsChartDates(mode){
 }
 function assetsChartSeries(mode){ return assetsChartDates(mode).map(d=>({date:d, value: assetsValueAt(d)})); }
 
-function assetsByAssetDonutEntries(){
+// items defaults to the whole portfolio (state.assets.items) but can be narrowed to e.g. one
+// user-defined portfolio's items — reused for the per-portfolio breakdown donut in renderAssets.
+function assetsByAssetDonutEntries(items){
   const cycle = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)'];
-  const sorted = [...state.assets.items].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0));
+  const sorted = [...(items || state.assets.items)].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0));
   const main = sorted.slice(0,6);
   const rest = sorted.slice(6);
   const entries = main.map((it,i)=>({label:it.name, color:cycle[i%cycle.length], value:Number(it.value)||0}));
@@ -535,6 +609,13 @@ function assetsByAssetDonutEntries(){
 function assetsByCategoryDonutEntries(){
   return ASSET_CATEGORIES.map(c=>({label:c.label, color:c.color, value: state.assets.items.filter(it=>(it.category||'other')===c.key).reduce((s,it)=>s+(Number(it.value)||0),0)}));
 }
+// Same idea as assetsByCategoryDonutEntries but grouped by the user's own portfolios instead
+// of the fixed category taxonomy — automatically picks up any portfolio just created (it'll
+// show as a 0% slice, filtered out by renderGenericDonut, until an item is assigned to it).
+function assetsByPortfolioDonutEntries(){
+  return (state.assets.portfolios||[]).map(p=>({label:p.name, color:p.color, value: state.assets.items.filter(it=>itemPortfolioId(it)===p.id).reduce((s,it)=>s+(Number(it.value)||0),0)}));
+}
+function assetPortfolioItemsTotal(id){ return state.assets.items.filter(it=>itemPortfolioId(it)===id).reduce((s,it)=>s+(Number(it.value)||0),0); }
 // Generic conic-gradient donut — same technique as renderActivityDonut, generalized to take
 // arbitrary {label,color,value} entries so it can be reused for the assets "by holding" /
 // "by category" breakdowns without a second charting approach.
@@ -606,30 +687,119 @@ function syncFromMilkHubDirect(){
       ? state.finance.transactions.filter(t=>!t.demo)
       : [];
     let processed = 0;
+    // Rebuilt fresh from Milk Hub's tax-slip tracker on every sync (not merged/upserted like
+    // transactions above) — Milk Hub is the sole source of truth for tax slips, so replacing
+    // the whole thing each time is what keeps this in sync when a slip in Milk Hub is
+    // edited/deleted, not just when a new one is added.
+    const taxByYear = {};
     profiles.forEach(p=>{
       const key = p.id === 'default' ? 'milkhub:money:entries' : 'milkhub:profile:' + p.id + ':money:entries';
       const raw = localStorage.getItem(key);
-      if(!raw) return;
-      let money; try{ money = JSON.parse(raw); }catch(e){ return; }
-      (money||[]).forEach(tx=>{
-        if(!tx.amount) return;
-        upsertTxn({
-          id: 'mh-' + (profiles.length>1?p.id+'-':'') + (tx.id || uid()),
-          date: (tx.date || todayISO()).slice(0,10),
-          type: tx.type === 'income' ? 'income' : 'expense',
-          category: tx.category || 'อื่นๆ',
-          item: tx.item || '',
-          amount: Number(tx.amount) || 0,
-          profile: profiles.length>1 ? (p.name||p.id) : undefined
+      if(raw){
+        let money; try{ money = JSON.parse(raw); }catch(e){ money = null; }
+        (money||[]).forEach(tx=>{
+          if(!tx.amount) return;
+          upsertTxn({
+            id: 'mh-' + (profiles.length>1?p.id+'-':'') + (tx.id || uid()),
+            date: (tx.date || todayISO()).slice(0,10),
+            type: tx.type === 'income' ? 'income' : 'expense',
+            category: tx.category || 'อื่นๆ',
+            item: tx.item || '',
+            amount: Number(tx.amount) || 0,
+            profile: profiles.length>1 ? (p.name||p.id) : undefined
+          });
+          processed++;
         });
-        processed++;
+      }
+      const taxKey = p.id === 'default' ? 'milkhub:tax:data' : 'milkhub:profile:' + p.id + ':tax:data';
+      const taxRaw = localStorage.getItem(taxKey);
+      if(!taxRaw) return;
+      let tax; try{ tax = JSON.parse(taxRaw); }catch(e){ return; }
+      Object.keys(tax||{}).forEach(yr=>{
+        const yd = tax[yr] || {slips:[], ded:{}};
+        if(!taxByYear[yr]) taxByYear[yr] = {slips:[], ded:{}};
+        (yd.slips||[]).forEach(s=> taxByYear[yr].slips.push({...s, profile: profiles.length>1 ? (p.name||p.id) : undefined}));
+        // Deduction inputs (ค่าลดหย่อน) are per-person, not summable across profiles — last
+        // profile with data for that year wins, same as how a single-person tax return works.
+        if(yd.ded && Object.keys(yd.ded).length) taxByYear[yr].ded = yd.ded;
       });
     });
+    if(Object.keys(taxByYear).length) state.finance.taxByYear = taxByYear;
     state.finance.lastImport = new Date().toISOString();
     state.finance.lastImportMode = 'same-origin';
     saveState();
     return processed;
   }catch(e){ return null; }
+}
+
+/* ---------- Thai personal income tax — ported from Milk Hub's own tax tracker so the
+   "current tax rate" figure here always matches what Milk Hub itself would show. Only the
+   calculation is duplicated; the slip data itself is never hand-entered here, only synced. ---------- */
+const DED_IDS = ['spouse','child','parent','life','health','rmf','ssf','tesg','home','erec','travel','donedu','dongen','other'];
+const DED_CAPS = {spouse:60000, life:100000, health:25000, ssf:200000, tesg:300000, home:100000, erec:50000, travel:15000};
+function dedItemsTotal(dd){
+  let t = 0;
+  DED_IDS.forEach(k=>{
+    let v = parseFloat((dd||{})[k])||0;
+    if(DED_CAPS[k]) v = Math.min(v, DED_CAPS[k]);
+    if(k==='donedu') v *= 2;
+    t += v;
+  });
+  return t;
+}
+// ขั้นบันไดภาษีเงินได้บุคคลธรรมดาไทย (เงินได้สุทธิ, อัตรา)
+const TAX_BRACKETS = [[150000,0],[300000,.05],[500000,.10],[750000,.15],[1000000,.20],[2000000,.25],[5000000,.30],[Infinity,.35]];
+function calcThaiTax(net){
+  net = Math.max(0, net||0);
+  let tax = 0, prev = 0;
+  for(const [cap,rate] of TAX_BRACKETS){
+    if(net<=prev) break;
+    tax += (Math.min(net,cap)-prev)*rate; prev=cap;
+  }
+  return tax;
+}
+// Which bracket net income currently sits in (marginal rate on the "next baht"), plus how
+// far to the next/previous bracket boundary.
+function taxBracketInfo(net){
+  net = Math.max(0, net||0);
+  let floor = 0;
+  for(let i=0;i<TAX_BRACKETS.length;i++){
+    const [cap, rate] = TAX_BRACKETS[i];
+    if(net<=cap){
+      const nextRate = (i+1<TAX_BRACKETS.length) ? TAX_BRACKETS[i+1][1] : null;
+      const prevRate = i>0 ? TAX_BRACKETS[i-1][1] : null;
+      return { rate, floor, cap, toNext: (cap===Infinity) ? null : Math.max(0, cap-net), toLower: prevRate!=null ? Math.max(0, net-floor) : null, nextRate, prevRate };
+    }
+    floor = cap;
+  }
+  const last = TAX_BRACKETS[TAX_BRACKETS.length-1];
+  return {rate:last[1], floor, cap:Infinity, toNext:null, toLower:null, nextRate:null, prevRate:TAX_BRACKETS[TAX_BRACKETS.length-2][1]};
+}
+function currentBEYear(){ return String(new Date().getFullYear()+543); }
+// Full per-year summary (gross income, withheld tax, PVD, tax owed vs. withheld, current
+// bracket) — used by the Finance page's "รายได้ & ภาษีรายปี" panel. Reads only
+// state.finance.taxByYear, which syncFromMilkHubDirect() keeps up to date automatically.
+function taxYearSummary(yr){
+  const yd = state.finance.taxByYear[yr] || {slips:[], ded:{}};
+  const slips = yd.slips || [];
+  const gross = slips.reduce((s,x)=>s+(Number(x.gross)||0),0);
+  const withheld = slips.reduce((s,x)=>s+(Number(x.withheld)||0),0);
+  const sso = Math.min(slips.reduce((s,x)=>s+(Number(x.sso)||0),0), 9000);
+  const pvd = slips.reduce((s,x)=>s+(Number(x.pvd)||0),0);
+  const expense = Math.min(gross*0.5, 100000);
+  const ded = 60000 + sso + pvd + dedItemsTotal(yd.ded);
+  const netIncome = Math.max(0, gross - expense - ded);
+  const taxOwed = calcThaiTax(netIncome);
+  const diff = taxOwed - withheld; // >0 ต้องจ่ายเพิ่ม, <0 ได้เงินคืน
+  const bracket = taxBracketInfo(netIncome);
+  const effectiveRate = netIncome ? taxOwed/netIncome*100 : 0;
+  return {yr, slips, gross, withheld, sso, pvd, expense, ded, netIncome, taxOwed, diff, bracket, effectiveRate};
+}
+function taxYearsAvailable(){
+  const years = Object.keys(state.finance.taxByYear || {});
+  const cur = currentBEYear();
+  if(years.indexOf(cur)===-1) years.push(cur);
+  return years.sort();
 }
 
 function defaultState(){
@@ -638,6 +808,10 @@ function defaultState(){
     finance: {
       monthlyBudget: 30000,
       lastImport: null,
+      // Per-year (Buddhist Era key, e.g. '2569') tax summary synced from Milk Hub's own
+      // tax-slip tracker (milkhub:tax:data) — { slips:[{month,type,gross,withheld,sso,pvd}], ded:{} }.
+      // Only ever written by syncFromMilkHubDirect(); never hand-edited here.
+      taxByYear: {},
       transactions: [
         {id:uid(), date:t, type:'expense', category:'อาหาร', item:'มื้อเที่ยง', amount:120, demo:true},
         {id:uid(), date:t, type:'expense', category:'เดินทาง', item:'BTS', amount:65, demo:true},
@@ -662,7 +836,13 @@ function defaultState(){
         {id:uid(), date:addDays(t,-2), name:'เวทเทรนนิ่ง', distance_km:0, moving_time_min:45, done:true, type:'weights', demo:true},
         {id:uid(), date:addDays(t,-4), name:'วิ่งเทรลเขาใหญ่', distance_km:12, moving_time_min:95, done:true, type:'run_trail', demo:true}
       ],
-      lastSync: null
+      lastSync: null,
+      // Race goals — each one a target race day to count down to. Purely manual (no API for
+      // trail-race calendars), shown on the "กิจกรรม" page, on the Today overview calendar
+      // (as a day marker), and in the reminder popup once a race falls inside the chosen window.
+      races: [
+        {id:uid(), name:'PYT100', date:'2026-10-17', location:'', distanceKm:100, note:'', demo:true}
+      ]
     },
     work: {
       tasks: [
@@ -675,6 +855,12 @@ function defaultState(){
       routineCompletions: {} // { 'YYYY-MM': { routineId: true } }
     },
     assets: {
+      // User-defined portfolios (separate from the ASSET_CATEGORIES taxonomy) — lets holdings be
+      // tracked apart from each other (e.g. "พอร์ตหลัก" vs "พอร์ตเก็งกำไร" vs "พอร์ตลูก"). 'default'
+      // always exists and can't be deleted, so every item always has somewhere to belong.
+      portfolios: [
+        {id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt:t}
+      ],
       // Manually-tracked assets (property, cash, stocks, crypto, ฯลฯ) — anything not covered by a Dime import.
       // category is the core/satellite/bond/cash/other investment bucket (see ASSET_CATEGORIES);
       // assetType keeps the old free-text description; valueHistory tracks manual "อัพเดทมูลค่า" snapshots.
@@ -698,6 +884,14 @@ function defaultState(){
       debts: [
         {id:uid(), name:'ผ่อนคอนโด (คงเหลือ)', amount:1200000, note:'', demo:true}
       ],
+      // "พอร์ตเสริม" — portfolios belonging to OTHER people (e.g. ลูกหลาน) that this person wants
+      // to keep an eye on, entirely separate from their own holdings above. Deliberately NEVER
+      // read by assetsNetWorth/assetsItemsTotal/any donut — purely display-only data, rendered by
+      // its own dedicated "พอร์ตเสริม" panel in renderAssets (see renderOtherPortfolios). Each
+      // entry's value comes either from uploading that person's own Dime monthly statement PDF
+      // (same password flow as the main import — just the guessed total, no per-holding table
+      // since this is "see the number" tracking only, not managed holdings) or typed in by hand.
+      otherPortfolios: [],
       dimeImportV1: true
     },
     trips: {
@@ -711,7 +905,14 @@ function defaultState(){
           ],
           expenses:[], participants:[], splitExpenses:[]
         }
-      ]
+      ],
+      // Shared across every trip so a category/currency typed once shows up as an autocomplete
+      // choice everywhere afterward. fxCache holds one THB exchange rate per exact
+      // "YYYY-MM-DD_CUR" key, fetched once (see fetchTripFxRate) and reused forever after —
+      // it's what lets a trip's THB total stay based on that day's real rate without refetching.
+      categories: DEFAULT_TRIP_CATEGORIES.slice(),
+      currencies: DEFAULT_TRIP_CURRENCIES.slice(),
+      fxCache: {}
     },
     // Tesla / car maintenance tracker. odometerKm is the one manually-updated number almost
     // everything else derives from (see carItemStatus()). deliveryDate is the "day one"
@@ -740,13 +941,21 @@ function defaultState(){
     },
     calendar: {
       events: [
-        {id:uid(), date:t, time:'14:00', title:'ประชุมทีมออกแบบ', demo:true}
+        {id:uid(), date:t, time:'14:00', title:'ประชุมทีมออกแบบ', category:'other', demo:true}
       ]
     },
     settings: {
       intervalsApiKey: '',
       intervalsAthleteId: '0',
-      finnhubApiKey: ''
+      finnhubApiKey: '',
+      // Reminder popup (Today overview) — which categories show, which time window, and
+      // when it last auto-opened so it only pops up once per day rather than on every render.
+      reminderPopup: {
+        enabledCats: {egat:true, doctor:true, other:true, race:true},
+        windowMode: 'week', // 'week' | 'month'
+        lastShownDate: null,
+        autoShow: true
+      }
     }
   };
 }
@@ -765,10 +974,23 @@ function loadState(){
       if(s.work && !s.work.routineCompletions) s.work.routineCompletions = {};
       if(!s.calendar) s.calendar = {events:[]};
       if(!s.calendar.events) s.calendar.events = [];
+      // Backfill: calendar events saved before category tagging (EGAT/doctor/other) existed.
+      s.calendar.events.forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
+      if(!s.finance.taxByYear) s.finance.taxByYear = {};
+      if(!s.settings) s.settings = {};
+      if(!s.settings.reminderPopup) s.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true}, windowMode:'week', lastShownDate:null, autoShow:true};
+      if(!s.settings.reminderPopup.enabledCats) s.settings.reminderPopup.enabledCats = {egat:true,doctor:true,other:true,race:true};
+      if(s.running && !s.running.races) s.running.races = [];
       if(!s.assets) s.assets = {items:[], reports:[]};
       if(!s.assets.items) s.assets.items = [];
       if(!s.assets.reports) s.assets.reports = [];
       if(!s.assets.debts) s.assets.debts = [];
+      if(!s.assets.otherPortfolios) s.assets.otherPortfolios = []; // "พอร์ตเสริม" — other people's portfolios, never summed into net worth
+      // Backfill: portfolios feature added later — every existing install gets a single
+      // 'default' portfolio and every existing item is assigned to it, so nothing already
+      // tracked silently "disappears" from portfolio views.
+      if(!s.assets.portfolios || !s.assets.portfolios.length) s.assets.portfolios = [{id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt: todayISO()}];
+      (s.assets.items||[]).forEach(it=>{ if(!it.portfolioId) it.portfolioId = (s.assets.portfolios[0] && s.assets.portfolios[0].id) || 'default'; });
       if(!s.settings) s.settings = {};
       if(s.settings.finnhubApiKey == null) s.settings.finnhubApiKey = '';
       // Backfill currency on items saved before live market-price tracking existed — don't
@@ -885,17 +1107,24 @@ function loadState(){
       // existed) rather than defaultState()'s "today", so it doesn't silently reset the
       // baseline every existing item's due date is calculated from.
       if(!s.car.deliveryDate) s.car.deliveryDate = s.car.odometerUpdated || todayISO();
+      // categories/currencies/fxCache are new (custom-category memory + per-item currency +
+      // day-of-expense THB conversion) — default them in for saves from before this existed.
+      if(!s.trips.categories) s.trips.categories = DEFAULT_TRIP_CATEGORIES.slice();
+      if(!s.trips.currencies) s.trips.currencies = DEFAULT_TRIP_CURRENCIES.slice();
+      if(!s.trips.fxCache) s.trips.fxCache = {};
       (s.trips.list||[]).forEach(tr=>{
         if(!tr.participants) tr.participants = [];
         if(!tr.splitExpenses) tr.splitExpenses = [];
         (tr.days||[]).forEach(d=>{
           if(!d.activities) d.activities = [];
-          // Backfill payer/splitBetween on activities saved before the per-day bill-split
-          // feature existed — they just default to "no payer set", so they're invisible to
-          // tripAllSplitItems()/tripSettlement() until someone actually assigns a payer.
+          // Backfill pre-currency activities as THB @ rate 1 (no conversion needed — that's
+          // what they always were), so old data keeps showing the exact same totals it always did.
           d.activities.forEach(a=>{
-            if(a.payer == null) a.payer = '';
-            if(!Array.isArray(a.splitBetween)) a.splitBetween = [];
+            if(!a.currency) a.currency = 'THB';
+            if(a.rate == null) a.rate = a.currency === 'THB' ? 1 : 0;
+            if(a.rateDate === undefined) a.rateDate = a.currency === 'THB' ? d.date : null;
+            if(a.rateCurrency === undefined) a.rateCurrency = a.rate ? a.currency : null;
+            if(a.rateSource === undefined) a.rateSource = '';
           });
         });
       });
@@ -940,6 +1169,7 @@ function parseCapture(text){
 let currentView = 'today';
 let lastCaptureResults = null;
 let financeViewYM = todayISO().slice(0,7);
+let financeTaxViewYear = currentBEYear(); // which BE year the Finance page's tax/income panel shows
 let calViewYM = todayISO().slice(0,7); // which month the "Today" overview calendar is showing
 function nav(view){ currentView = view; render(); }
 function selectCalDay(d){ selectedCalDay = d; render(); }
@@ -947,15 +1177,27 @@ function calMonthShift(delta){ calViewYM = shiftYM(calViewYM, delta); selectedCa
 function calGoToday(){ calViewYM = todayISO().slice(0,7); selectedCalDay = todayISO(); render(); }
 
 /* ---------- Custom calendar events (นัด/กิจกรรม คีย์เองในหน้าปฏิทิน) ---------- */
+// Category tagging for นัดหมาย/appointments — drives both the calendar dot color and the
+// reminder popup's filter checkboxes. 'race' isn't chosen here — it's assigned automatically
+// to items pulled from state.running.races (see gatherReminders/dayEvents).
+const CAL_CATEGORIES = [
+  {key:'egat', label:'งาน EGAT', color:'var(--amber)'},
+  {key:'doctor', label:'นัดหมอ', color:'var(--coral)'},
+  {key:'other', label:'นัดหมายอื่นๆ', color:'var(--blue)'}
+];
+const RACE_CATEGORY = {key:'race', label:'ซ้อม/แข่งขัน', color:'var(--green-deep)'};
+function calCategoryMeta(key){ return CAL_CATEGORIES.find(c=>c.key===key) || CAL_CATEGORIES[CAL_CATEGORIES.length-1]; }
 function addCalEvent(){
   const dateEl = document.getElementById('calEvDate');
   const timeEl = document.getElementById('calEvTime');
   const titleEl = document.getElementById('calEvTitle');
+  const catEl = document.getElementById('calEvCategory');
   const date = (dateEl && dateEl.value) || selectedCalDay || todayISO();
   const time = timeEl ? timeEl.value : '';
   const title = titleEl ? titleEl.value.trim() : '';
+  const category = (catEl && catEl.value) || 'other';
   if(!title) return;
-  state.calendar.events.push({id:uid(), date, time, title});
+  state.calendar.events.push({id:uid(), date, time, title, category});
   if(titleEl) titleEl.value = '';
   selectedCalDay = date;
   calViewYM = date.slice(0,7);
@@ -964,6 +1206,172 @@ function addCalEvent(){
 function delCalEvent(id){
   state.calendar.events = state.calendar.events.filter(e=>e.id!==id);
   saveState(); render();
+}
+
+/* ---------- Race goals (กิจกรรม page) ---------- */
+function sortedRaces(){ return [...state.running.races].sort((a,b)=>String(a.date).localeCompare(String(b.date))); }
+function upcomingRaces(){ return sortedRaces().filter(r=>r.date >= todayISO()); }
+function nearestRace(){ return upcomingRaces()[0] || null; }
+function addRace(){
+  const nameEl = document.getElementById('raceName');
+  const dateEl = document.getElementById('raceDate');
+  const locEl = document.getElementById('raceLoc');
+  const distEl = document.getElementById('raceDist');
+  const name = nameEl.value.trim();
+  const date = dateEl.value;
+  if(!name || !date) return;
+  state.running.races.push({id:uid(), name, date, location:(locEl.value||'').trim(), distanceKm: parseFloat(distEl.value)||null, note:''});
+  nameEl.value=''; dateEl.value=''; locEl.value=''; distEl.value='';
+  saveState(); render();
+}
+function delRace(id){ state.running.races = state.running.races.filter(r=>r.id!==id); saveState(); render(); }
+
+/* ---------- Reminder popup — upcoming appointments/tasks/races within a chosen window ---------- */
+// Pulls from every module that has date-bound items: custom calendar events (already
+// categorized), pending EGAT work tasks (always 'egat'), and race goals (always 'race').
+// Returns items with today <= date <= windowEnd, soonest first.
+function reminderWindowEnd(mode){
+  const t = todayISO();
+  if(mode === 'month'){ const ym = t.slice(0,7); const [y,m] = ym.split('-').map(Number); const last = new Date(y, m, 0).getDate(); return ym+'-'+pad2(last); }
+  return addDays(t, 7); // 'week'
+}
+function gatherReminders(mode){
+  const t = todayISO();
+  const end = reminderWindowEnd(mode);
+  const out = [];
+  state.calendar.events.forEach(ev=>{
+    if(ev.date >= t && ev.date <= end){
+      const meta = calCategoryMeta(ev.category);
+      out.push({date:ev.date, time:ev.time||'', title:ev.title, category:meta.key, catLabel:meta.label, color:meta.color});
+    }
+  });
+  state.work.tasks.filter(tk=>!tk.done).forEach(tk=>{
+    const d = (tk.due||'').slice(0,10);
+    if(d && d >= t && d <= end){
+      out.push({date:d, time:(tk.due||'').slice(11,16), title:tk.text, category:'egat', catLabel:'งาน EGAT', color:calCategoryMeta('egat').color});
+    }
+  });
+  state.running.races.forEach(r=>{
+    if(r.date >= t && r.date <= end){
+      out.push({date:r.date, time:'', title:r.name + (r.distanceKm?(' ('+r.distanceKm+'K)'):''), category:'race', catLabel:'ซ้อม/แข่งขัน', color:RACE_CATEGORY.color});
+    }
+  });
+  return out.sort((a,b)=> String(a.date+a.time).localeCompare(String(b.date+b.time)));
+}
+function reminderPopupCount(){
+  const p = state.settings.reminderPopup;
+  return gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]).length;
+}
+function updateBellBadge(){
+  const el = document.getElementById('bellBadge');
+  if(!el) return;
+  const n = reminderPopupCount();
+  el.style.display = n>0 ? 'flex' : 'none';
+  el.textContent = n>9 ? '9+' : String(n);
+}
+function reminderRowHtml(r){
+  const dleft = daysUntil(r.date);
+  const when = dleft===0 ? 'วันนี้' + (r.time?(' '+r.time):'') : dleft===1 ? 'พรุ่งนี้' : 'อีก '+dleft+' วัน';
+  return `<div class="reminder-row">
+    <span class="reminder-dot" style="background:${r.color}"></span>
+    <span class="reminder-title">${escapeHtml(r.title)}</span>
+    <span class="reminder-cat">${escapeHtml(r.catLabel)}</span>
+    <span class="reminder-when">${when}</span>
+  </div>`;
+}
+// The "วันนี้" overview page's own hero box — this IS the "popup" the person actually meant:
+// a persistent, always-visible list of what's coming up (not just today), instead of a
+// same-day-only timeline. The 🔔 bell modal (below) is the same data as a quick-glance
+// overlay reachable from any page; both read/write the same state.settings.reminderPopup
+// so toggling the window or a category filter in either place stays in sync with the other.
+function renderUpcomingRibbon(){
+  const p = state.settings.reminderPopup;
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY];
+  const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
+  return `
+  <div class="ribbon">
+    <div class="ribbon-head">
+      <h3>🔔 นัดหมาย/งานที่ใกล้ถึง</h3>
+      <div class="form-row" style="margin:0">
+        <button class="btn btn-sm ${p.windowMode==='week'?'':'btn-ghost'}" onclick="setReminderWindow('week')">สัปดาห์นี้</button>
+        <button class="btn btn-sm ${p.windowMode==='month'?'':'btn-ghost'}" onclick="setReminderWindow('month')">เดือนนี้</button>
+      </div>
+    </div>
+    <div class="chip-toggle" style="margin-top:2px">
+      ${cats.map(c=>`<button type="button" class="chip ${p.enabledCats[c.key]?'on':''}" style="${p.enabledCats[c.key]?('background:'+c.color+';'):''}" onclick="toggleReminderCat('${c.key}')">${escapeHtml(c.label)}</button>`).join('')}
+    </div>
+    <div class="reminder-list">
+      ${items.length ? items.map(reminderRowHtml).join('') : '<div class="tl-empty">ไม่มีนัดหมาย/งาน/วันแข่งในช่วงนี้ — ลองพิมพ์ใน Quick Capture ด้านล่าง 🎉</div>'}
+    </div>
+  </div>
+  `;
+}
+function renderReminderPopup(){
+  const p = state.settings.reminderPopup;
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY];
+  const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
+  return `
+  <div class="modal-head">
+    <div>
+      <h3>🔔 นัดหมาย/งานที่ใกล้ถึง</h3>
+      <div class="muted" style="margin-top:2px">${p.windowMode==='month' ? 'ภายในเดือนนี้' : 'ภายใน 7 วันข้างหน้า'} · ${items.length} รายการ</div>
+    </div>
+    <button class="modal-close" onclick="closeReminderPopup()">✕</button>
+  </div>
+  <div class="form-row" style="margin:10px 0 2px">
+    <button class="btn btn-sm ${p.windowMode==='week'?'':'btn-ghost'}" onclick="setReminderWindow('week')">สัปดาห์นี้</button>
+    <button class="btn btn-sm ${p.windowMode==='month'?'':'btn-ghost'}" onclick="setReminderWindow('month')">เดือนนี้</button>
+  </div>
+  <div class="chip-toggle">
+    ${cats.map(c=>`<button type="button" class="chip ${p.enabledCats[c.key]?'on':''}" style="${p.enabledCats[c.key]?('background:'+c.color+';'):''}" onclick="toggleReminderCat('${c.key}')">${escapeHtml(c.label)}</button>`).join('')}
+  </div>
+  <div class="reminder-list">
+    ${items.length ? items.map(reminderRowHtml).join('') : '<div class="muted" style="padding:10px 0">ไม่มีรายการในช่วงนี้ 🎉</div>'}
+  </div>
+  <div class="form-row" style="justify-content:space-between; margin-top:16px; margin-bottom:0">
+    <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-soft); cursor:pointer">
+      <input type="checkbox" id="reminderAutoShow" ${p.autoShow?'checked':''} onchange="toggleReminderAutoShow()"> เด้งเตือนอัตโนมัติทุกวัน
+    </label>
+  </div>
+  `;
+}
+function openReminderPopup(){
+  document.getElementById('reminderBox').innerHTML = renderReminderPopup();
+  document.getElementById('reminderOverlay').style.display = 'flex';
+}
+function closeReminderPopup(){
+  document.getElementById('reminderOverlay').style.display = 'none';
+}
+// Both of these can be triggered from the bell modal OR the Today page ribbon (they share
+// state.settings.reminderPopup) — re-render the whole page so the ribbon picks up the change,
+// then also refresh the modal body directly if it's the one currently open (render() alone
+// doesn't touch it, since it lives outside #viewRoot).
+function setReminderWindow(mode){
+  state.settings.reminderPopup.windowMode = mode;
+  saveState(); render();
+  if(document.getElementById('reminderOverlay').style.display !== 'none') openReminderPopup();
+}
+function toggleReminderCat(key){
+  const p = state.settings.reminderPopup;
+  p.enabledCats[key] = !p.enabledCats[key];
+  saveState(); render();
+  if(document.getElementById('reminderOverlay').style.display !== 'none') openReminderPopup();
+}
+function toggleReminderAutoShow(){
+  state.settings.reminderPopup.autoShow = document.getElementById('reminderAutoShow').checked;
+  saveState();
+}
+// Auto-opens the popup once per calendar day (only if there's something to show and the
+// person hasn't turned auto-show off) — called once from render() on the "today" view.
+function maybeAutoShowReminderPopup(){
+  const p = state.settings.reminderPopup;
+  updateBellBadge();
+  if(!p.autoShow) return;
+  const t = todayISO();
+  if(p.lastShownDate === t) return;
+  p.lastShownDate = t;
+  saveState();
+  if(reminderPopupCount() > 0) openReminderPopup();
 }
 
 function render(){
@@ -977,18 +1385,14 @@ function render(){
   const root = document.getElementById('viewRoot');
   const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, trips:renderTrips, assets:renderAssets, car:renderCar, settings:renderSettings};
   root.innerHTML = (renderers[currentView] || renderToday)();
+  updateBellBadge();
+  if(currentView === 'today') maybeAutoShowReminderPopup();
 }
 
 /* ---------- Today view ---------- */
 let selectedCalDay = null; // transient — which calendar day is expanded below the grid
 function renderToday(){
   const t = todayISO();
-  const items = [];
-  state.work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10) === t) items.push({time:(tk.due||'').slice(11,16) || '—', label:tk.text, color:'var(--amber)'}); });
-  state.running.activities.forEach(a=>{ if(a.date === t) items.push({time:'', label:activityTypeMeta(a.type).label + ' — ' + a.name + (a.distance_km?' ('+a.distance_km+'K)':''), color:activityTypeMeta(a.type).color}); });
-  state.trips.list.forEach(tr=> tr.days.forEach(d=>{ if(d.date === t) items.push({time:'', label:'ทริป: ' + d.place, color:'var(--purple)'}); }));
-  state.finance.transactions.forEach(tx=>{ if(tx.date === t) items.push({time:'', label:'฿' + fmtMoney(tx.amount) + ' ' + tx.note, color:'var(--coral)'}); });
-
   const finance = state.finance, running = state.running, work = state.work, trips = state.trips;
   const thisMonth = monthSummary(todayISO().slice(0,7));
   const workYm = t.slice(0,7);
@@ -1001,12 +1405,14 @@ function renderToday(){
   const runWeek = runningWeekSummary();
   const netWorth = assetsNetWorth();
   const mom = assetsMoM();
+  const nearRace = nearestRace();
 
   const dayEvents = (d)=>{
     const out = [];
-    state.calendar.events.forEach(ev=>{ if(ev.date===d) out.push({label:(ev.time?ev.time+' ':'')+ev.title, color:'var(--blue)', gcalTitle:ev.title, custom:true, id:ev.id}); });
+    state.calendar.events.forEach(ev=>{ const meta = calCategoryMeta(ev.category); if(ev.date===d) out.push({label:(ev.time?ev.time+' ':'')+ev.title, color:meta.color, gcalTitle:ev.title, custom:true, id:ev.id}); });
     work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10)===d) out.push({label:(tk.done?'✓ ':'')+tk.text, color:'var(--amber)', gcalTitle:tk.text}); });
     trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
+    state.running.races.forEach(r=>{ if(r.date===d) out.push({label:'🏁 '+r.name+(r.distanceKm?(' ('+r.distanceKm+'K)'):''), color:RACE_CATEGORY.color, gcalTitle:'แข่ง: '+r.name}); });
     return out;
   };
   // Which month the calendar grid shows — defaults to the current month, but calMonthShift() lets
@@ -1016,17 +1422,7 @@ function renderToday(){
   const selEvents = dayEvents(selDay);
 
   return `
-  <div class="ribbon">
-    <div class="ribbon-head"><h3>ไทม์ไลน์วันนี้ — รวมทุกด้าน</h3><span>${items.length} รายการ</span></div>
-    <div class="timeline">
-      ${items.length ? items.map(it=>`
-        <div class="tl-item">
-          <div class="tl-time">${it.time}</div>
-          <div class="tl-dot" style="background:${it.color}"></div>
-          <div class="tl-label">${escapeHtml(it.label)}</div>
-        </div>`).join('') : '<div class="tl-empty">ไม่มีรายการวันนี้ — ลองพิมพ์ใน Quick Capture ด้านล่าง</div>'}
-    </div>
-  </div>
+  ${renderUpcomingRibbon()}
 
   <div class="grid">
     <div class="card">
@@ -1045,6 +1441,7 @@ function renderToday(){
         <div class="pill pill-teal">${runWeek.pct}% ของเป้าหมาย</div>
       </div>
       <div class="big-stat mono">${runWeek.weekKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม. สัปดาห์นี้</span></div>
+      ${nearRace ? `<div class="stat-note" style="margin-top:-6px">🏁 ${escapeHtml(nearRace.name)} — อีก ${daysUntil(nearRace.date)} วัน</div>` : ''}
       ${running.activities.length ? renderActivityBarChart(buildWeeklyActivityBuckets(currentWeekMondayToSunday())) : '<div class="muted">ยังไม่มีข้อมูล — ไป Sync ที่หน้า "กิจกรรม"</div>'}
     </div>
 
@@ -1124,16 +1521,22 @@ function renderToday(){
         const dayTasks = work.tasks.filter(tk=>!tk.done && (tk.due||'').slice(0,10)===d);
         const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
         const dayEv = state.calendar.events.filter(ev=>ev.date===d);
-        if(dayEv.length) dots.push({color:'var(--blue)'});
+        const dayRaces = state.running.races.filter(r=>r.date===d);
+        // One dot per category actually present that day (custom events grouped by their own
+        // category, plus EGAT tasks/trips/race day) — dedupe categories so a day with three
+        // "other" appointments doesn't get three identical blue dots.
+        const evCats = new Set(dayEv.map(ev=>calCategoryMeta(ev.category).key));
+        evCats.forEach(key=> dots.push({color: calCategoryMeta(key).color}));
         if(dayTasks.length) dots.push({color:'var(--amber)'});
         if(dayTrips.length) dots.push({color:'var(--purple)'});
+        if(dayRaces.length) dots.push({color:RACE_CATEGORY.color});
         return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
           <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
           <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
         </button>`;
       }).join('')}
     </div>
-    <div class="muted" style="margin:10px 0">จุดฟ้า = นัด/กิจกรรมที่คีย์เอง · จุดส้ม = งาน EGAT · จุดม่วง = วันในทริป — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดแดง = นัดหมอ · จุดฟ้า = นัดหมายอื่นๆ · จุดม่วง = วันในทริป · จุดเขียว = วันแข่ง/ซ้อม — คลิกวันที่เพื่อดูรายละเอียด</div>
     <div style="border-top:1px solid var(--line); padding-top:12px">
       <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
       ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
@@ -1148,6 +1551,7 @@ function renderToday(){
       <div class="form-row">
         <input type="date" id="calEvDate" value="${selDay}" style="max-width:150px">
         <input type="time" id="calEvTime" style="max-width:110px">
+        <select id="calEvCategory" style="max-width:150px">${CAL_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
         <input type="text" id="calEvTitle" placeholder='เช่น "นัดหมอฟัน" หรือ "ประชุมลูกค้า"' style="flex:1">
         <button class="btn btn-sm" onclick="addCalEvent()">+ เพิ่ม</button>
       </div>
@@ -1191,7 +1595,7 @@ function renderFinance(){
   const history = lastNMonthsSummary(6);
   return `
   <div class="section-title">การเงิน</div>
-  <div class="section-sub">Import ไฟล์ "ดาวน์โหลด Backup (JSON)" จาก Milk Hub (หน้าตั้งค่า → 💾 สำรอง/ย้ายข้อมูล) เพื่อดึงรายรับ-รายจ่ายทั้งหมดเข้ามา ดูย้อนหลังเป็นรายเดือนได้ด้านล่าง</div>
+  <div class="section-sub">Import ไฟล์ "ดาวน์โหลด Backup (JSON)" จาก Milk Hub (หน้าตั้งค่า → 💾 สำรอง/ย้ายข้อมูล) เพื่อดึงรายรับ-รายจ่ายทั้งหมดเข้ามา ดูย้อนหลังเป็นรายเดือนได้ด้านล่าง — เชื่อม origin เดียวกันจะดึงสลิปเงินเดือน/ภาษีมาสรุปรายปีให้อัตโนมัติด้วย (ดูด้านล่างสุด)</div>
 
   <div class="panel">
     ${milkHubSameOriginAvailable() ? `
@@ -1269,8 +1673,70 @@ function renderFinance(){
       </table>
     </div>
   </div>
+
+  ${renderFinanceTaxPanel()}
   `;
 }
+// รายได้รวมรายปี, ภาษีหัก ณ ที่จ่ายสะสม, เงินสมทบ PVD สะสม และเรทภาษีปัจจุบัน — ดึงมาจากสลิปเงินเดือน
+// ที่บันทึกไว้ในหน้า "ภาษี" ของ Milk Hub โดยตรง (sync อัตโนมัติทุกครั้งที่เปิดหน้านี้ เมื่อเปิดจาก
+// origin เดียวกับ Milk Hub — เหมือนกับรายรับ-รายจ่ายด้านบน)
+function renderFinanceTaxPanel(){
+  const years = taxYearsAvailable();
+  if(years.indexOf(financeTaxViewYear)===-1) financeTaxViewYear = years[years.length-1];
+  const ts = taxYearSummary(financeTaxViewYear);
+  const sortedSlips = [...ts.slips].sort((a,b)=>(a.month||0)-(b.month||0));
+  const THM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `
+  <div class="panel">
+    <div class="form-row" style="justify-content:space-between; align-items:center">
+      <h3 style="margin:0">💰 รายได้ & ภาษีรายปี (จาก Milk Hub)</h3>
+      <select id="financeTaxYearSel" style="max-width:120px" onchange="setFinanceTaxYear(this.value)">
+        ${years.map(y=>`<option value="${y}" ${y===financeTaxViewYear?'selected':''}>ปี ${y}</option>`).join('')}
+      </select>
+    </div>
+    ${ts.slips.length ? '' : `<div class="msg msg-err" style="margin-top:10px">ยังไม่พบสลิปเงินเดือนของปี ${escapeHtml(financeTaxViewYear)} จาก Milk Hub — ไปกรอก/แนบสลิปที่หน้า "ภาษี" ใน Milk Hub ก่อน แล้วกด "🔄 Sync ตอนนี้" ด้านบน</div>`}
+    <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-top:10px">
+      <div class="card" style="padding:12px">
+        <div class="card-sub">รายได้รวมทั้งปี</div>
+        <div class="big-stat mono" style="color:var(--teal)">฿${fmtMoney(ts.gross)}</div>
+        <div class="stat-note" style="margin:0">${ts.slips.length} สลิป</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">ภาษีหัก ณ ที่จ่ายสะสม</div>
+        <div class="big-stat mono" style="color:var(--coral)">฿${fmtMoney(ts.withheld)}</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">สมทบ PVD สะสม</div>
+        <div class="big-stat mono" style="color:var(--indigo)">฿${fmtMoney(ts.pvd)}</div>
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-top:2px">
+      <div class="card" style="padding:12px">
+        <div class="card-sub">ขั้นภาษีปัจจุบัน (Marginal)</div>
+        <div class="big-stat mono">${(ts.bracket.rate*100).toFixed(0)}%</div>
+        <div class="stat-note" style="margin:0">เงินได้สุทธิ ฿${fmtMoney(ts.bracket.floor)} − ${ts.bracket.cap===Infinity?'ขึ้นไป':'฿'+fmtMoney(ts.bracket.cap)}</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">อัตราภาษีเฉลี่ยที่แท้จริง (Effective)</div>
+        <div class="big-stat mono">${ts.effectiveRate.toFixed(2)}%</div>
+        <div class="stat-note" style="margin:0">= ภาษีที่คำนวณ ÷ เงินได้สุทธิ</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">${ts.diff>0?'ประมาณต้องจ่ายเพิ่ม':'ประมาณได้เงินคืน'}</div>
+        <div class="big-stat mono" style="color:${ts.diff>0?'var(--coral)':'var(--teal)'}">฿${fmtMoney(Math.abs(ts.diff))}</div>
+        <div class="stat-note" style="margin:0">ภาษีที่คำนวณได้ ฿${fmtMoney(ts.taxOwed)} − หักไว้แล้ว ฿${fmtMoney(ts.withheld)}</div>
+      </div>
+    </div>
+    ${sortedSlips.length ? `
+    <table class="table" style="margin-top:6px">
+      <tr><th>เดือน</th><th style="text-align:right">รายได้</th><th style="text-align:right">ภาษีหัก</th><th style="text-align:right">PVD</th></tr>
+      ${sortedSlips.map(s=>`<tr><td>${THM[(s.month||1)-1]||''}${s.profile?(' · '+escapeHtml(s.profile)):''}</td><td style="text-align:right" class="mono">฿${fmtMoney(s.gross)}</td><td style="text-align:right" class="mono">฿${fmtMoney(s.withheld)}</td><td style="text-align:right" class="mono">฿${fmtMoney(s.pvd||0)}</td></tr>`).join('')}
+    </table>` : ''}
+    <div class="muted" style="margin-top:10px">ประมาณการเบื้องต้นจากสลิปเงินเดือนที่บันทึกไว้ใน Milk Hub เท่านั้น (หักค่าใช้จ่าย 50% สูงสุด ฿100,000 + ค่าลดหย่อนส่วนตัว ฿60,000 + ประกันสังคม + PVD + ค่าลดหย่อนอื่นที่กรอกไว้ในหน้าภาษีของ Milk Hub) ไม่ใช่คำแนะนำทางภาษี — ยอดจริงอาจต่างจากนี้ ควรตรวจกับหน่วยงานหรือผู้เชี่ยวชาญด้านภาษีอีกครั้ง</div>
+  </div>
+  `;
+}
+function setFinanceTaxYear(y){ financeTaxViewYear = y; render(); }
 function financeMonthShift(delta){ financeViewYM = shiftYM(financeViewYM, delta); render(); }
 function manualSyncMilkHub(){
   const n = syncFromMilkHubDirect();
@@ -1317,17 +1783,31 @@ function importFinanceJson(evt){
         amount: Number(tx.amount) || 0,
         profile: pid ? (profileName(pid) || undefined) : undefined
       });
+      // Tax slips (สลิปเงินเดือน/ภาษี) — same {year: {slips, ded}} shape as syncFromMilkHubDirect(),
+      // rebuilt fresh from the backup file each import so edits/deletes in Milk Hub carry over.
+      const taxByYear = {};
+      const mergeTaxData = (tax, pid)=>{
+        Object.keys(tax||{}).forEach(yr=>{
+          const yd = tax[yr] || {slips:[], ded:{}};
+          if(!taxByYear[yr]) taxByYear[yr] = {slips:[], ded:{}};
+          (yd.slips||[]).forEach(s=> taxByYear[yr].slips.push({...s, profile: pid ? profileName(pid) : undefined}));
+          if(yd.ded && Object.keys(yd.ded).length) taxByYear[yr].ded = yd.ded;
+        });
+      };
       if(allData && Object.keys(allData).length){
         Object.keys(allData).forEach(pid=>{
           const money = (allData[pid] && allData[pid].money) || [];
           money.forEach(tx=>{ if(!tx.amount) return; upsertTxn(mapTxn(tx, profiles.length>1 ? pid : null)); processed++; });
+          mergeTaxData(allData[pid] && allData[pid].tax, profiles.length>1 ? pid : null);
         });
       } else {
         const list = data.money || (Array.isArray(data) ? data : []);
         list.forEach(tx=>{ if(!tx.amount) return; upsertTxn(mapTxn(tx, null)); processed++; });
+        if(data.tax) mergeTaxData(data.tax, null);
       }
+      if(Object.keys(taxByYear).length) state.finance.taxByYear = taxByYear;
       state.finance.lastImport = new Date().toISOString();
-      document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-ok">Import สำเร็จ — ประมวลผล ${processed} รายการ${profiles.length>1 ? (' จาก ' + profiles.length + ' โปรไฟล์') : ''}</div>`;
+      document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-ok">Import สำเร็จ — ประมวลผล ${processed} รายการ${profiles.length>1 ? (' จาก ' + profiles.length + ' โปรไฟล์') : ''}${Object.keys(taxByYear).length ? (' · สลิปภาษี ' + Object.keys(taxByYear).length + ' ปี') : ''}</div>`;
       saveState(); render();
     }catch(e){
       document.getElementById('financeImportMsg').innerHTML = `<div class="msg msg-err">อ่านไฟล์ไม่ได้ — ตรวจสอบว่าเป็นไฟล์ backup JSON จาก Milk Hub (ปุ่ม "ดาวน์โหลด Backup (JSON)" ในหน้าตั้งค่าของ Milk Hub) ข้อผิดพลาด: ${escapeHtml(e.message)}</div>`;
@@ -1389,6 +1869,33 @@ function renderRunning(){
     </div>
     <div class="tag-row" style="margin-top:16px">
       ${ACTIVITY_TYPES.map(t=>`<span class="tag" style="background:${t.color}; color:#fff">${t.label}</span>`).join('')}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>🏁 เป้าหมายการแข่ง (Race Goals)</h3>
+    <div class="muted" style="margin-bottom:12px">ใส่ได้หลายสนาม — นับถอยหลังอัตโนมัติ และดึงไปโชว์ในปฏิทิน + ป๊อปอัพเตือนหน้า "วันนี้" ด้วย</div>
+    ${sortedRaces().length ? sortedRaces().map(r=>{
+      const dleft = daysUntil(r.date);
+      const isPast = dleft < 0;
+      return `<div class="race-card">
+        <div class="race-count ${isPast?'past':''}">
+          <div class="n">${isPast ? '✓' : dleft}</div>
+          <div class="u">${isPast ? 'ผ่านแล้ว' : 'วัน'}</div>
+        </div>
+        <div class="race-info">
+          <div class="name">${escapeHtml(r.name)}</div>
+          <div class="meta">${fmtDate(r.date)} ${(new Date(r.date+'T00:00:00').getFullYear())+543}${r.location?(' · '+escapeHtml(r.location)):''}${r.distanceKm?(' · '+r.distanceKm+' กม.'):''}</div>
+        </div>
+        <button class="task-del" onclick="delRace('${r.id}')">✕</button>
+      </div>`;
+    }).join('') : '<div class="muted">ยังไม่มีสนามที่ตั้งเป้าไว้ — เพิ่มด้านล่าง</div>'}
+    <div class="form-row" style="margin-top:14px">
+      <input type="text" id="raceName" placeholder="ชื่อสนาม เช่น PYT100">
+      <input type="date" id="raceDate" style="max-width:150px">
+      <input type="text" id="raceLoc" placeholder="สถานที่ (ไม่บังคับ)" style="max-width:160px">
+      <input type="number" id="raceDist" placeholder="ระยะ (กม., ไม่บังคับ)" style="max-width:150px">
+      <button class="btn" onclick="addRace()">+ เพิ่มสนาม</button>
     </div>
   </div>
 
@@ -1625,6 +2132,8 @@ function renderTrips(){
     </div>
     <div id="tripImportMsg"></div>
   </div>
+  <datalist id="tripCategoryList">${(state.trips.categories||DEFAULT_TRIP_CATEGORIES).map(c=>`<option value="${escapeHtml(c)}">`).join('')}</datalist>
+  <datalist id="tripCurrencyList">${(state.trips.currencies||DEFAULT_TRIP_CURRENCIES).map(c=>`<option value="${escapeHtml(c)}">`).join('')}</datalist>
   ${trips.map(tr=>renderTripCard(tr)).join('') || '<div class="muted">ยังไม่มีทริป</div>'}
   `;
 }
@@ -1632,7 +2141,22 @@ function renderTrips(){
 // itemized "went here, spent this much" log). Legacy tr.expenses (the old flat trip-level
 // list this replaced) is still added in for safety in case an older save has entries in it,
 // but the add/edit UI for that list is gone — everything now goes through activities.
-function dayActivitiesTotal(d){ return (d.activities||[]).reduce((s,a)=>s+(Number(a.cost)||0),0); }
+// THB-equivalent of one activity's cost. THB (or an activity with no currency set, e.g. old
+// data) is 1:1. A foreign-currency activity uses its own rate snapshot (a.rate, taken for
+// a.rateDate — see fetchTripFxRate/refreshTripActivityRate) rather than always converting at
+// today's rate, so a trip's total doesn't silently drift every time you reopen it. Until a
+// rate has actually been fetched/entered (a.rate is 0), the raw number is shown as-is instead
+// of being zeroed out, so an unconverted entry is still visible in the running total.
+function activityCostTHB(a){
+  const cost = Number(a.cost)||0;
+  if(!a.currency || a.currency === 'THB') return cost;
+  const rate = Number(a.rate);
+  // rateCurrency must match the activity's *current* currency — otherwise the stored rate is a
+  // leftover snapshot from before the currency was last changed (see refreshTripActivityRate),
+  // and using it here would silently convert at the wrong currency's rate.
+  return (rate > 0 && a.rateCurrency === a.currency) ? cost * rate : cost;
+}
+function dayActivitiesTotal(d){ return (d.activities||[]).reduce((s,a)=>s+activityCostTHB(a),0); }
 function tripActivitiesTotal(tr){ return tr.days.reduce((s,d)=>s+dayActivitiesTotal(d),0); }
 function tripLegacyExpenseTotal(tr){ return (tr.expenses||[]).reduce((s,e)=>s+(Number(e.amount)||0),0); }
 function tripTotalExpense(tr){ return tripActivitiesTotal(tr) + tripLegacyExpenseTotal(tr); }
@@ -1640,11 +2164,80 @@ function tripCategoryTotals(tr){
   const totals = {};
   tr.days.forEach(d=>(d.activities||[]).forEach(a=>{
     const c = a.category || 'อื่นๆ';
-    totals[c] = (totals[c]||0) + (Number(a.cost)||0);
+    totals[c] = (totals[c]||0) + activityCostTHB(a);
   }));
   return totals;
 }
-const TRIP_ACTIVITY_CATEGORIES = ['เดินทาง','ที่พัก','อาหาร','อื่นๆ'];
+// Appends a custom category/currency Milk types into any trip's activity form to the shared,
+// all-trips list (state.trips.categories / .currencies) so it becomes an autocomplete choice
+// (via the tripCategoryList / tripCurrencyList <datalist>s below) the next time too.
+function rememberTripCategory(cat){
+  if(!cat) return;
+  if(!state.trips.categories) state.trips.categories = DEFAULT_TRIP_CATEGORIES.slice();
+  if(!state.trips.categories.includes(cat)) state.trips.categories.push(cat);
+}
+function rememberTripCurrency(cur){
+  if(!cur) return;
+  if(!state.trips.currencies) state.trips.currencies = DEFAULT_TRIP_CURRENCIES.slice();
+  if(!state.trips.currencies.includes(cur)) state.trips.currencies.push(cur);
+}
+// Historical THB rate for one calendar day, from frankfurter.dev — free, no API key, CORS-open,
+// ECB reference rates back to 1999. Looked up once per exact (date, currency) pair and cached
+// in state.trips.fxCache, so re-opening a trip (or adding a second expense on the same day in
+// the same currency) never re-fetches — it's also what keeps a past trip's THB totals stable
+// even if today's live rate has since moved.
+async function fetchTripFxRate(dateIso, currency){
+  if(!currency || currency === 'THB') return 1;
+  if(!state.trips.fxCache) state.trips.fxCache = {};
+  const key = dateIso + '_' + currency;
+  if(state.trips.fxCache[key] != null) return state.trips.fxCache[key];
+  const res = await fetch(`https://api.frankfurter.dev/v1/${dateIso}?from=${encodeURIComponent(currency)}&to=THB`);
+  if(!res.ok) throw new Error('เรียกอัตราแลกเปลี่ยนไม่สำเร็จ (' + res.status + ')');
+  const data = await res.json();
+  const rate = data && data.rates && data.rates.THB;
+  if(!(rate > 0)) throw new Error('ไม่พบอัตราแลกเปลี่ยนของ ' + currency + ' ณ วันที่นี้');
+  state.trips.fxCache[key] = rate;
+  return rate;
+}
+// Fetches (or reuses the cached) THB rate for one activity's own day + currency, and stores it
+// on the activity itself so the conversion used in every total is a frozen snapshot, not a
+// live recompute. Wired to fire automatically when an activity's currency is changed away from
+// THB (see updateTripActivity) — Milk can also hit "⟳ อัปเดตเรท" to re-pull it any time, or type
+// a rate in by hand (setTripActivityManualRate) when offline or to override the auto value.
+async function refreshTripActivityRate(tripId, dayIdx, actIdx){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
+  const d = tr.days[dayIdx], a = d.activities[actIdx];
+  if(!a.currency || a.currency === 'THB'){ a.rate = 1; a.rateDate = d.date; a.rateCurrency = 'THB'; a.rateSource = ''; a.fxError=''; saveState(); render(); return; }
+  const wantedCurrency = a.currency;
+  a.fxLoading = true; a.fxError = ''; render();
+  try{
+    const rate = await fetchTripFxRate(d.date, wantedCurrency);
+    // Only commit if currency/day haven't changed again while this fetch was in flight — and
+    // rateCurrency is set alongside rate/rateDate precisely so a rate fetched for a *previous*
+    // currency (e.g. USD) is never displayed/used as though it were the new one's (e.g. EUR) —
+    // rateKnown below checks all three together, so a stale mismatch just reads as "not yet converted".
+    if(a.currency === wantedCurrency){ a.rate = rate; a.rateDate = d.date; a.rateCurrency = wantedCurrency; a.rateSource = 'auto'; }
+  }catch(err){
+    if(a.currency === wantedCurrency) a.fxError = err.message || 'ดึงอัตราแลกเปลี่ยนไม่สำเร็จ';
+  }
+  a.fxLoading = false;
+  saveState(); render();
+}
+// Manual override — e.g. offline, or Milk wants to use the rate they actually got at a money
+// changer/ATM rather than the ECB reference rate. Also seeds the shared fxCache with it so any
+// other activity on the same day+currency picks up the same manual number automatically.
+function setTripActivityManualRate(tripId, dayIdx, actIdx, value){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
+  const d = tr.days[dayIdx], a = d.activities[actIdx];
+  const rate = parseFloat(value);
+  if(!(rate > 0)) return;
+  a.rate = rate; a.rateDate = d.date; a.rateCurrency = a.currency||'THB'; a.rateSource = 'manual'; a.fxError = '';
+  if(!state.trips.fxCache) state.trips.fxCache = {};
+  state.trips.fxCache[d.date + '_' + (a.currency||'THB')] = rate;
+  saveState(); render();
+}
 function renderTripCard(tr){
   const totalExpense = tripTotalExpense(tr);
   const catTotals = tripCategoryTotals(tr);
@@ -1678,18 +2271,31 @@ function renderTripCard(tr){
             <div style="margin:8px 0 0 0; padding-left:10px; border-left:2px solid var(--line)">
               <div class="muted" style="margin-bottom:4px">กิจกรรม/ค่าใช้จ่ายวันนี้${dayActivitiesTotal(d) ? (' — รวม ฿'+fmtMoney(dayActivitiesTotal(d))) : ''}</div>
               ${(d.activities||[]).map((a,ai)=>{
+                const currency = a.currency || 'THB';
+                const isForeign = currency !== 'THB';
+                const rateKnown = !isForeign || (Number(a.rate) > 0 && a.rateDate === d.date && a.rateCurrency === currency);
                 const payer = a.payer || '';
                 const splitWith = a.splitBetween || [];
                 return `
                 <div style="margin-bottom:8px; padding-bottom:8px; ${participants.length>=2?'border-bottom:1px dashed var(--line);':''}">
                   <div class="form-row" style="align-items:center; margin-bottom:0">
                     <input type="text" value="${escapeHtml(a.place||'')}" placeholder="กิจกรรม/สถานที่ เช่น รถไฟ, โรงแรม" onchange="updateTripActivity('${tr.id}',${i},${ai},'place',this.value)">
-                    <select onchange="updateTripActivity('${tr.id}',${i},${ai},'category',this.value)" style="max-width:100px">
-                      ${TRIP_ACTIVITY_CATEGORIES.map(c=>`<option value="${c}" ${a.category===c?'selected':''}>${c}</option>`).join('')}
-                    </select>
-                    <input type="number" value="${a.cost||''}" placeholder="บาท" style="max-width:95px" onchange="updateTripActivity('${tr.id}',${i},${ai},'cost',this.value)">
+                    <input type="text" list="tripCategoryList" value="${escapeHtml(a.category||'อื่นๆ')}" placeholder="หมวด (พิมพ์เพิ่มเองได้)" style="max-width:120px" onchange="updateTripActivity('${tr.id}',${i},${ai},'category',this.value)">
+                    <input type="number" value="${a.cost||''}" placeholder="จำนวนเงิน" style="max-width:95px" onchange="updateTripActivity('${tr.id}',${i},${ai},'cost',this.value)">
+                    <input type="text" list="tripCurrencyList" value="${escapeHtml(currency)}" placeholder="สกุลเงิน" title="สกุลเงินของรายการนี้ เช่น THB, USD, JPY" style="max-width:64px" onchange="updateTripActivity('${tr.id}',${i},${ai},'currency',this.value)">
                     <button class="task-del" onclick="delTripActivity('${tr.id}',${i},${ai})">✕</button>
                   </div>
+                  ${isForeign ? `
+                    <div class="muted" style="font-size:11px; margin:3px 0 0 2px; display:flex; flex-wrap:wrap; align-items:center; gap:6px">
+                      ${a.fxLoading
+                        ? 'กำลังดึงอัตราแลกเปลี่ยน…'
+                        : rateKnown
+                          ? `≈ ฿${fmtMoney(activityCostTHB(a))} (1 ${escapeHtml(currency)} = ฿${(Number(a.rate)||0).toLocaleString('th-TH',{maximumFractionDigits:4})} ณ ${fmtDate(a.rateDate)}${a.rateSource==='manual' ? ' · ใส่เอง' : ''})`
+                          : (a.fxError ? `⚠ ${escapeHtml(a.fxError)}` : 'ยังไม่ได้แปลงเป็นบาท')}
+                      <button class="btn btn-ghost btn-sm" style="padding:1px 6px" onclick="refreshTripActivityRate('${tr.id}',${i},${ai})" ${a.fxLoading?'disabled':''}>⟳ อัปเดตเรท</button>
+                      <input type="number" step="0.0001" placeholder="ใส่เรทเอง" title="ใส่อัตราแลกเปลี่ยนเอง (1 ${escapeHtml(currency)} = ? บาท)" style="max-width:80px" onchange="setTripActivityManualRate('${tr.id}',${i},${ai},this.value); this.value=''">
+                    </div>
+                  ` : ''}
                   ${participants.length>=2 ? `
                   <div class="form-row" style="align-items:center; margin:5px 0 0 0; gap:6px">
                     <select style="max-width:120px; font-size:11px" onchange="setTripActivityPayer('${tr.id}',${i},${ai},this.value)" title="ใครจ่ายค่านี้ — เลือกเพื่อรวมเข้าส่วนหารค่าใช้จ่ายด้านล่าง">
@@ -1698,8 +2304,8 @@ function renderTripCard(tr){
                     </select>
                     ${payer ? `<span class="muted" style="font-size:11px">หารกับ:</span>${participants.map((p,pi)=>`<span class="tag" style="cursor:pointer; opacity:${splitWith.includes(p)?1:0.35}" onclick="toggleTripActivitySplit('${tr.id}',${i},${ai},${pi})" title="${splitWith.includes(p)?'คลิกเพื่อเอาออกจากการหาร':'คลิกเพื่อรวมคนนี้เข้าการหาร'}">${escapeHtml(p)}</span>`).join('')}` : `<span class="muted" style="font-size:11px">เลือกคนจ่ายเพื่อรวมรายการนี้เข้าส่วนหารด้านล่าง</span>`}
                   </div>` : ''}
-                </div>`;
-              }).join('') || ''}
+                </div>
+              `;}).join('') || ''}
               <button class="btn btn-ghost btn-sm" onclick="addTripActivity('${tr.id}',${i})">+ กิจกรรม</button>
             </div>
           </div>
@@ -1740,7 +2346,9 @@ function renderTripCard(tr){
 // ระบุได้เลยว่าใครจ่าย" in the day plan feeds into) and (2) trip-level splitExpenses entered
 // by hand for costs not tied to any single day (e.g. a shared gear rental booked in advance).
 // One shared shape ({item, amount, payer, splitBetween, source, ...}) so tripSettlement() and
-// renderTripSplitItemsBlock() never have to combine the two sources differently.
+// renderTripSplitItemsBlock() never have to combine the two sources differently. Amounts are in
+// THB (activityCostTHB — same conversion used everywhere else) so a foreign-currency activity
+// splits on its converted value, not the raw number typed in its own currency.
 function tripAllSplitItems(tr){
   const participants = tr.participants || [];
   const fromActivities = [];
@@ -1749,7 +2357,7 @@ function tripAllSplitItems(tr){
       if(a.payer && Number(a.cost)>0){
         fromActivities.push({
           source: 'activity', dayIdx: di, actIdx: ai, dayLabel: 'Day ' + (di+1),
-          item: a.place || 'ค่าใช้จ่าย', amount: Number(a.cost)||0, payer: a.payer,
+          item: a.place || 'ค่าใช้จ่าย', amount: activityCostTHB(a), payer: a.payer,
           splitBetween: (a.splitBetween && a.splitBetween.length) ? a.splitBetween : participants
         });
       }
@@ -1899,15 +2507,23 @@ function normalizeImportedTrip(tr){
       date: d.date || todayISO(),
       place: d.place || '',
       notes: d.notes || '',
-      activities: Array.isArray(d.activities) ? d.activities.map(a=>({
-        id: a.id || uid(),
-        place: a.place || '',
-        category: a.category || 'อื่นๆ',
-        cost: Number(a.cost) || 0,
-        note: a.note || '',
-        payer: a.payer || '',
-        splitBetween: Array.isArray(a.splitBetween) ? a.splitBetween : []
-      })) : []
+      activities: Array.isArray(d.activities) ? d.activities.map(a=>{
+        const currency = (a.currency || 'THB').toUpperCase();
+        return {
+          id: a.id || uid(),
+          place: a.place || '',
+          category: a.category || 'อื่นๆ',
+          cost: Number(a.cost) || 0,
+          currency,
+          rate: Number(a.rate) || (currency === 'THB' ? 1 : 0),
+          rateDate: a.rateDate || (currency === 'THB' ? (d.date || todayISO()) : null),
+          rateCurrency: a.rateCurrency || (currency === 'THB' ? 'THB' : (Number(a.rate) > 0 ? currency : null)),
+          rateSource: a.rateSource || '',
+          note: a.note || '',
+          payer: a.payer || '',
+          splitBetween: Array.isArray(a.splitBetween) ? a.splitBetween : []
+        };
+      }) : []
     })).sort((a,b)=> String(a.date).localeCompare(String(b.date))),
     expenses: Array.isArray(tr.expenses) ? tr.expenses : [],
     participants: Array.isArray(tr.participants) ? tr.participants : [],
@@ -1941,6 +2557,9 @@ function importTripsJson(evt){
       let added = 0, updated = 0;
       list.forEach(raw=>{
         const tr = normalizeImportedTrip(raw);
+        // Any category/currency the imported file uses becomes an autocomplete choice too,
+        // same as if it had been typed into the form directly.
+        tr.days.forEach(d=>(d.activities||[]).forEach(a=>{ rememberTripCategory(a.category); rememberTripCurrency(a.currency); }));
         const idx = state.trips.list.findIndex(t=>t.id===tr.id);
         if(idx >= 0){ state.trips.list[idx] = tr; updated++; }
         else { state.trips.list.push(tr); added++; }
@@ -1990,7 +2609,7 @@ function addTripActivity(tripId, dayIdx){
   if(!tr.days[dayIdx].activities) tr.days[dayIdx].activities = [];
   // payer/splitBetween start unset — this activity only counts toward the bill-split once a
   // payer is chosen (see setTripActivityPayer), so plain unshared costs don't need any of this.
-  tr.days[dayIdx].activities.push({id:uid(), place:'', category:'อื่นๆ', cost:0, note:'', payer:'', splitBetween:[]});
+  tr.days[dayIdx].activities.push({id:uid(), place:'', category:'อื่นๆ', cost:0, currency:'THB', rate:1, rateDate:null, rateCurrency:'THB', rateSource:'', note:'', payer:'', splitBetween:[]});
   saveState(); render();
 }
 function delTripActivity(tripId, dayIdx, actIdx){
@@ -1999,17 +2618,59 @@ function delTripActivity(tripId, dayIdx, actIdx){
   tr.days[dayIdx].activities.splice(actIdx,1);
   saveState(); render();
 }
+// category/currency are free-text (with a <datalist> of remembered choices — see
+// rememberTripCategory/rememberTripCurrency) rather than a fixed <select>, so any value Milk
+// types is accepted and saved as-is. Changing currency away from THB kicks off an automatic
+// fetch of that day's THB rate (refreshTripActivityRate); switching back to THB just resets the
+// rate to 1 with nothing to fetch.
 function updateTripActivity(tripId, dayIdx, actIdx, field, value){
   const tr = state.trips.list.find(t=>t.id===tripId);
   if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
-  tr.days[dayIdx].activities[actIdx][field] = field==='cost' ? (parseFloat(value)||0) : value;
+  const d = tr.days[dayIdx], a = d.activities[actIdx];
+  if(field === 'cost'){ a.cost = parseFloat(value)||0; saveState(); render(); return; }
+  if(field === 'category'){ a.category = (value||'').trim() || 'อื่นๆ'; rememberTripCategory(a.category); saveState(); render(); return; }
+  if(field === 'currency'){
+    const cur = (value||'THB').trim().toUpperCase() || 'THB';
+    a.currency = cur;
+    rememberTripCurrency(cur);
+    if(cur === 'THB'){ a.rate = 1; a.rateDate = d.date; a.rateCurrency = 'THB'; a.rateSource = ''; a.fxError = ''; saveState(); render(); }
+    else refreshTripActivityRate(tripId, dayIdx, actIdx);
+    return;
+  }
+  a[field] = value;
   saveState(); render();
 }
-// Sets who paid for a per-day activity, which is what makes it count toward the trip's
-// bill-split (see tripAllSplitItems). Picking a payer for the first time defaults the split to
-// everyone (the common "we all shared this" case); clearing the payer back to "ไม่ระบุคนจ่าย"
-// also clears splitBetween so the activity cleanly drops out of the settlement math instead of
-// lingering half-configured (a payer with no one to split with, or vice versa).
+// Bill-split participants + shared expenses (see tripSettlement() for the payoff math).
+// Removing a participant also drops them from any expense's splitBetween list so the math
+// stays consistent — their share of past expenses is silently dropped, not reassigned.
+function addTripParticipant(tripId){
+  const input = document.getElementById('tripParticipant-'+tripId);
+  const name = input.value.trim();
+  if(!name) return;
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  if(!tr.participants) tr.participants = [];
+  if(!tr.participants.includes(name)) tr.participants.push(name);
+  input.value = '';
+  saveState(); render();
+}
+function delTripParticipant(tripId, idx){
+  const tr = state.trips.list.find(t=>t.id===tripId);
+  if(!tr) return;
+  const name = (tr.participants||[])[idx];
+  tr.participants = (tr.participants||[]).filter((_,i)=>i!==idx);
+  (tr.splitExpenses||[]).forEach(e=>{ e.splitBetween = (e.splitBetween||[]).filter(p=>p!==name); });
+  // Also clean up any day activity that had this person as payer/in its split, so a removed
+  // participant never lingers silently attributing cost in the settlement math.
+  (tr.days||[]).forEach(d=>(d.activities||[]).forEach(a=>{
+    if(a.splitBetween) a.splitBetween = a.splitBetween.filter(p=>p!==name);
+    if(a.payer === name) a.payer = '';
+  }));
+  saveState(); render();
+}
+// Sets who paid for a per-day activity, straight from that activity's row in the day plan.
+// Choosing a payer defaults the split to "everyone in the trip" (adjustable right after via the
+// tag toggles); clearing the payer back to "ไม่ระบุ" drops it out of the bill-split entirely.
 function setTripActivityPayer(tripId, dayIdx, actIdx, value){
   const tr = state.trips.list.find(t=>t.id===tripId);
   if(!tr || !tr.days[dayIdx] || !tr.days[dayIdx].activities || !tr.days[dayIdx].activities[actIdx]) return;
@@ -2043,37 +2704,6 @@ function clearTripActivitySplit(tripId, dayIdx, actIdx){
   a.payer = ''; a.splitBetween = [];
   saveState(); render();
 }
-// Bill-split participants + shared expenses (see tripSettlement() for the payoff math).
-// Removing a participant also drops them from any expense's splitBetween list so the math
-// stays consistent — their share of past expenses is silently dropped, not reassigned.
-function addTripParticipant(tripId){
-  const input = document.getElementById('tripParticipant-'+tripId);
-  const name = input.value.trim();
-  if(!name) return;
-  const tr = state.trips.list.find(t=>t.id===tripId);
-  if(!tr) return;
-  if(!tr.participants) tr.participants = [];
-  if(!tr.participants.includes(name)) tr.participants.push(name);
-  input.value = '';
-  saveState(); render();
-}
-function delTripParticipant(tripId, idx){
-  const tr = state.trips.list.find(t=>t.id===tripId);
-  if(!tr) return;
-  const name = (tr.participants||[])[idx];
-  tr.participants = (tr.participants||[]).filter((_,i)=>i!==idx);
-  (tr.splitExpenses||[]).forEach(e=>{ e.splitBetween = (e.splitBetween||[]).filter(p=>p!==name); });
-  // Also clean up any day activity that had this person as payer/in its split, so a removed
-  // participant never lingers silently attributing cost in the settlement math.
-  (tr.days||[]).forEach(d=>(d.activities||[]).forEach(a=>{
-    if(a.splitBetween) a.splitBetween = a.splitBetween.filter(p=>p!==name);
-    if(a.payer === name) a.payer = '';
-  }));
-  saveState(); render();
-}
-// Manual (not tied to a specific day) split expense — for costs like a group gear rental
-// booked before the trip. Defaults to splitting with everyone; adjust who it's split with
-// afterwards via the tag toggles in renderTripSplitItemsBlock, same as a day activity's split.
 function addTripSplitExpense(tripId){
   const item = document.getElementById('splitItem-'+tripId).value.trim();
   const amount = parseFloat(document.getElementById('splitAmount-'+tripId).value);
@@ -2485,7 +3115,10 @@ function renderItemTransactionsBlock(item){
 let assetsChartMode = 'monthly'; // 'daily' | 'monthly' | 'yearly' | 'all' — toggled on the "ทรัพย์สิน" page
 let livePriceMsg = null; // {ok:bool, html:string} — last refreshLivePrices() result, shown near the refresh button
 let assetAddMsg = null; // {ok:bool, html:string} — last addAssetItem() USD→THB conversion status, shown near the add-asset form
+let btcAddMsgHtml = null; // string|null — last addBtcAsset() result, shown near the BTC quick-add form
+let assetsPortfolioFilter = 'all'; // 'all' or a portfolio id — filters the "รายการสินทรัพย์" list on the "ทรัพย์สิน" page
 function setAssetsChartMode(mode){ assetsChartMode = mode; render(); }
+function setAssetsPortfolioFilter(id){ assetsPortfolioFilter = id; render(); }
 
 // Item chart modal — clicking a holding's inline sparkline opens a larger version of the
 // same chart. Transient UI state only (not persisted), looked up by id at render time so it
@@ -2523,6 +3156,14 @@ function renderAssets(){
   const series = assetsChartSeries(assetsChartMode);
   const byAsset = assetsByAssetDonutEntries();
   const byCategory = assetsByCategoryDonutEntries();
+  const byPortfolio = assetsByPortfolioDonutEntries();
+  const portfolios = a.portfolios || [];
+  const unsortedItems = a.items.filter(it=>it.needsPortfolioReview);
+  const filteredItems = assetsPortfolioFilter==='all' ? a.items
+    : assetsPortfolioFilter==='unsorted' ? unsortedItems
+    : a.items.filter(it=>itemPortfolioId(it)===assetsPortfolioFilter);
+  const activePortfolio = (assetsPortfolioFilter==='all' || assetsPortfolioFilter==='unsorted') ? null : assetPortfolioMeta(assetsPortfolioFilter);
+  const viewingUnsorted = assetsPortfolioFilter==='unsorted';
 
   return `
   <div class="section-title">ทรัพย์สิน</div>
@@ -2575,40 +3216,122 @@ function renderAssets(){
 
   <div class="panel">
     <div class="ribbon-head" style="margin-bottom:6px">
-      <h3>รายการสินทรัพย์ (แยกรายชิ้น)</h3>
+      <h3>พอร์ต (แยกติดตามรายพอร์ต)</h3>
+    </div>
+    <div class="muted" style="margin-bottom:12px">สร้างพอร์ตเพิ่มได้ไม่จำกัด ตั้งชื่อเอง — ใช้แยกติดตามสินทรัพย์แต่ละกลุ่ม (เช่น พอร์ตหลัก, พอร์ตเก็งกำไร, พอร์ตลูก) กดที่ชื่อพอร์ตด้านล่างเพื่อกรองรายการสินทรัพย์เฉพาะพอร์ตนั้น (จะขึ้นกราฟสัดส่วนของพอร์ตนั้นให้ดูคู่กับกราฟรวมด้านล่างด้วย) — ลบพอร์ตไหนก็ได้ รวมถึง "พอร์ตหลัก" เดิม ตราบใดที่ยังเหลืออย่างน้อย 1 พอร์ต สินทรัพย์ในพอร์ตที่ถูกลบจะย้ายไปพอร์ตอื่นที่เหลือให้เองอัตโนมัติ ไม่มีอะไรหาย</div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px">
+      <button class="btn ${assetsPortfolioFilter==='all'?'':'btn-ghost'} btn-sm" onclick="setAssetsPortfolioFilter('all')">ทั้งหมด · ฿${fmtMoney(assetsItemsTotal())}</button>
+      ${unsortedItems.length ? `<button class="btn btn-sm" style="background:var(--amber-pale); color:#8a5a00; box-shadow:none" onclick="setAssetsPortfolioFilter('unsorted')">⚠ ยังไม่ได้จัดพอร์ต · ${unsortedItems.length} รายการ</button>` : ''}
+      ${portfolios.map(p=>{
+        const total = assetPortfolioItemsTotal(p.id);
+        const count = assetPortfolioItemsCount(p.id);
+        return `<span style="display:inline-flex; align-items:center; gap:2px">
+          <button class="btn ${assetsPortfolioFilter===p.id?'':'btn-ghost'} btn-sm" onclick="setAssetsPortfolioFilter('${p.id}')" title="${count} รายการ">
+            <span style="width:8px; height:8px; border-radius:3px; background:${p.color}; display:inline-block; margin-right:6px"></span>${escapeHtml(p.name)} · ฿${fmtMoney(total)}
+          </button>
+          <button class="task-del" onclick="renameAssetPortfolio('${p.id}')" title="เปลี่ยนชื่อพอร์ต">✎</button>
+          ${portfolios.length>1 ? `<button class="task-del" onclick="delAssetPortfolio('${p.id}')" title="ลบพอร์ตนี้ (สินทรัพย์จะย้ายไปพอร์ตอื่นที่เหลืออยู่)">✕</button>` : ''}
+        </span>`;
+      }).join('')}
+    </div>
+    <div class="form-row" style="margin-bottom:18px">
+      <input type="text" id="portfolioName" placeholder="ชื่อพอร์ตใหม่ เช่น พอร์ตเก็งกำไร, พอร์ตลูก" onkeydown="if(event.key==='Enter') addAssetPortfolio()">
+      <button class="btn" onclick="addAssetPortfolio()">+ สร้างพอร์ต</button>
+    </div>
+    ${activePortfolio ? `
+    <div class="two-col">
+      <div>
+        <h3 style="margin-bottom:0">สัดส่วนตามพอร์ต</h3>
+        ${renderGenericDonut(byPortfolio, {emptyText:'ยังไม่มีสินทรัพย์'})}
+      </div>
+      <div>
+        <h3 style="margin-bottom:0">สัดส่วนในพอร์ต "${escapeHtml(activePortfolio.name)}"</h3>
+        ${renderGenericDonut(assetsByAssetDonutEntries(filteredItems), {centerLabel:filteredItems.length+' รายการ', centerSub:activePortfolio.name, emptyText:'พอร์ตนี้ยังไม่มีสินทรัพย์'})}
+      </div>
+    </div>
+    ` : `
+    <h3 style="margin-bottom:0">สัดส่วนตามพอร์ต</h3>
+    ${renderGenericDonut(byPortfolio, {emptyText:'ยังไม่มีสินทรัพย์'})}
+    `}
+  </div>
+
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:6px">
+      <h3>รายการสินทรัพย์ (แยกรายชิ้น)${activePortfolio ? ' — กำลังดูเฉพาะพอร์ต "'+escapeHtml(activePortfolio.name)+'"' : viewingUnsorted ? ' — ยังไม่ได้จัดพอร์ต' : ''}</h3>
       <button class="btn btn-ghost btn-sm" onclick="refreshLivePrices()">📈 รีเฟรชราคาตลาด</button>
     </div>
     <div id="livePriceMsg">${livePriceMsg ? livePriceMsg.html : ''}</div>
-    <div class="muted" style="margin-bottom:10px">เรียงตามมูลค่าปัจจุบันมากไปน้อย — กด "อัพเดทมูลค่า" ต่อรายการเพื่อบันทึกมูลค่าเอง หรือรายการที่มีแท็ก 📈 ใส่ symbol/units ไว้แล้วสามารถกด "รีเฟรชราคาตลาด" ด้านบนเพื่อดึงราคาจริงได้ (ต้องตั้งค่า Finnhub API key ที่หน้า "ตั้งค่า" ก่อน — เฉพาะหุ้น/ETF ต่างประเทศเท่านั้น) ระบบจะเก็บประวัติไว้ทำกราฟ sparkline และเส้นพอร์ตรวมด้านบน</div>
-    ${a.items.length ? [...a.items].sort((x,y)=>(Number(y.value)||0)-(Number(x.value)||0)).map(it=>{
+    <div class="muted" style="margin-bottom:10px">เรียงตามมูลค่าปัจจุบันมากไปน้อย — กด "อัพเดทมูลค่า" ต่อรายการเพื่อบันทึกมูลค่าเอง หรือรายการที่มีแท็ก 📈 ใส่ symbol/units ไว้แล้วสามารถกด "รีเฟรชราคาตลาด" ด้านบนเพื่อดึงราคาจริงได้ (ต้องตั้งค่า Finnhub API key ที่หน้า "ตั้งค่า" ก่อน — เฉพาะหุ้น/ETF ต่างประเทศเท่านั้น) ระบบจะเก็บประวัติไว้ทำกราฟ sparkline และเส้นพอร์ตรวมด้านบน — เลือกพอร์ตที่ช่อง "พอร์ต" ท้ายแต่ละรายการเพื่อย้ายสินทรัพย์ที่มีอยู่แล้วเข้าพอร์ตได้เลยโดยไม่ต้องเพิ่มใหม่${(activePortfolio||viewingUnsorted) ? ' (กด "ทั้งหมด" ด้านบนเพื่อดูทุกพอร์ตอีกครั้ง)' : ''}</div>
+    ${filteredItems.length ? [...filteredItems].sort((x,y)=>(Number(y.value)||0)-(Number(x.value)||0)).map(it=>{
       const cat = assetCategoryMeta(it.category);
+      const pf = assetPortfolioMeta(itemPortfolioId(it));
       const gain = (Number(it.value)||0) - (Number(it.costBasis)||0);
       const gainPct = it.costBasis ? Math.round(1000*gain/it.costBasis)/10 : null;
       const gainColor = gain>=0 ? 'var(--teal)' : 'var(--coral)';
+      // Dollar-equivalent gain, alongside the THB one, for any USD-tracked item (crypto included)
+      // that has both a $ value and a $ cost snapshot — same "฿X ($Y)" pairing used for value/cost.
+      const gainUsd = (it.currency==='USD' && it.originalAmount!=null && it.originalCostBasis!=null) ? Math.round((it.originalAmount-it.originalCostBasis)*100)/100 : null;
+      // Per-coin current price (crypto only) — shown in the same "฿X ($Y)" style as the cost
+      // line below, so it's easy to eyeball whether the entered cost basis is in the right
+      // ballpark (a cost-per-coin wildly different from this current price usually means the
+      // cost was typed with an extra digit/zero, not that the app miscalculated anything).
+      const pricePerUnitThb = (it.cryptoId && it.units) ? Math.round(it.value/it.units) : null;
+      const pricePerUnitUsd = (it.cryptoId && it.units && it.originalAmount!=null) ? Math.round((it.originalAmount/it.units)*100)/100 : null;
       return `
       <div class="form-row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--line)">
         <span style="width:34px; height:34px; border-radius:10px; background:${cat.color}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0">${escapeHtml((it.name||'?').slice(0,1))}</span>
         <div style="min-width:150px; flex:1">
-          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}${(it.currency==='USD' && it.originalAmount!=null) ? ' <span class="tag" style="background:var(--indigo-pale); color:var(--indigo)" title="แปลงจาก USD อัตโนมัติตอนบันทึก (rate '+it.fxRateUsed+')">$'+fmtMoney(it.originalAmount)+'</span>' : ''}</div>
-          <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}</div>
+          <div style="font-weight:600; font-size:13px">${escapeHtml(it.name)}${it.symbol ? ' <span class="tag" style="background:var(--teal-pale); color:var(--teal)" title="รองรับดึงราคาตลาดสด">📈 '+escapeHtml(it.symbol)+'</span>' : ''}${(it.currency==='USD' && it.originalAmount!=null) ? ' <span class="tag" style="background:var(--indigo-pale); color:var(--indigo)" title="'+(it.cryptoId ? 'ราคาล่าสุดจาก CoinGecko (rate '+it.fxRateUsed+') — กด &quot;รีเฟรชราคาตลาด&quot; เพื่ออัพเดท' : 'แปลงจาก USD อัตโนมัติตอนบันทึก (rate '+it.fxRateUsed+')')+'">$'+fmtMoney(it.originalAmount)+'</span>' : ''}${it.needsPortfolioReview ? ' <span class="tag" style="background:var(--amber-pale); color:#8a5a00" title="เพิ่มจากใบยืนยันการซื้อขายอัตโนมัติ ยังไม่ได้จัดพอร์ต">⚠ ยังไม่ได้จัดพอร์ต</span>' : ''}</div>
+          <div class="muted">${escapeHtml(cat.label)}${it.assetType?(' · '+escapeHtml(it.assetType)):''}${(it.cryptoId && it.units!=null) ? (' · '+it.units+' '+escapeHtml(it.symbol||'')) : ''}</div>
         </div>
         <div style="min-width:72px; cursor:pointer" onclick="openItemChart('${it.id}')" title="ดูกราฟแนวโน้มแบบเต็ม">${renderSparkline(it.valueHistory)}</div>
         <div style="text-align:right; min-width:100px">
-          <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}</div>
-          <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}</div>
+          <div class="mono" style="font-size:12.5px">฿${fmtMoney(it.value)}${(it.currency==='USD' && it.originalAmount!=null) ? ' ($'+fmtMoney(it.originalAmount)+')' : ''}</div>
+          ${pricePerUnitThb!=null ? `<div class="muted" style="font-size:10.5px">ราคา ฿${fmtMoney(pricePerUnitThb)}${pricePerUnitUsd!=null?' ($'+fmtMoney(pricePerUnitUsd)+')':''}/เหรียญ</div>` : ''}
+          <div class="muted">ทุน ฿${fmtMoney(it.costBasis||0)}${it.originalCostBasis!=null ? ' ($'+fmtMoney(it.originalCostBasis)+')' : ''} <span class="task-del" style="cursor:pointer" onclick="editItemCostBasis('${it.id}')" title="แก้ไขต้นทุน">✎</span></div>
         </div>
         <div style="text-align:right; min-width:90px; color:${gainColor}">
-          <div class="mono" style="font-size:12.5px">${gain>=0?'+':''}฿${fmtMoney(gain)}</div>
+          <div class="mono" style="font-size:12.5px">${gain>=0?'+':''}฿${fmtMoney(gain)}${gainUsd!=null ? ' ('+(gainUsd>=0?'+':'')+'$'+fmtMoney(gainUsd)+')' : ''}</div>
           <div style="font-size:11px">${gainPct!=null ? (gain>=0?'+':'')+gainPct+'%' : '—'}</div>
         </div>
+        <select onchange="setItemPortfolio('${it.id}', this.value)" title="ย้ายสินทรัพย์นี้เข้าพอร์ต — เลือกได้เลยโดยไม่ต้องเพิ่มใหม่" style="font-size:11px; padding:5px 8px; max-width:120px; border:1px solid ${it.needsPortfolioReview?'var(--amber)':'var(--line)'}; border-radius:8px; background:var(--bg); color:${pf.color}">
+          ${portfolios.map(p=>`<option value="${p.id}" ${itemPortfolioId(it)===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}
+        </select>
         <input type="number" id="assetVal_${it.id}" placeholder="มูลค่าใหม่" style="max-width:120px">
         <button class="btn btn-ghost btn-sm" onclick="updateAssetItemValue('${it.id}')">อัพเดทมูลค่า</button>
         <button class="task-del" onclick="delAssetItem('${it.id}')">✕</button>
       </div>`;
-    }).join('') : '<div class="muted">ยังไม่มีสินทรัพย์อื่น</div>'}
+    }).join('') : `<div class="muted">${activePortfolio ? 'พอร์ตนี้ยังไม่มีสินทรัพย์ — เพิ่มด้านล่างแล้วเลือกพอร์ตนี้ในช่อง "พอร์ต" หรือย้ายของเดิมมาจากช่อง "พอร์ต" ท้ายแต่ละรายการ' : viewingUnsorted ? 'ไม่มีสินทรัพย์ที่ยังไม่ได้จัดพอร์ต' : 'ยังไม่มีสินทรัพย์อื่น'}</div>`}
+    ${filteredItems.length ? (()=>{
+      // Bottom summary bar for whichever slice of our own portfolio is currently shown (one
+      // named portfolio via the filter, "ทั้งหมด" = everything, or the unsorted view) — total
+      // item count, total value, total cost, total gain/loss. Column widths match the item rows
+      // above so it visually reads as a footer/total row under the list.
+      const totalValue = filteredItems.reduce((s,it)=>s+(Number(it.value)||0),0);
+      const totalCost = filteredItems.reduce((s,it)=>s+(Number(it.costBasis)||0),0);
+      const totalGain = totalValue - totalCost;
+      const totalGainPct = totalCost ? Math.round(1000*totalGain/totalCost)/10 : null;
+      const gainColor = totalGain>=0 ? 'var(--teal)' : 'var(--coral)';
+      const scopeLabel = activePortfolio ? `ในพอร์ต "${escapeHtml(activePortfolio.name)}"` : viewingUnsorted ? '(ยังไม่ได้จัดพอร์ต)' : 'ทุกพอร์ตรวมกัน';
+      return `
+      <div class="form-row" style="align-items:center; padding:10px 0; margin-top:2px; border-top:2px solid var(--line); font-weight:600">
+        <span style="width:34px; flex-shrink:0"></span>
+        <div style="min-width:150px; flex:1">รวม ${filteredItems.length} รายการ<div class="muted" style="font-weight:400">${scopeLabel}</div></div>
+        <div style="min-width:72px"></div>
+        <div style="text-align:right; min-width:100px">
+          <div class="mono" style="font-size:12.5px">฿${fmtMoney(totalValue)}</div>
+          <div class="muted" style="font-weight:400">ทุน ฿${fmtMoney(totalCost)}</div>
+        </div>
+        <div style="text-align:right; min-width:90px; color:${gainColor}">
+          <div class="mono" style="font-size:12.5px">${totalGain>=0?'+':''}฿${fmtMoney(totalGain)}</div>
+          <div style="font-size:11px; font-weight:400">${totalGainPct!=null ? (totalGain>=0?'+':'')+totalGainPct+'%' : '—'}</div>
+        </div>
+      </div>`;
+    })() : ''}
     <div class="form-row" style="margin-top:14px">
       <input type="text" id="assetName" placeholder="ชื่อสินทรัพย์ เช่น คอนโด, กองทุน, ทองคำ">
       <select id="assetCategory">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select>
+      <select id="assetPortfolio" title="เลือกพอร์ตที่จะเพิ่มสินทรัพย์นี้เข้าไป">${portfolios.map(p=>`<option value="${p.id}" ${(activePortfolio?activePortfolio.id:mainPortfolioId())===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
       <input type="text" id="assetNote" placeholder="รายละเอียด/โน้ต (ไม่บังคับ)" style="max-width:160px">
       <select id="assetCurrency" onchange="onAssetCurrencyChange()" style="max-width:90px">
         <option value="THB">THB (บาท)</option>
@@ -2620,6 +3343,22 @@ function renderAssets(){
     </div>
     <div class="muted" id="assetCurrencyHint" style="margin-top:6px"></div>
     <div id="assetAddMsg">${assetAddMsg ? assetAddMsg.html : ''}</div>
+  </div>
+
+  <div class="panel">
+    <h3>₿ คริปโต — Bitcoin (BTC)</h3>
+    <div class="muted" style="margin-bottom:12px">กรอกจำนวนเหรียญ BTC ที่ถือ + ราคาทุนเฉลี่ยต่อเหรียญที่ซื้อมา (เฉลี่ยถ่วงน้ำหนักถ้าซื้อหลายรอบ — เลือกได้ว่ากรอกเป็นบาทหรือดอลลาร์ต่อเหรียญ) ระบบจะเอาไปคูณกับจำนวนเหรียญให้เป็นต้นทุนรวมเอง แล้วดึงราคา BTC ล่าสุดจาก CoinGecko (ฟรี ไม่ต้องมี API key) มาคำนวณมูลค่าปัจจุบันให้ทั้งสองสกุลทันที แล้วเพิ่มเป็นสินทรัพย์รายการหนึ่งในลิสต์ด้านบนตามปกติ (นับรวมในมูลค่าสุทธิ/กราฟ/โดนัทด้วย) — กด "รีเฟรชราคาตลาด" ที่รายการสินทรัพย์ด้านบนได้ทุกครั้งที่อยากอัพเดทราคา BTC ให้เป็นปัจจุบัน (ไม่ต้องมี Finnhub key เฉพาะส่วนคริปโต)</div>
+    <div class="form-row">
+      <input type="number" id="btcUnits" placeholder="จำนวนเหรียญ BTC" step="0.00000001" min="0" style="max-width:150px">
+      <input type="number" id="btcAvgCost" placeholder="ราคาทุนเฉลี่ย/เหรียญ (ที่ซื้อมา)" min="0" style="max-width:190px">
+      <select id="btcCostCurrency" style="max-width:100px">
+        <option value="THB">THB (บาท)</option>
+        <option value="USD">USD (ดอลลาร์)</option>
+      </select>
+      <select id="btcPortfolio" title="เลือกพอร์ตที่จะเพิ่ม BTC เข้าไป">${portfolios.map(p=>`<option value="${p.id}" ${(activePortfolio?activePortfolio.id:mainPortfolioId())===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+      <button class="btn" id="btcAddBtn" onclick="addBtcAsset()">+ เพิ่ม BTC</button>
+    </div>
+    <div id="btcAddMsg" class="muted" style="margin-top:8px">${btcAddMsgHtml || ''}</div>
   </div>
 
   <div class="panel">
@@ -2646,24 +3385,27 @@ function renderAssets(){
 
   <div class="panel">
     <h3>นำเข้ารายงาน Dime (PDF)</h3>
-    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF รายงานที่ Dime ส่งมาทางอีเมลทุกเดือน ระบบจะลองอ่านมูลค่ารวมให้อัตโนมัติ — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน (โหลดเฉพาะตัวอ่าน PDF จาก cdnjs ตอนใช้ครั้งแรก) เพราะรูปแบบรายงานของ Dime อาจไม่เหมือนที่ระบบเดาไว้ทุกครั้ง <b>ให้ตรวจตัวเลขในช่อง "มูลค่ารวม" ก่อนกดบันทึกเสมอ</b></div>
+    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF รายงานที่ Dime ส่งมาทางอีเมลทุกเดือน ระบบจะลองอ่านมูลค่ารวมให้อัตโนมัติ และลองอ่านตารางโฮลดิ้งรายตัวด้วย ทั้งบัญชีหลักทรัพย์ต่างประเทศ (Offshore, USD) และบัญชีหลักทรัพย์ไทย (Thai Securities, THB) — ไม่ว่าจะอยู่คนละไฟล์หรือรวมอยู่ในไฟล์เดียวกันก็อ่านได้ — เพื่อให้อัพเดทมูลค่า/จำนวนหน่วยของหุ้นแต่ละตัวได้จากไฟล์นี้ไฟล์เดียว ไม่ต้องอัปโหลดใบยืนยันการซื้อขายทุกรอบ ไฟล์ที่มีรหัสผ่านจะมีกล่องให้กรอกรหัส (วันเกิด 8 หลัก) — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน (โหลดเฉพาะตัวอ่าน PDF จาก cdnjs ตอนใช้ครั้งแรก) เพราะรูปแบบรายงานของ Dime อาจไม่เหมือนที่ระบบเดาไว้ทุกครั้ง <b>ให้ตรวจตัวเลขก่อนกดบันทึก/นำเข้าเสมอ</b></div>
     <input type="file" id="dimePdfFile" accept="application/pdf" onchange="handleDimePdf(event)">
-    <div id="dimeImportMsg" class="muted" style="margin-top:8px"></div>
+    <div id="dimeImportMsg" class="muted" style="margin-top:8px">${dimeImportMsgHtml || ''}</div>
     <div class="form-row" style="margin-top:14px">
-      <input type="month" id="dimeMonth" value="${todayISO().slice(0,7)}" style="max-width:150px">
-      <input type="number" id="dimeValue" placeholder="มูลค่ารวม (บาท)" style="max-width:170px">
+      <input type="month" id="dimeMonth" value="${dimeMonthValue || todayISO().slice(0,7)}" style="max-width:150px">
+      <input type="number" id="dimeValue" placeholder="มูลค่ารวม (บาท)" value="${dimeGuessedValue!=null?dimeGuessedValue:''}" style="max-width:170px">
       <button class="btn" onclick="confirmDimeImport()">+ บันทึกลงพอร์ต</button>
     </div>
     <div class="muted">ไม่มี PDF ก็กรอกมูลค่ารวมของเดือนนั้นด้วยมือในช่องนี้ได้เลย</div>
   </div>
+  ${renderDimeHoldingsReview()}
 
   <div class="panel">
     <h3>นำเข้าใบยืนยันการซื้อขาย (Confirmation Note)</h3>
-    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF "ใบยืนยันการซื้อขาย" ที่ Dime ส่งทางอีเมลทุกครั้งที่มีการซื้อขาย (คนละไฟล์กับรายงานพอร์ตรายเดือนด้านบน) ระบบจะอ่านรายการซื้อ/ขายในไฟล์ให้อัตโนมัติ — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน ไฟล์ที่มีรหัสผ่านจะมีกล่องให้กรอกรหัส (วันเกิด 8 หลัก) <b>ระบบจะให้ตรวจรายการทุกแถวก่อนกดยืนยันนำเข้าเสมอ</b> รายการจะถูกผูกเข้ากับสินทรัพย์ที่มี symbol ตรงกันเท่านั้น (ไม่สร้างสินทรัพย์ใหม่ให้อัตโนมัติ)</div>
+    <div class="muted" style="margin-bottom:10px">อัปโหลดไฟล์ PDF "ใบยืนยันการซื้อขาย" ที่ Dime ส่งทางอีเมลทุกครั้งที่มีการซื้อขาย (คนละไฟล์กับรายงานพอร์ตรายเดือนด้านบน) — ใช้เสริมได้เมื่ออยากได้ประวัติการซื้อ/ขายรายรายการจริง ส่วนการอัพเดทมูลค่า/จำนวนหน่วยของหุ้นแต่ละตัวตามปกติทำผ่านรายงานรายเดือนด้านบนได้เลยโดยไม่ต้องอัปโหลดไฟล์นี้ทุกรอบ ระบบจะอ่านรายการซื้อ/ขายในไฟล์ให้อัตโนมัติ — ประมวลผลทั้งหมดในเบราว์เซอร์นี้ ไฟล์ไม่ถูกส่งออกไปที่ไหน ไฟล์ที่มีรหัสผ่านจะมีกล่องให้กรอกรหัส (วันเกิด 8 หลัก) <b>ระบบจะให้ตรวจรายการทุกแถวก่อนกดยืนยันนำเข้าเสมอ</b> รายการที่ symbol ตรงกับสินทรัพย์ที่มีอยู่แล้วจะถูกผูกเข้ากับสินทรัพย์นั้น ส่วนหุ้น/ETF ตัวใหม่ที่ยังไม่เคยมีในระบบสามารถเลือกสร้างเป็นสินทรัพย์ใหม่ได้จากตารางตรวจสอบ (ไม่สร้างให้อัตโนมัติ ต้องติ๊กเลือกเองทุกครั้ง)</div>
     <input type="file" id="confirmationNoteFile" accept="application/pdf" onchange="handleConfirmationNotePdf(event)">
     <div id="confirmationNoteMsg" class="muted" style="margin-top:8px">${confirmationNoteMsg || ''}</div>
   </div>
   ${renderConfirmationNoteReview()}
+
+  ${renderOtherPortfolios()}
   ${renderItemChartModal()}
   `;
 }
@@ -2687,16 +3429,39 @@ function ensurePdfJs(){
   return pdfjsLoadPromise;
 }
 let dimeParseSucceeded = false;
+// dimeValue/dimeMonth used to be poked directly via document.getElementById(...).value from
+// inside handleDimePdf without an accompanying render() — that worked because nothing else in
+// the function touched the DOM wholesale. Now that a successful parse can also produce the
+// holdings review table below (a brand-new block of markup that only render() can insert), the
+// guessed total and month need to survive that render() too — a full render() replaces these
+// input elements from the template, so anything poked onto the old element is lost. Driving
+// their value from these two variables instead keeps the guessed total/month on screen across
+// that render() the same way livePriceMsg/assetAddMsg already drive their own message areas.
+let dimeGuessedValue = null; // number|null
+let dimeMonthValue = null; // 'YYYY-MM'|null — falls back to the current month in the template
+let dimeImportMsgHtml = '';
+// Per-holding breakdown parsed from the monthly PDF's "รายละเอียดการลงทุน / Investment
+// Information" table (see parseDimeMonthlyHoldings below) — transient review-before-save state,
+// same pattern as confirmationNoteRows. Lets one monthly statement update every holding's value/
+// cost/units directly, instead of needing a separate Confirmation Note upload every time.
+let dimeHoldingsRows = null;
+let dimeHoldingsMeta = null; // {fxRate, statementDate}
 async function handleDimePdf(evt){
   const file = evt.target.files[0];
   const msgEl = document.getElementById('dimeImportMsg');
   dimeParseSucceeded = false;
+  dimeGuessedValue = null;
+  dimeHoldingsRows = null;
+  dimeHoldingsMeta = null;
   if(!file) return;
-  msgEl.innerHTML = '<span class="muted">กำลังอ่านไฟล์...</span>';
+  if(msgEl) msgEl.innerHTML = '<span class="muted">กำลังอ่านไฟล์...</span>';
+  let resultHtml;
   try{
     await ensurePdfJs();
     const buf = await file.arrayBuffer();
-    const pdf = await window.pdfjsLib.getDocument({data:buf}).promise;
+    // Monthly statements use the same password scheme as confirmation notes (8-digit birthdate) —
+    // loadPdfWithPassword() prompts for it via window.prompt if the file needs one.
+    const pdf = await loadPdfWithPassword(buf);
     let text = '';
     for(let i=1;i<=pdf.numPages;i++){
       const page = await pdf.getPage(i);
@@ -2704,34 +3469,89 @@ async function handleDimePdf(evt){
       text += content.items.map(it=>it.str).join(' ') + '\n';
     }
     const guess = guessPortfolioValue(text);
+    const parts = [];
     if(guess != null){
-      document.getElementById('dimeValue').value = guess;
+      dimeGuessedValue = guess;
       dimeParseSucceeded = true;
-      msgEl.innerHTML = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ — เดามูลค่ารวมได้ ฿${fmtMoney(guess)}. ตรวจเลขในช่องด้านล่างก่อนกดบันทึกเสมอ เผื่อรูปแบบรายงานเปลี่ยนไปจากที่เดาไว้</span>`;
+      parts.push(`เดามูลค่ารวมได้ ฿${fmtMoney(guess)}`);
     } else {
-      msgEl.innerHTML = `<span style="color:var(--amber)">อ่านไฟล์ได้ (${pdf.numPages} หน้า) แต่หา "มูลค่ารวม" ในเนื้อหาไม่เจอ — กรอกตัวเลขในช่องด้านล่างเองได้เลย</span>`;
+      parts.push('หา "มูลค่ารวม" ในเนื้อหาไม่เจอ — กรอกตัวเลขในช่องด้านล่างเองได้เลย');
     }
+    // Also try the per-holding table (KKP Dime Offshore and/or Thai Securities Account statement
+    // layout — see parseDimeMonthlyHoldings). Uses the same Y/X-coordinate line grouping as the
+    // Confirmation Note importer (extractPdfLines) since a raw item-order join isn't reliable for
+    // a table layout. A combined PDF can carry both an Offshore (USD) and a Thai (THB) section —
+    // holdings from either/both come back tagged with their own currency.
+    const lines = await extractPdfLines(pdf);
+    const holdingsResult = parseDimeMonthlyHoldings(lines);
+    if(holdingsResult.holdings.length){
+      if(holdingsResult.statementDate) dimeMonthValue = holdingsResult.statementDate.slice(0,7);
+      dimeHoldingsMeta = {fxRate: holdingsResult.fxRate, statementDate: holdingsResult.statementDate || todayISO()};
+      dimeHoldingsRows = holdingsResult.holdings.map(h=>{
+        const item = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===h.symbol.toUpperCase());
+        // An item whose note mentions รวมหลายบัญชี (see the seeded IVV holding) is known to combine
+        // more than one Dime account — this one monthly statement only ever covers ONE account, so
+        // defaulting that row to unchecked (instead of silently overwriting a manually-reconciled
+        // combined total) is the safer default. A USD row also defaults unchecked (and gets
+        // disabled in the review table) when this file has no "1 USD = X THB" line to convert
+        // it with — e.g. a Thai-Securities-only statement with a stray/unrelated USD row.
+        const multiAccountNote = !!(item && /บัญชี/.test(item.note||''));
+        const missingFx = h.currency==='USD' && holdingsResult.fxRate==null;
+        return {...h, checked: !multiAccountNote && !missingFx, create: false, multiAccountNote, missingFx};
+      });
+      parts.push(`พบโฮลดิ้งรายตัว ${dimeHoldingsRows.length} รายการ — ตรวจสอบด้านล่างก่อนนำเข้า`);
+    }
+    resultHtml = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ (${pdf.numPages} หน้า) — ${parts.join(' · ')}</span>`;
   }catch(err){
-    msgEl.innerHTML = `<span style="color:var(--coral)">อ่านไฟล์ไม่สำเร็จ: ${escapeHtml(err.message)} — กรอกมูลค่าด้วยมือแทนได้</span>`;
+    resultHtml = `<span style="color:var(--coral)">อ่านไฟล์ไม่สำเร็จ: ${escapeHtml(err.message)} — กรอกมูลค่าด้วยมือแทนได้</span>`;
   }
+  dimeImportMsgHtml = resultHtml;
+  render();
 }
 // Heuristic only — Dime's exact PDF layout isn't known, so this looks for a
 // labelled total near common Thai/English keywords first, then falls back to
 // the largest currency-looking number on the page. Always shown to the person
 // for confirmation before it's saved (see the "+ บันทึกลงพอร์ต" button).
+//
+// A combined statement (Offshore + Thai Securities account in one PDF, as KKP Dime issues once
+// someone holds both) repeats the exact Thai phrase "มูลค่าเงินลงทุนรวม / Total Balance" once
+// per account section — so every distinct occurrence is summed into a whole-statement grand
+// total, instead of only ever finding the first account. numRe/near-THB matching also tolerates
+// a stray space around the decimal point (e.g. "770 .59") since pdf.js occasionally splits a
+// number's integer/decimal halves into separate text items.
 function guessPortfolioValue(text){
-  const keywords = ['มูลค่ารวม','รวมทั้งหมด','พอร์ตรวม','มูลค่าพอร์ตรวม','total portfolio value','total value','net asset value','nav รวม','total assets'];
   const numRe = /[\d]{1,3}(?:,\d{3})+(?:\.\d+)?|\d{4,}(?:\.\d+)?/g;
+  const thbNearRe = /([\d,]+)\s*\.?\s*(\d*)\s*THB/gi;
+  const extractNear = (idx)=>{
+    const windowText = text.slice(Math.max(0, idx-80), idx+150);
+    thbNearRe.lastIndex = 0;
+    const m = thbNearRe.exec(windowText);
+    if(m){
+      const raw = m[1].replace(/,/g,'') + (m[2] ? '.'+m[2] : '');
+      const val = parseFloat(raw);
+      if(val>0) return val;
+    }
+    const any = windowText.match(numRe);
+    if(any && any[0]){
+      const val = parseFloat(any[0].replace(/,/g,''));
+      if(val>0) return val;
+    }
+    return null;
+  };
+  const primary = 'มูลค่าเงินลงทุนรวม';
+  let idx = -1, total = 0, hits = 0;
+  while((idx = text.indexOf(primary, idx+1)) >= 0){
+    const val = extractNear(idx);
+    if(val != null){ total += val; hits++; }
+  }
+  if(hits) return Math.round(total);
+  const keywords = ['มูลค่ารวม','รวมทั้งหมด','พอร์ตรวม','มูลค่าพอร์ตรวม','total balance','total portfolio value','total value','net asset value','nav รวม','total assets'];
   const lower = text.toLowerCase();
   for(const kw of keywords){
-    const idx = lower.indexOf(kw);
-    if(idx>=0){
-      const windowText = text.slice(idx, idx+120);
-      const m = windowText.match(numRe);
-      if(m && m.length){
-        const val = parseFloat(m[0].replace(/,/g,''));
-        if(val>0) return Math.round(val);
-      }
+    const kidx = lower.indexOf(kw);
+    if(kidx>=0){
+      const val = extractNear(kidx);
+      if(val != null) return Math.round(val);
     }
   }
   const all = [...text.matchAll(numRe)].map(m=>parseFloat(m[0].replace(/,/g,''))).filter(n=>n>=1000 && n<=500000000);
@@ -2751,9 +3571,480 @@ function confirmDimeImport(){
   };
   if(existingIdx>=0) state.assets.reports[existingIdx] = entry; else state.assets.reports.push(entry);
   dimeParseSucceeded = false;
+  dimeGuessedValue = null;
   saveState(); render();
 }
 function delAssetReport(id){ state.assets.reports = state.assets.reports.filter(r=>r.id!==id); saveState(); render(); }
+
+/* ---------- Per-holding parsing of the Dime monthly statement's own holdings table ----------
+   Verified against real KKP Dime monthly statements, both the "Offshore Securities Account"
+   layout (USD holdings) and the "Thai Securities Account" layout (THB holdings) — Dime issues
+   both as their own account section, sometimes combined into one PDF once someone holds both
+   (an "As of ..." Thai-year statement date + an optional "1 USD = X THB" line only when an
+   Offshore section is present). Each holding is two consecutive visual lines (from
+   extractPdfLines' Y-coordinate grouping) —
+     SYMBOL  alloc%  shares  avgCostPerShare  price  ±return%  ±return  marketValue
+   followed by the company/fund name. A "สกุลเงิน / Currency USD|THB" line precedes each
+   account section's table and tags every row parsed after it, so a combined statement's rows
+   carry the right currency each — no assumption that the whole file is one currency. Section
+   headers (หุ้นสามัญ = Common Stock, กองทุน = fund/ETF) set a default category per row (still
+   editable before import). Symbols can start with a digit or contain a dot (e.g. "1DIV",
+   "BRK.B") — real tickers seen in these statements. Only ever recognizes this one specific
+   layout — returns holdings:[] (not an error) for anything else, so it's purely additive: the
+   existing "มูลค่ารวม" guess above keeps working as-is either way. */
+const DIME_MONTH_EN = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+function parseDimeMonthlyHoldings(lines){
+  const joined = lines.join('\n');
+  let fxRate = null, statementDate = null;
+  const fxMatch = joined.match(/1\s*USD\s*=\s*([\d.]+)\s*THB/i);
+  if(fxMatch) fxRate = parseFloat(fxMatch[1]);
+  const dateMatch = joined.match(/As\s+of\s+(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/i);
+  if(dateMatch){
+    const mo = DIME_MONTH_EN[dateMatch[2].toLowerCase()];
+    if(mo) statementDate = dateMatch[3]+'-'+pad2(mo)+'-'+pad2(parseInt(dateMatch[1],10));
+  }
+  // Note: no early bail-out when fxRate is missing — a Thai-Securities-only statement has no
+  // "1 USD = X THB" line at all (nothing in it needs converting), and its holdings are still
+  // fully readable. Only a USD-currency row actually needs fxRate (checked at import time).
+  // Numeric fields use [\d,]+(?:\.\d+)? rather than plain [\d.]+ because Dime formats any of
+  // shares/avg-cost/price/return/market-value with a thousands-separator comma once it crosses
+  // 1,000 (e.g. a high-priced ADR like ASML shows avg cost/price as "1,740.00"/"1,696.01") — the
+  // old digits-and-dot-only pattern silently failed to match the whole line, so that holding's
+  // row was dropped from the table entirely with no error (it just never showed up). Commas are
+  // stripped before parseFloat below.
+  const numPat = '[\\d,]+(?:\\.\\d+)?';
+  const rowRe = new RegExp('^([A-Z0-9][A-Z0-9.]{0,7})\\s+('+numPat+')%\\s+('+numPat+')\\s+('+numPat+')\\s+('+numPat+')\\s+([+-])\\s*('+numPat+')%\\s+([+-])\\s*('+numPat+')\\s+('+numPat+')\\s*$');
+  let section = null; // 'stock' | 'etf' — only affects the default category on newly-created items
+  let currency = null; // 'USD' | 'THB' — set per account section by its "Currency USD|THB" line
+  const holdings = [];
+  for(let i=0;i<lines.length;i++){
+    const line = lines[i].trim();
+    const curMatch = line.match(/Currency\s+(USD|THB)/i);
+    if(curMatch){ currency = curMatch[1].toUpperCase(); continue; }
+    // These Thai section-header words never appear inside an English holding-name line, so
+    // matching on them (rather than the bilingual "Common Stock"/"ETF"/"ADR" phrasing) can't be
+    // confused with a stock/ETF/ADR name that happens to contain those words itself. "ตราสาร ADR"
+    // (the ADR/depositary-receipt section, e.g. ASML) is treated like an individual stock holding
+    // for the default category, same as "หุ้นสามัญ".
+    if(/หุ้นสามัญ/.test(line)){ section = 'stock'; continue; }
+    if(/ตราสาร\s*ADR/.test(line)){ section = 'stock'; continue; }
+    if(/กองทุน/.test(line)){ section = 'etf'; continue; }
+    const m = line.match(rowRe);
+    if(!m) continue;
+    const [, symbol, , sharesRaw, avgCostRaw, priceRaw, , , , , mktValRaw] = m;
+    const nameLine = (lines[i+1]||'').trim();
+    const name = (nameLine && !rowRe.test(nameLine) && !/^รวม|^total/i.test(nameLine)) ? nameLine : '';
+    const denum = s => parseFloat(String(s).replace(/,/g,''));
+    holdings.push({
+      symbol, name,
+      units: denum(sharesRaw),
+      avgCost: denum(avgCostRaw),
+      price: denum(priceRaw),
+      marketValue: denum(mktValRaw),
+      currency: currency || 'USD', // defensive fallback only — every real statement seen tags this before its table
+      category: section==='etf' ? 'core' : 'satellite'
+    });
+  }
+  return {fxRate, statementDate, holdings};
+}
+// Converts one parsed holding row to its THB value/cost, currency-aware: a THB row (Thai
+// Securities account) is already in baht — no conversion needed; a USD row (Offshore account)
+// needs meta.fxRate, and returns null when that's missing (nothing in the file to convert with —
+// see the missingFx flag set in handleDimePdf) rather than silently producing a wrong number.
+function dimeHoldingValueThb(r, meta){
+  if(r.currency === 'THB'){
+    return {valueThb: Math.round(r.marketValue), costThb: Math.round(r.avgCost * r.units)};
+  }
+  if(!meta.fxRate) return null;
+  return {valueThb: Math.round(r.marketValue * meta.fxRate), costThb: Math.round(r.avgCost * r.units * meta.fxRate)};
+}
+// Review-before-save table for the per-holding parse above — same "nothing is written until the
+// person confirms" pattern as renderConfirmationNoteReview. A row matching an existing item's
+// symbol updates that item's value/cost/units/valueHistory in place; an unmatched symbol only
+// gets created as a new item if its "สร้างสินทรัพย์ใหม่" checkbox is explicitly ticked (mirrors
+// the Confirmation Note review below), landing in พอร์ตหลัก + flagged unless a different
+// portfolio is picked right there. Rows can be a mix of USD (Offshore) and THB (Thai Securities)
+// when the source PDF combines both account sections — each row shows its own currency.
+function renderDimeHoldingsReview(){
+  if(!dimeHoldingsRows || !dimeHoldingsRows.length) return '';
+  const rows = dimeHoldingsRows;
+  const meta = dimeHoldingsMeta || {};
+  const portfolios = state.assets.portfolios || [];
+  return `
+  <div class="panel">
+    <h3>ตรวจสอบโฮลดิ้งรายตัวก่อนนำเข้า (${rows.length} รายการ)</h3>
+    <div class="muted" style="margin-bottom:10px">อ้างอิงจากตาราง "รายละเอียดการลงทุน" ในรายงานนี้ ณ ${meta.statementDate?fmtDate(meta.statementDate):'—'}${meta.fxRate?` (1 USD = ${meta.fxRate} THB)`:''} — รองรับทั้งบัญชีต่างประเทศ (USD, แปลงด้วยอัตราแลกเปลี่ยนในไฟล์) และบัญชีหลักทรัพย์ไทย (THB, ใช้ตัวเลขตรงจากไฟล์) ในรายงานเดียวกันหรือคนละไฟล์ก็ได้ — ติ๊กแถวที่จะอัพเดท มูลค่า/ต้นทุน/จำนวนหน่วยของสินทรัพย์ที่มีอยู่แล้วจะถูกแทนที่ด้วยตัวเลขจากรายงานนี้ (ประวัติเก่ายังอยู่ในกราฟแนวโน้ม) ส่วนหุ้น/กองทุนตัวใหม่ติ๊ก "สร้างสินทรัพย์ใหม่" เพื่อเพิ่มเข้าระบบพร้อมเลือกพอร์ตได้เลย</div>
+    <table class="table">
+      <tr><th></th><th>Symbol</th><th>สกุลเงิน</th><th>ชื่อ</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">มูลค่าใหม่</th><th style="text-align:right">ต้นทุนใหม่</th><th>สินทรัพย์</th></tr>
+      ${rows.map((r,i)=>{
+        const item = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===r.symbol.toUpperCase());
+        const computed = dimeHoldingValueThb(r, meta);
+        const valueThb = computed ? computed.valueThb : null;
+        const costThb = computed ? computed.costThb : null;
+        let statusCell;
+        if(r.missingFx){
+          statusCell = `<span style="font-size:11px; color:var(--coral)">⚠ ไม่พบอัตราแลกเปลี่ยน (1 USD = ... THB) ในไฟล์นี้ — แปลงเป็นบาทไม่ได้ ข้ามรายการนี้ไปก่อน</span>`;
+        } else if(item){
+          const pf = assetPortfolioMeta(itemPortfolioId(item));
+          const diff = valueThb - (Number(item.value)||0);
+          const diffPct = item.value ? Math.round(1000*diff/item.value)/10 : null;
+          statusCell = `<span class="muted" style="font-size:11px">อัพเดท "${escapeHtml(item.name)}" (พอร์ต ${escapeHtml(pf.name)})<br>เดิม ฿${fmtMoney(item.value)} → ${diff>=0?'+':''}฿${fmtMoney(diff)}${diffPct!=null?' ('+(diff>=0?'+':'')+diffPct+'%)':''}</span>${r.multiAccountNote ? `<br><span style="font-size:11px; color:var(--amber)">⚠ รายการนี้เดิมรวมมาจากหลายบัญชี (${escapeHtml(item.note)}) — ไฟล์นี้มีข้อมูลแค่บัญชีเดียว ตรวจสอบก่อนติ๊กอัพเดท</span>` : ''}`;
+        } else {
+          statusCell = `
+            <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin-bottom:4px">
+              <input type="checkbox" id="dhCreate_${i}"> สร้างสินทรัพย์ใหม่
+            </label>
+            <div style="display:flex; gap:4px; flex-wrap:wrap">
+              <select id="dhCat_${i}" style="font-size:11px; padding:3px 5px">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===r.category?'selected':''}>${c.label}</option>`).join('')}</select>
+              <select id="dhPortfolio_${i}" style="font-size:11px; padding:3px 5px">${portfolios.map(p=>`<option value="${p.id}" ${p.id===mainPortfolioId()?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+            </div>
+            <div class="muted" style="font-size:10px; margin-top:2px">ไม่เลือกพอร์ต = เข้าพอร์ตหลัก + ติดแท็กยังไม่ได้จัดพอร์ต</div>`;
+        }
+        return `<tr>
+          <td><input type="checkbox" id="dhRow_${i}" ${r.checked?'checked':''} ${r.missingFx?'disabled':''}></td>
+          <td class="mono">${escapeHtml(r.symbol)}</td>
+          <td><span class="tag">${r.currency}</span></td>
+          <td class="muted" style="font-size:11px">${escapeHtml(r.name||'—')}</td>
+          <td style="text-align:right" class="mono">${r.units}</td>
+          <td style="text-align:right" class="mono">${valueThb!=null?'฿'+fmtMoney(valueThb):'—'}</td>
+          <td style="text-align:right" class="mono">${costThb!=null?'฿'+fmtMoney(costThb):'—'}</td>
+          <td>${statusCell}</td>
+        </tr>`;
+      }).join('')}
+    </table>
+    <div class="form-row" style="margin-top:12px">
+      <button class="btn" onclick="confirmDimeHoldingsImport()">ยืนยันนำเข้าโฮลดิ้ง</button>
+      <button class="btn btn-ghost" onclick="cancelDimeHoldingsImport()">ยกเลิก</button>
+    </div>
+  </div>`;
+}
+function confirmDimeHoldingsImport(){
+  if(!dimeHoldingsRows || !dimeHoldingsMeta) return;
+  const meta = dimeHoldingsMeta;
+  const d = meta.statementDate || todayISO();
+  let updated = 0, created = 0, skipped = 0;
+  dimeHoldingsRows.forEach((r,i)=>{
+    const cb = document.getElementById('dhRow_'+i);
+    if(!cb || !cb.checked) return;
+    const computed = dimeHoldingValueThb(r, meta);
+    if(!computed){ skipped++; return; } // e.g. a USD row with no fxRate in this file — can't convert safely
+    const {valueThb, costThb} = computed;
+    const item = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===r.symbol.toUpperCase());
+    if(item){
+      item.value = valueThb;
+      item.costBasis = costThb;
+      item.units = r.units;
+      item.updated = d;
+      if(!item.valueHistory) item.valueHistory = [];
+      if(item.valueHistory.length && item.valueHistory[item.valueHistory.length-1].date === d){
+        item.valueHistory[item.valueHistory.length-1].value = valueThb;
+      } else {
+        item.valueHistory.push({date: d, value: valueThb});
+      }
+      updated++;
+      return;
+    }
+    const createCb = document.getElementById('dhCreate_'+i);
+    if(createCb && createCb.checked){
+      const catEl = document.getElementById('dhCat_'+i);
+      const pfEl = document.getElementById('dhPortfolio_'+i);
+      const portfolioId = pfEl ? pfEl.value : mainPortfolioId();
+      state.assets.items.push({
+        id: uid(), name: r.name ? (r.symbol+' — '+r.name) : r.symbol,
+        assetType: r.currency==='THB' ? 'หุ้น/กองทุนไทย (Dime)' : 'หุ้น/ETF ต่างประเทศ (Dime)',
+        category: catEl ? catEl.value : r.category,
+        portfolioId, needsPortfolioReview: portfolioId===mainPortfolioId(),
+        value: valueThb, costBasis: costThb,
+        note: 'สร้าง/อัพเดทจากรายงาน Dime รายเดือน', updated: d, dimeSourced: true,
+        symbol: r.symbol, units: r.units, currency: r.currency,
+        valueHistory: [{date: d, value: valueThb}], transactions: []
+      });
+      created++;
+    } else {
+      skipped++;
+    }
+  });
+  dimeHoldingsRows = null;
+  dimeHoldingsMeta = null;
+  const parts = [];
+  if(updated) parts.push(`อัพเดท ${updated} รายการ`);
+  if(created) parts.push(`สร้างสินทรัพย์ใหม่ ${created} รายการ`);
+  if(skipped) parts.push(`ข้าม ${skipped} รายการ`);
+  dimeImportMsgHtml = `<span style="color:var(--teal)">${parts.length?parts.join(' · '):'ไม่มีรายการที่นำเข้า'}</span>`;
+  saveState();
+  render();
+}
+function cancelDimeHoldingsImport(){ dimeHoldingsRows = null; dimeHoldingsMeta = null; render(); }
+
+/* ---------- "พอร์ตเสริม" — other people's portfolios (never counted in net worth) ----------
+   Lets this person keep an eye on someone else's portfolio (e.g. ลูกหลาน) without it touching
+   their own net worth/asset totals/donuts anywhere — state.assets.otherPortfolios is a wholly
+   separate array that assetsNetWorth/assetsItemsTotal/every donut function deliberately never
+   reads. Reuses the same password-protected-PDF flow as the main Dime import above
+   (loadPdfWithPassword/ensurePdfJs) and the same "มูลค่ารวม" heuristic (guessPortfolioValue), but
+   deliberately stays at "one total number per person" — no per-holding table — since the point
+   here is just seeing that person's number, not managing their individual holdings. A person
+   with no Dime account at all can just have their number typed in by hand instead. Same "review
+   before save" pattern as everywhere else: an uploaded PDF's guessed value sits in
+   otherPortfolioPending until explicitly confirmed, never auto-saved. */
+let otherPortfolioPending = {}; // {[personId]: {guessedValue, monthDate}} — transient, not persisted until confirmed
+let otherPortfolioMsgHtml = {}; // {[personId]: html} — status/error message from the last upload attempt, must
+                                 // survive the render() call right after it's set (see handleOtherPortfolioPdf)
+function addOtherPortfolio(){
+  const input = document.getElementById('otherPortfolioName');
+  const name = input ? input.value.trim() : '';
+  if(!name) return;
+  if(!state.assets.otherPortfolios) state.assets.otherPortfolios = [];
+  state.assets.otherPortfolios.push({id: uid(), name, value: 0, source: null, updated: null, valueHistory: [], note: '', holdings: []});
+  if(input) input.value = '';
+  saveState(); render();
+}
+function renameOtherPortfolio(id){
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  const name = window.prompt('เปลี่ยนชื่อ:', p.name);
+  if(name == null) return;
+  const trimmed = name.trim();
+  if(!trimmed) return;
+  p.name = trimmed;
+  saveState(); render();
+}
+function delOtherPortfolio(id){
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm(`ลบ "${p.name}" ออกจากพอร์ตเสริม? (ไม่กระทบทรัพย์สิน/มูลค่าสุทธิของเราอยู่แล้ว เพราะไม่เคยถูกนับรวมอยู่แล้ว)`)) return;
+  state.assets.otherPortfolios = state.assets.otherPortfolios.filter(x=>x.id!==id);
+  delete otherPortfolioPending[id];
+  delete otherPortfolioMsgHtml[id];
+  saveState(); render();
+}
+function updateOtherPortfolioManual(id){
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  const el = document.getElementById('otherPortfolioManualValue_'+id);
+  const value = el ? parseFloat(el.value) : NaN;
+  if(!value || value<=0) return;
+  const d = todayISO();
+  p.value = Math.round(value);
+  p.source = 'manual';
+  p.updated = d;
+  // A manual number carries no per-holding breakdown — clear any composition donut left over
+  // from a previous PDF import, since it would otherwise misrepresent this new total.
+  p.holdings = [];
+  if(!p.valueHistory) p.valueHistory = [];
+  if(p.valueHistory.length && p.valueHistory[p.valueHistory.length-1].date === d){
+    p.valueHistory[p.valueHistory.length-1].value = p.value;
+  } else {
+    p.valueHistory.push({date: d, value: p.value});
+  }
+  if(el) el.value = '';
+  delete otherPortfolioPending[id];
+  otherPortfolioMsgHtml[id] = `<span style="color:var(--teal)">บันทึกแล้ว ฿${fmtMoney(p.value)}</span>`;
+  saveState(); render();
+}
+async function handleOtherPortfolioPdf(evt, id){
+  const file = evt.target.files[0];
+  const msgEl = document.getElementById('otherPortfolioMsg_'+id);
+  delete otherPortfolioPending[id];
+  if(!file) return;
+  // Written directly to the DOM for the *immediate* "reading file..." feedback (there's no render()
+  // in between yet). Everything after this must go through otherPortfolioMsgHtml[id] instead of the
+  // DOM node directly — render() (called at the end, and possibly by something else in between on a
+  // slow parse) fully replaces this element, which would otherwise silently wipe out any error or
+  // "not found" message the instant it was shown (this was the bug: a failed/not-found parse looked
+  // like nothing happened at all, because the message flashed then was immediately erased).
+  if(msgEl) msgEl.innerHTML = '<span class="muted">กำลังอ่านไฟล์...</span>';
+  let resultHtml;
+  try{
+    await ensurePdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await loadPdfWithPassword(buf); // same 8-digit-birthdate password prompt as the main import
+    let text = '';
+    for(let i=1;i<=pdf.numPages;i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it=>it.str).join(' ') + '\n';
+    }
+    const guess = guessPortfolioValue(text);
+    // Also parse the per-holding "รายละเอียดการลงทุน" table (same parser as our own monthly-
+    // statement import) so this person gets their OWN composition donut, not just a single total.
+    // Uses extractPdfLines (Y/X-coordinate row reconstruction) since guessPortfolioValue's raw
+    // item-order join isn't reliable for a table layout — see parseDimeMonthlyHoldings.
+    const lines = await extractPdfLines(pdf);
+    const holdingsResult = parseDimeMonthlyHoldings(lines);
+    const holdings = holdingsResult.holdings.map(h=>{
+      const computed = dimeHoldingValueThb(h, {fxRate: holdingsResult.fxRate});
+      // Keeps cost (ต้นทุน) and units alongside value so the per-person card can show a
+      // cost/current-value/gain breakdown per holding, same numbers as our own portfolio's
+      // holdings review — just without a trend line/sparkline (no valueHistory is kept per
+      // holding here, only the latest snapshot each time a new statement is uploaded).
+      return computed ? {symbol: h.symbol, name: h.name, value: computed.valueThb, cost: computed.costThb, units: h.units, currency: h.currency} : null;
+    }).filter(Boolean);
+    if(guess != null){
+      otherPortfolioPending[id] = {guessedValue: guess, monthDate: holdingsResult.statementDate || todayISO(), holdings};
+      const holdingsNote = holdings.length ? ` · พบโฮลดิ้งรายตัว ${holdings.length} รายการ (จะบันทึกไว้ทำกราฟสัดส่วน + ตารางทุน/มูลค่าของคนนี้ด้วย)` : '';
+      resultHtml = `<span style="color:var(--teal)">อ่านไฟล์สำเร็จ (${pdf.numPages} หน้า) — เดามูลค่ารวมได้ ฿${fmtMoney(guess)}${holdingsNote} ตรวจสอบแล้วกดยืนยันด้านล่าง</span>`;
+    } else {
+      resultHtml = `<span style="color:var(--coral)">หา "มูลค่ารวม" ในไฟล์นี้ไม่เจอ — กรอกตัวเลขด้วยมือแทนได้</span>`;
+    }
+  }catch(err){
+    resultHtml = `<span style="color:var(--coral)">อ่านไฟล์ไม่สำเร็จ: ${escapeHtml(err.message)} — กรอกมูลค่าด้วยมือแทนได้</span>`;
+  }
+  otherPortfolioMsgHtml[id] = resultHtml;
+  render();
+}
+function confirmOtherPortfolioImport(id){
+  const pending = otherPortfolioPending[id];
+  const p = (state.assets.otherPortfolios||[]).find(x=>x.id===id);
+  if(!pending || !p) return;
+  const d = pending.monthDate || todayISO();
+  p.value = Math.round(pending.guessedValue);
+  p.source = 'dime-pdf';
+  p.updated = d;
+  p.holdings = pending.holdings || []; // per-symbol breakdown for this person's own composition donut
+  if(!p.valueHistory) p.valueHistory = [];
+  if(p.valueHistory.length && p.valueHistory[p.valueHistory.length-1].date === d){
+    p.valueHistory[p.valueHistory.length-1].value = p.value;
+  } else {
+    p.valueHistory.push({date: d, value: p.value});
+  }
+  delete otherPortfolioPending[id];
+  otherPortfolioMsgHtml[id] = `<span style="color:var(--teal)">บันทึกแล้ว ฿${fmtMoney(p.value)}</span>`;
+  saveState(); render();
+}
+function cancelOtherPortfolioImport(id){ delete otherPortfolioPending[id]; delete otherPortfolioMsgHtml[id]; render(); }
+// Reordering people in the "พอร์ตเสริม" list — state.assets.otherPortfolios's array ORDER is the
+// display order (no separate sort-index field needed), so reordering just means moving entries
+// within that array. Two ways to do it: native HTML5 drag-and-drop on each card (the ⠿ handle),
+// and ▲/▼ buttons as a reliable fallback for touch/accessibility. Both funnel into the same
+// splice-based move so they always agree.
+let otherPortfolioDragId = null;
+function otherPortfolioDragStart(id){ otherPortfolioDragId = id; }
+function otherPortfolioDragOver(evt){ evt.preventDefault(); } // required so the drop target accepts the drop
+function otherPortfolioDrop(targetId){
+  const fromId = otherPortfolioDragId;
+  otherPortfolioDragId = null;
+  if(!fromId || fromId === targetId) return;
+  const list = state.assets.otherPortfolios || [];
+  const fromIdx = list.findIndex(p=>p.id===fromId);
+  const toIdx = list.findIndex(p=>p.id===targetId);
+  if(fromIdx<0 || toIdx<0) return;
+  const [moved] = list.splice(fromIdx,1);
+  list.splice(toIdx,0,moved);
+  saveState(); render();
+}
+function moveOtherPortfolio(id, dir){ // dir: -1 = up, +1 = down
+  const list = state.assets.otherPortfolios || [];
+  const idx = list.findIndex(p=>p.id===id);
+  if(idx<0) return;
+  const newIdx = idx+dir;
+  if(newIdx<0 || newIdx>=list.length) return;
+  const [moved] = list.splice(idx,1);
+  list.splice(newIdx,0,moved);
+  saveState(); render();
+}
+// Per-person composition donut for the "พอร์ตเสริม" panel — each person's OWN holdings broken
+// down by symbol, parsed from their own uploaded Dime monthly statement's "รายละเอียดการลงทุน"
+// table (same parser as our own portfolio's holdings review, see parseDimeMonthlyHoldings/
+// dimeHoldingValueThb in handleOtherPortfolioPdf). A person entered by hand (no PDF, so no
+// holdings table) simply has no donut here — there's nothing to break down, only a total.
+// Entirely local to each person: never reads from or feeds into state.assets.items/portfolios,
+// assetsNetWorth(), or any of our own donuts above — same isolation guarantee as the rest of
+// this feature. Same top-6-then-"อื่นๆ" grouping as assetsByAssetDonutEntries, adapted for the
+// simpler {symbol,name,value} holding objects stored per person instead of full asset items.
+function otherPortfolioHoldingsDonutEntries(holdings){
+  const cycle = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)'];
+  const sorted = [...(holdings||[])].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0));
+  const main = sorted.slice(0,6);
+  const rest = sorted.slice(6);
+  const entries = main.map((h,i)=>({label:h.name||h.symbol, color:cycle[i%cycle.length], value:Number(h.value)||0}));
+  if(rest.length) entries.push({label:'อื่นๆ ('+rest.length+')', color:'var(--coral-pale)', value: rest.reduce((s,h)=>s+(Number(h.value)||0),0)});
+  return entries;
+}
+function renderOtherPortfolios(){
+  const people = state.assets.otherPortfolios || [];
+  return `
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:6px">
+      <h3>พอร์ตเสริม (ติดตามพอร์ตคนอื่น)</h3>
+    </div>
+    <div class="muted" style="margin-bottom:14px">สำหรับดูตัวเลขพอร์ตของคนอื่น เช่น ลูกหลาน — <b>ไม่ถูกนำไปรวมกับมูลค่าสุทธิ/สินทรัพย์ของเราด้านบนเลย</b> แค่ไว้ติดตามดูเฉยๆ แต่ละคนอัปโหลดรายงาน Dime รายเดือนของเขาเพื่อดึงมูลค่ารวมอัตโนมัติได้ทุกเดือน พร้อมกราฟโดนัทสัดส่วน + ตารางต้นทุน/มูลค่าปัจจุบัน/กำไรขาดทุนรายตัว (ไม่มีกราฟเส้นแนวโน้ม) (จะเจอกล่องถามรหัสผ่านถ้าไฟล์มีรหัส) หรือกรอกตัวเลขด้วยมือก็ได้ เผื่อคนนั้นไม่มีบัญชี Dime (แบบกรอกมือจะมีแค่ยอดรวม ไม่มีกราฟ/ตารางเพราะไม่รู้รายละเอียดหุ้นแต่ละตัว) — ลากการ์ด (⠿) หรือกดปุ่ม ▲▼ เพื่อจัดลำดับใครอยู่บนอยู่ล่างได้ตามใจ</div>
+    ${people.length ? people.map((p,idx)=>{
+      const pending = otherPortfolioPending[p.id];
+      return `
+      <div class="card" style="margin-bottom:12px" draggable="true" ondragstart="otherPortfolioDragStart('${p.id}')" ondragover="otherPortfolioDragOver(event)" ondrop="otherPortfolioDrop('${p.id}')">
+        <div class="ribbon-head" style="margin-bottom:4px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="cursor:grab; color:var(--ink-soft); font-size:15px" title="ลากเพื่อจัดลำดับ">⠿</span>
+            <div style="font-weight:600">${escapeHtml(p.name)}</div>
+          </div>
+          <div style="display:flex; gap:4px">
+            <button class="task-del" onclick="moveOtherPortfolio('${p.id}',-1)" title="ย้ายขึ้น" ${idx===0?'disabled':''}>▲</button>
+            <button class="task-del" onclick="moveOtherPortfolio('${p.id}',1)" title="ย้ายลง" ${idx===people.length-1?'disabled':''}>▼</button>
+            <button class="task-del" onclick="renameOtherPortfolio('${p.id}')" title="เปลี่ยนชื่อ">✎</button>
+            <button class="task-del" onclick="delOtherPortfolio('${p.id}')" title="ลบออกจากพอร์ตเสริม">✕</button>
+          </div>
+        </div>
+        <div class="big-stat mono">฿${fmtMoney(p.value)}</div>
+        <div class="stat-note">${p.updated ? (p.source==='dime-pdf'?'จากไฟล์ Dime':'กรอกเอง') + ' · อัพเดทล่าสุด ' + fmtDate(p.updated) : 'ยังไม่เคยอัพเดท'}</div>
+        ${(p.holdings && p.holdings.length) ? `
+        <div style="margin:10px 0">
+          ${renderGenericDonut(otherPortfolioHoldingsDonutEntries(p.holdings), {size:92, centerLabel:p.holdings.length+' ชิ้น', centerSub:'สัดส่วนของ '+escapeHtml(p.name)})}
+        </div>
+        <table class="table" style="font-size:12px; margin-bottom:8px">
+          <tr><th>Symbol</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">ต้นทุน</th><th style="text-align:right">มูลค่าปัจจุบัน</th><th style="text-align:right">กำไร/ขาดทุน</th></tr>
+          ${[...p.holdings].sort((a,b)=>(Number(b.value)||0)-(Number(a.value)||0)).map(h=>{
+            const gain = (Number(h.value)||0) - (Number(h.cost)||0);
+            const gainPct = h.cost ? Math.round(1000*gain/h.cost)/10 : null;
+            const gainColor = gain>=0 ? 'var(--teal)' : 'var(--coral)';
+            return `<tr>
+              <td>${escapeHtml(h.symbol)}${h.name?`<div class="muted" style="font-size:10px">${escapeHtml(h.name)}</div>`:''}</td>
+              <td style="text-align:right" class="mono">${h.units!=null?fmtMoney(h.units):'—'}</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(h.cost)}</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(h.value)}</td>
+              <td style="text-align:right" class="mono"><span style="color:${gainColor}">${gain>=0?'+':''}฿${fmtMoney(gain)}${gainPct!=null?` (${gain>=0?'+':''}${gainPct}%)`:''}</span></td>
+            </tr>`;
+          }).join('')}
+          ${(()=>{
+            // "รวม" total footer for this person's holdings table — total value, total cost,
+            // total gain/loss (color-coded), same convention as the per-holding rows above.
+            const totalValue = p.holdings.reduce((s,h)=>s+(Number(h.value)||0),0);
+            const totalCost = p.holdings.reduce((s,h)=>s+(Number(h.cost)||0),0);
+            const totalGain = totalValue - totalCost;
+            const totalGainPct = totalCost ? Math.round(1000*totalGain/totalCost)/10 : null;
+            const totalGainColor = totalGain>=0 ? 'var(--teal)' : 'var(--coral)';
+            return `<tr style="font-weight:600; border-top:2px solid var(--line)">
+              <td>รวม ${p.holdings.length} รายการ</td>
+              <td style="text-align:right" class="mono">—</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(totalCost)}</td>
+              <td style="text-align:right" class="mono">฿${fmtMoney(totalValue)}</td>
+              <td style="text-align:right" class="mono"><span style="color:${totalGainColor}">${totalGain>=0?'+':''}฿${fmtMoney(totalGain)}${totalGainPct!=null?` (${totalGain>=0?'+':''}${totalGainPct}%)`:''}</span></td>
+            </tr>`;
+          })()}
+        </table>
+        ` : ''}
+        <div class="form-row" style="margin-top:10px">
+          <input type="file" id="otherPortfolioFile_${p.id}" accept="application/pdf" onchange="handleOtherPortfolioPdf(event,'${p.id}')" style="max-width:220px">
+          <input type="number" id="otherPortfolioManualValue_${p.id}" placeholder="หรือกรอกมูลค่าด้วยมือ (บาท)" style="max-width:180px">
+          <button class="btn btn-ghost btn-sm" onclick="updateOtherPortfolioManual('${p.id}')">อัพเดทด้วยมือ</button>
+        </div>
+        <div id="otherPortfolioMsg_${p.id}" class="muted" style="margin-top:6px">${otherPortfolioMsgHtml[p.id] || ''}</div>
+        ${pending ? `
+        <div class="muted" style="margin-top:6px; padding:8px; border:1px solid var(--line); border-radius:8px">
+          พบมูลค่า ฿${fmtMoney(pending.guessedValue)} จากไฟล์${pending.holdings && pending.holdings.length ? ` (${pending.holdings.length} โฮลดิ้ง: ${pending.holdings.slice(0,5).map(h=>escapeHtml(h.symbol)).join(', ')}${pending.holdings.length>5?', …':''})` : ''} — ตรวจสอบแล้วกดยืนยันเพื่อบันทึกทับตัวเลขเดิม
+          <div class="form-row" style="margin-top:6px">
+            <button class="btn btn-sm" onclick="confirmOtherPortfolioImport('${p.id}')">ยืนยันบันทึก</button>
+            <button class="btn btn-ghost btn-sm" onclick="cancelOtherPortfolioImport('${p.id}')">ยกเลิก</button>
+          </div>
+        </div>` : ''}
+      </div>`;
+    }).join('') : `<div class="muted" style="margin-bottom:14px">ยังไม่มีใครอยู่ในพอร์ตเสริม — เพิ่มด้านล่างได้เลย</div>`}
+    <div class="form-row">
+      <input type="text" id="otherPortfolioName" placeholder="ชื่อคน เช่น ลูกคนโต, หลานชาย" onkeydown="if(event.key==='Enter') addOtherPortfolio()">
+      <button class="btn" onclick="addOtherPortfolio()">+ เพิ่มคน</button>
+    </div>
+  </div>`;
+}
 
 /* ---------- Confirmation Note (ใบยืนยันการซื้อขาย) PDF import ----------
    Mirrors the safety pattern of the monthly Dime statement import above (handleDimePdf/
@@ -2765,15 +4056,22 @@ function delAssetReport(id){ state.assets.reports = state.assets.reports.filter(
 // one (pdf.js calls onPassword again with reason=2 if the entered password was wrong).
 function loadPdfWithPassword(buf){
   return new Promise((resolve, reject)=>{
-    const loadingTask = window.pdfjsLib.getDocument({
-      data: buf,
-      onPassword: (updatePassword, reason)=>{
-        const msg = reason===2 ? 'รหัสผ่านไม่ถูกต้อง ลองใหม่ (วันเกิด 8 หลัก DDMMYYYY):' : 'ไฟล์นี้มีรหัสผ่าน — กรอกรหัสผ่าน (วันเกิด 8 หลัก DDMMYYYY):';
-        const pw = window.prompt(msg);
-        if(pw == null){ reject(new Error('ยกเลิกการกรอกรหัสผ่าน')); return; }
-        updatePassword(pw);
-      }
-    });
+    const loadingTask = window.pdfjsLib.getDocument({ data: buf });
+    // pdf.js only looks at `loadingTask.onPassword` (a property set on the returned task object) —
+    // it does NOT read an `onPassword` key from the params passed into getDocument(). Passing it in
+    // the params object (as this used to do) is silently ignored, so pdf.js's internal password-
+    // request handler sees `loadingTask.onPassword` as unset and immediately rejects the whole load
+    // with its own generic "No password given" error instead of ever calling this callback — no
+    // prompt ever appears. This is the actual bug behind "อัปโหลดไฟล์แล้วไม่มีอะไรเกิดขึ้นเลย": every
+    // password-protected PDF (monthly statement, confirmation note, พอร์ตเสริม) has been failing this
+    // way from the start; it only became visible once the message-persistence fix above stopped the
+    // resulting error message from being wiped out by the next render().
+    loadingTask.onPassword = (updatePassword, reason)=>{
+      const msg = reason===2 ? 'รหัสผ่านไม่ถูกต้อง ลองใหม่ (วันเกิด 8 หลัก DDMMYYYY):' : 'ไฟล์นี้มีรหัสผ่าน — กรอกรหัสผ่าน (วันเกิด 8 หลัก DDMMYYYY):';
+      const pw = window.prompt(msg);
+      if(pw == null){ reject(new Error('ยกเลิกการกรอกรหัสผ่าน')); return; }
+      updatePassword(pw);
+    };
     loadingTask.promise.then(resolve, reject);
   });
 }
@@ -2858,18 +4156,42 @@ async function handleConfirmationNotePdf(evt){
 }
 // Review-before-save table — every parsed row gets a checkbox (checked by default) and an
 // editable symbol field, since OCR/layout parsing can occasionally get the symbol wrong.
-// Rows whose symbol doesn't match any existing holding are flagged and simply skipped on
-// confirm (this import path is additive-only to existing holdings, never creates new items).
+// Rows whose symbol doesn't match any existing holding default to being skipped (this import
+// path was originally additive-only), but a "buy" row with no match can now optionally be
+// created as a brand-new asset item right from this review table (see the cnCreate_i checkbox
+// below) — always opt-in, never automatic, same "review everything before it's saved"
+// philosophy as the rest of this import flow. A newly-created item this way lands in
+// พอร์ตหลัก and is flagged needsPortfolioReview unless the person explicitly picks a different
+// portfolio for it in the row's own portfolio selector before confirming.
 function renderConfirmationNoteReview(){
   if(!confirmationNoteRows || !confirmationNoteRows.length) return '';
   const rows = confirmationNoteRows;
+  const portfolios = state.assets.portfolios || [];
   return `
   <div class="panel">
     <h3>ตรวจสอบก่อนนำเข้า (${rows.length} รายการ)</h3>
+    <div class="muted" style="margin-bottom:10px">รายการที่ symbol ตรงกับสินทรัพย์ที่มีอยู่แล้วจะถูกผูกเข้ากับสินทรัพย์นั้นตามปกติ ส่วนรายการ "ซื้อ" ที่ไม่พบสินทรัพย์ตรงกัน (หุ้น/ETF ตัวใหม่) ติ๊ก "สร้างสินทรัพย์ใหม่" เพื่อเพิ่มเข้าระบบได้เลย — ถ้าไม่เลือกพอร์ตไว้จะเข้า "พอร์ตหลัก" และขึ้นแท็ก "ยังไม่ได้จัดพอร์ต" ให้มาจัดทีหลังได้</div>
     <table class="table">
-      <tr><th></th><th>วันที่</th><th>Symbol</th><th>ฝั่ง</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">ราคา</th><th style="text-align:right">รวม (THB)</th><th></th></tr>
+      <tr><th></th><th>วันที่</th><th>Symbol</th><th>ฝั่ง</th><th style="text-align:right">จำนวนหน่วย</th><th style="text-align:right">ราคา</th><th style="text-align:right">รวม (THB)</th><th>สินทรัพย์ตัวใหม่?</th></tr>
       ${rows.map((r,i)=>{
-        const matched = state.assets.items.some(it=>String(it.symbol||'').toUpperCase()===String(r.symbol||'').toUpperCase());
+        const matchedItem = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===String(r.symbol||'').toUpperCase());
+        let statusCell;
+        if(matchedItem){
+          const pf = assetPortfolioMeta(itemPortfolioId(matchedItem));
+          statusCell = `<span class="muted" style="font-size:11px">ผูกกับ "${escapeHtml(matchedItem.name)}" (พอร์ต ${escapeHtml(pf.name)})</span>`;
+        } else if(r.side!=='buy'){
+          statusCell = '<span style="font-size:11px; color:var(--coral)">ไม่พบสินทรัพย์ที่ถือครองอยู่ตรงกับสัญลักษณ์นี้ — ข้าม (สร้างสินทรัพย์ใหม่จากรายการขายไม่ได้)</span>';
+        } else {
+          statusCell = `
+            <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin-bottom:4px">
+              <input type="checkbox" id="cnCreate_${i}"> สร้างสินทรัพย์ใหม่
+            </label>
+            <div style="display:flex; gap:4px; flex-wrap:wrap">
+              <select id="cnCat_${i}" style="font-size:11px; padding:3px 5px">${ASSET_CATEGORIES.map(c=>`<option value="${c.key}" ${c.key==='satellite'?'selected':''}>${c.label}</option>`).join('')}</select>
+              <select id="cnPortfolio_${i}" style="font-size:11px; padding:3px 5px">${portfolios.map(p=>`<option value="${p.id}" ${p.id===mainPortfolioId()?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+            </div>
+            <div class="muted" style="font-size:10px; margin-top:2px">ไม่เลือกพอร์ต = เข้าพอร์ตหลัก + ติดแท็กยังไม่ได้จัดพอร์ต</div>`;
+        }
         return `<tr>
           <td><input type="checkbox" id="cnRow_${i}" ${r.checked?'checked':''}></td>
           <td class="mono">${fmtDate(r.date)}</td>
@@ -2878,7 +4200,7 @@ function renderConfirmationNoteReview(){
           <td style="text-align:right" class="mono">${r.units}</td>
           <td style="text-align:right" class="mono">${r.price} ${r.currency}</td>
           <td style="text-align:right" class="mono">฿${fmtMoney(r.totalTHB)}</td>
-          <td>${matched ? '' : '<span style="font-size:11px; color:var(--coral)">ไม่พบสินทรัพย์ที่ถือครองอยู่ตรงกับสัญลักษณ์นี้ — ข้าม</span>'}</td>
+          <td>${statusCell}</td>
         </tr>`;
       }).join('')}
     </table>
@@ -2890,23 +4212,49 @@ function renderConfirmationNoteReview(){
 }
 function confirmConfirmationNoteImport(){
   if(!confirmationNoteRows) return;
-  let imported = 0, skipped = 0;
+  let imported = 0, created = 0, skipped = 0;
+  const today = todayISO();
   confirmationNoteRows.forEach((r,i)=>{
     const cb = document.getElementById('cnRow_'+i);
     if(!cb || !cb.checked) return;
     const symInput = document.getElementById('cnSym_'+i);
     const symbol = (symInput ? symInput.value : r.symbol).trim();
     const item = state.assets.items.find(it=>String(it.symbol||'').toUpperCase()===symbol.toUpperCase());
-    if(!item){ skipped++; return; }
-    if(!item.transactions) item.transactions = [];
-    item.transactions.push({
-      id: uid(), date: r.date, side: r.side, units: r.units, price: r.price,
-      currency: r.currency, totalTHB: r.totalTHB, orderId: r.orderId, source: 'confirmation-pdf'
-    });
-    imported++;
+    const txn = {id: uid(), date: r.date, side: r.side, units: r.units, price: r.price,
+      currency: r.currency, totalTHB: r.totalTHB, orderId: r.orderId, source: 'confirmation-pdf'};
+    if(item){
+      if(!item.transactions) item.transactions = [];
+      item.transactions.push(txn);
+      imported++;
+      return;
+    }
+    // No existing holding matches this symbol. Only ever created if the person explicitly
+    // ticked "สร้างสินทรัพย์ใหม่" for this row (see renderConfirmationNoteReview) — otherwise
+    // this row is silently skipped, same as before this feature existed.
+    const createCb = document.getElementById('cnCreate_'+i);
+    if(r.side==='buy' && createCb && createCb.checked){
+      const catEl = document.getElementById('cnCat_'+i);
+      const pfEl = document.getElementById('cnPortfolio_'+i);
+      const portfolioId = pfEl ? pfEl.value : mainPortfolioId();
+      state.assets.items.push({
+        id: uid(), name: symbol, assetType: 'หุ้น/ETF ต่างประเทศ (Dime)',
+        category: catEl ? catEl.value : 'satellite', portfolioId,
+        needsPortfolioReview: portfolioId===mainPortfolioId(),
+        value: r.totalTHB, costBasis: r.totalTHB,
+        note: 'สร้างจากใบยืนยันการซื้อขาย (Confirmation Note) — มูลค่าเริ่มต้นมาจากรายการซื้อนี้รายการเดียว ควรตรวจสอบ/อัพเดทมูลค่าจริงเอง',
+        updated: today, dimeSourced: true, symbol, units: r.units, currency: r.currency || 'USD',
+        valueHistory: [{date: r.date, value: r.totalTHB}], transactions: [txn]
+      });
+      created++;
+    } else {
+      skipped++;
+    }
   });
   confirmationNoteRows = null;
-  confirmationNoteMsg = `<span style="color:var(--teal)">นำเข้า ${imported} รายการ${skipped ? ` (ข้าม ${skipped} รายการที่ไม่พบสินทรัพย์ตรงกัน)` : ''}</span>`;
+  const parts = [`นำเข้า ${imported} รายการ`];
+  if(created) parts.push(`สร้างสินทรัพย์ใหม่ ${created} รายการ`);
+  if(skipped) parts.push(`ข้าม ${skipped} รายการที่ไม่พบสินทรัพย์ตรงกัน`);
+  confirmationNoteMsg = `<span style="color:var(--teal)">${parts.join(' · ')}</span>`;
   saveState();
   render();
 }
@@ -2940,6 +4288,8 @@ function onAssetCurrencyChange(){
 async function addAssetItem(){
   const name = document.getElementById('assetName').value.trim();
   const category = document.getElementById('assetCategory').value;
+  const portfolioEl = document.getElementById('assetPortfolio');
+  const portfolioId = portfolioEl ? portfolioEl.value : mainPortfolioId();
   const note = document.getElementById('assetNote').value.trim();
   const currency = document.getElementById('assetCurrency').value;
   const rawValue = parseFloat(document.getElementById('assetValue').value);
@@ -2968,7 +4318,7 @@ async function addAssetItem(){
   }
 
   const today = todayISO();
-  state.assets.items.push({id:uid(), name, category, assetType:'', value, costBasis, note, updated: today, transactions:[], valueHistory:[{date:today, value}], ...extra});
+  state.assets.items.push({id:uid(), name, category, portfolioId, assetType:'', value, costBasis, note, updated: today, transactions:[], valueHistory:[{date:today, value}], ...extra});
   document.getElementById('assetName').value = '';
   document.getElementById('assetValue').value = '';
   document.getElementById('assetCostBasis').value = '';
@@ -2978,6 +4328,82 @@ async function addAssetItem(){
   saveState(); render();
 }
 function delAssetItem(id){ state.assets.items = state.assets.items.filter(x=>x.id!==id); if(openItemChartId===id) openItemChartId = null; saveState(); render(); }
+// Shared CoinGecko price fetch (free, no API key) for one or more coin ids at once — used both
+// by addBtcAsset() below and by the crypto branch of refreshLivePrices(). Unlike the stock-price
+// path (Finnhub for price + Frankfurter for USD→THB, two separate calls), CoinGecko returns the
+// coin's price directly in both USD and THB in a single request, so no separate FX conversion
+// step is needed for the value itself. Returns null on any failure so callers can show an error/
+// fall back instead of throwing. `ids` is an array of CoinGecko coin ids (e.g. ['bitcoin']).
+async function fetchCoinGeckoPrices(ids){
+  if(!ids || !ids.length) return null;
+  try{
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.map(encodeURIComponent).join(',')}&vs_currencies=usd,thb`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return data || null;
+  }catch(e){ return null; }
+}
+// Adds a Bitcoin holding as a regular asset item (category 'crypto') — appears in the normal
+// "รายการสินทรัพย์" list, counts toward net worth/donuts/charts like anything else. Cost basis can
+// be entered in THB or USD (matching the pattern in addAssetItem() above); the CURRENT value is
+// always computed from CoinGecko's live BTC price in both currencies at add time, using the same
+// USD⇄THB cross-rate implied by that single quote (thbPrice/usdPrice) to convert a USD-entered
+// cost to THB or vice versa — avoids a second network call to Frankfurter just for that. `symbol`
+// + `units` + `cryptoId` are set so this item is picked up by the crypto branch of
+// refreshLivePrices() later (no Finnhub key needed for that part — see there).
+// The cost field is the AVERAGE COST PER COIN (what someone actually knows off the top of their
+// head after buying in over several rounds) — NOT a total. It gets multiplied by `units` here to
+// produce the stored total cost basis. An earlier version treated the field as a total, which
+// silently misread "my average cost was ~2,026 THB/coin" as "I spent 2,026,000 THB total",
+// producing an enormous, nonsensical loss — this is the fix for that.
+async function addBtcAsset(){
+  const unitsEl = document.getElementById('btcUnits');
+  const costEl = document.getElementById('btcAvgCost');
+  const costCurEl = document.getElementById('btcCostCurrency');
+  const portfolioEl = document.getElementById('btcPortfolio');
+  const units = parseFloat(unitsEl.value);
+  if(!(units>0)){ btcAddMsgHtml = `<span style="color:var(--coral)">กรอกจำนวนเหรียญ BTC ก่อน</span>`; render(); return; }
+  const rawAvgCost = parseFloat(costEl.value) || 0; // per-coin average cost, NOT a total
+  const costCurrency = costCurEl ? costCurEl.value : 'THB';
+  const portfolioId = portfolioEl ? portfolioEl.value : mainPortfolioId();
+
+  btcAddMsgHtml = `<span class="muted">กำลังดึงราคา BTC ล่าสุดจาก CoinGecko...</span>`;
+  render();
+
+  const prices = await fetchCoinGeckoPrices(['bitcoin']);
+  const quote = prices && prices.bitcoin;
+  if(!quote || !(quote.usd>0) || !(quote.thb>0)){
+    btcAddMsgHtml = `<span style="color:var(--coral)">ดึงราคา BTC ไม่สำเร็จ (เช็คอินเทอร์เน็ต) — ลองกด "+ เพิ่ม BTC" อีกครั้ง</span>`;
+    render();
+    return;
+  }
+  const priceUsd = quote.usd, priceThb = quote.thb;
+  const impliedRate = priceThb / priceUsd; // this quote's own USD→THB cross-rate, for the cost conversion below
+
+  const valueUsd = units * priceUsd;
+  const valueThb = units * priceThb;
+  // avg cost per coin -> total cost basis (multiply by units)
+  const avgCostThbPerUnit = costCurrency === 'USD' ? rawAvgCost * impliedRate : rawAvgCost;
+  const avgCostUsdPerUnit = costCurrency === 'USD' ? rawAvgCost : (impliedRate ? rawAvgCost / impliedRate : 0);
+  const costThb = avgCostThbPerUnit * units;
+  const costUsd = avgCostUsdPerUnit * units;
+
+  const today = todayISO();
+  state.assets.items.push({
+    id: uid(), name: 'Bitcoin (BTC)', category: 'crypto', assetType: '', portfolioId,
+    symbol: 'BTC', cryptoId: 'bitcoin', units,
+    currency: 'USD', // reuses the existing $-badge display convention (see the item-row template)
+    value: Math.round(valueThb), costBasis: Math.round(costThb),
+    originalAmount: Math.round(valueUsd*100)/100, originalCostBasis: rawAvgCost ? Math.round(costUsd*100)/100 : null,
+    fxRateUsed: Math.round(impliedRate*100)/100,
+    note: '', updated: today, transactions: [],
+    valueHistory: [{date: today, value: Math.round(valueThb)}]
+  });
+  unitsEl.value = ''; costEl.value = ''; costCurEl.value = 'THB';
+  btcAddMsgHtml = `<span style="color:var(--teal)">เพิ่ม BTC ${units} เหรียญแล้ว — มูลค่า ฿${fmtMoney(valueThb)} ($${fmtMoney(valueUsd)}) ที่ราคา $${fmtMoney(priceUsd)}/BTC${rawAvgCost ? ` · ทุนรวม ฿${fmtMoney(costThb)} ($${fmtMoney(costUsd)})` : ''}</span>`;
+  saveState(); render();
+}
 // Manual "อัพเดทมูลค่า" action — the only way this app's asset values ever change over
 // time (no live market feed). Overwrites today's valueHistory entry instead of stacking
 // a duplicate if this item was already updated once today.
@@ -2989,6 +4415,13 @@ function updateAssetItemValue(id){
   const it = state.assets.items.find(x=>x.id===id);
   if(!it) return;
   it.value = v;
+  // Keep the $ badge (originalAmount) in sync when this item shows one — otherwise a manual THB
+  // correction here would leave the $ figure stuck at whatever it was from the last live refresh/
+  // add, which is exactly the kind of THB/USD mismatch that looks like a bug (see editItemCostBasis
+  // below for the same reasoning on the cost side).
+  if(it.currency === 'USD' && it.fxRateUsed){
+    it.originalAmount = Math.round((v / it.fxRateUsed) * 100) / 100;
+  }
   it.updated = todayISO();
   if(!it.valueHistory) it.valueHistory = [];
   const today = todayISO();
@@ -2996,6 +4429,42 @@ function updateAssetItemValue(id){
     it.valueHistory[it.valueHistory.length-1].value = v;
   } else {
     it.valueHistory.push({date: today, value: v});
+  }
+  saveState(); render();
+}
+// Lets a wrong cost basis (e.g. an extra zero typed in by mistake — the THB amount and its $
+// equivalent then imply a nonsensical price-per-coin/share, showing as a huge gain/loss in red)
+// be corrected in place instead of deleting and re-adding the whole item (which would also lose
+// its valueHistory/sparkline). For a crypto item, this asks for the AVERAGE COST PER COIN (same
+// convention as addBtcAsset()) and multiplies by units — matches how someone actually knows their
+// own cost basis, and avoids re-introducing the total-vs-per-unit mixup this was built to fix.
+// Everything else is entered in THB, matching the "อัพเดทมูลค่า" convention — for a USD-currency
+// item (crypto or a USD deposit) with a known fxRateUsed, the $ equivalent is recomputed from that
+// same rate so both figures stay consistent with each other.
+function editItemCostBasis(id){
+  const it = state.assets.items.find(x=>x.id===id);
+  if(!it) return;
+  if(it.cryptoId && it.units){
+    const currentAvg = it.units ? (it.costBasis||0) / it.units : 0;
+    const input = window.prompt('แก้ไขราคาทุนเฉลี่ยต่อเหรียญ (บาท/เหรียญ):', String(Math.round(currentAvg)));
+    if(input == null) return;
+    const avg = parseFloat(input);
+    if(!(avg>=0)) return;
+    const total = avg * it.units;
+    it.costBasis = Math.round(total);
+    if(it.currency === 'USD' && it.fxRateUsed){
+      it.originalCostBasis = Math.round((total / it.fxRateUsed) * 100) / 100;
+    }
+    saveState(); render();
+    return;
+  }
+  const input = window.prompt('แก้ไขต้นทุน (บาท):', String(it.costBasis||0));
+  if(input == null) return;
+  const v = parseFloat(input);
+  if(!(v>=0)) return;
+  it.costBasis = Math.round(v);
+  if(it.currency === 'USD' && it.fxRateUsed){
+    it.originalCostBasis = Math.round((v / it.fxRateUsed) * 100) / 100;
   }
   saveState(); render();
 }
@@ -3011,21 +4480,22 @@ async function fetchUsdThbRate(){
     return fxData && fxData.rates ? Number(fxData.rates.THB) : null;
   }catch(e){ return null; }
 }
-// Live market-price refresh for stocks/ETFs. Uses Finnhub's free quote endpoint (needs a
-// user-supplied API key, see Settings) for the price and Frankfurter's free no-key FX API
-// for USD→THB, fetched once per batch and reused across all USD items. Only items with both
-// `symbol` and `units` set are eligible — everything else keeps working via the manual
-// "อัพเดทมูลค่า" flow untouched. Mirrors the exact same-day valueHistory de-dup convention as
-// updateAssetItemValue() so history doesn't grow a duplicate entry per refresh in one day.
+// Live market-price refresh for stocks/ETFs AND crypto, in one button/pass. Stocks/ETFs use
+// Finnhub's free quote endpoint (needs a user-supplied API key, see Settings) + Frankfurter's
+// free no-key FX API for USD→THB — unchanged from before. Crypto items (marked by `cryptoId`,
+// see addBtcAsset()) use CoinGecko's free no-key endpoint instead, which returns both USD and
+// THB directly, so no separate FX step is needed for those. The two branches are independent:
+// a missing Finnhub key only skips the stock/ETF branch, it never blocks the crypto refresh
+// (crypto needs no key at all). Only items with both `symbol`/`cryptoId` and `units` set are
+// eligible — everything else keeps working via the manual "อัพเดทมูลค่า" flow untouched. Mirrors
+// the same-day valueHistory de-dup convention as updateAssetItemValue() so history doesn't grow
+// a duplicate entry per refresh in one day.
 async function refreshLivePrices(){
   const key = state.settings.finnhubApiKey;
-  if(!key){
-    livePriceMsg = {ok:false, html:`<div class="msg msg-err">ยังไม่ได้ใส่ Finnhub API key — ไปที่หน้า "ตั้งค่า" ก่อน</div>`};
-    render();
-    return;
-  }
-  const eligible = state.assets.items.filter(it=>it.symbol && it.units);
-  if(!eligible.length){
+  const stockEligible = state.assets.items.filter(it=>it.symbol && it.units && !it.cryptoId);
+  const cryptoEligible = state.assets.items.filter(it=>it.cryptoId && it.units);
+  const total = stockEligible.length + cryptoEligible.length;
+  if(!total){
     livePriceMsg = {ok:false, html:`<div class="muted">ยังไม่มีสินทรัพย์ที่ตั้งค่า symbol/units ไว้สำหรับดึงราคาสด</div>`};
     render();
     return;
@@ -3033,37 +4503,75 @@ async function refreshLivePrices(){
   livePriceMsg = {ok:true, html:`<div class="muted">กำลังดึงราคาตลาด...</div>`};
   render();
 
-  let fxRate = null;
-  if(eligible.some(it=>it.currency==='USD')){
-    fxRate = await fetchUsdThbRate();
-  }
-
   const today = todayISO();
   let ok = 0, fail = 0;
-  for(const it of eligible){
-    try{
-      if(it.currency === 'USD' && !fxRate) throw new Error('no fx rate');
-      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(it.symbol)}&token=${encodeURIComponent(key)}`);
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      const price = Number(data && data.c);
-      if(!(price>0)) throw new Error('no price');
-      const value = Math.round(it.currency === 'USD' ? it.units * price * fxRate : it.units * price);
-      it.value = value;
-      it.updated = today;
-      if(!it.valueHistory) it.valueHistory = [];
-      if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
-        it.valueHistory[it.valueHistory.length-1].value = value;
-      } else {
-        it.valueHistory.push({date: today, value});
-      }
-      ok++;
-    }catch(e){ fail++; }
+  const notes = [];
+
+  // Crypto branch first — CoinGecko needs no API key, so this runs unconditionally whenever
+  // there's an eligible crypto item, independent of whether Finnhub is configured below.
+  if(cryptoEligible.length){
+    const ids = [...new Set(cryptoEligible.map(it=>it.cryptoId))];
+    const prices = await fetchCoinGeckoPrices(ids);
+    if(!prices){
+      fail += cryptoEligible.length;
+      notes.push('ดึงราคาคริปโตไม่สำเร็จ (เช็คอินเทอร์เน็ต)');
+    } else {
+      cryptoEligible.forEach(it=>{
+        const quote = prices[it.cryptoId];
+        if(!quote || !(quote.usd>0) || !(quote.thb>0)){ fail++; return; }
+        const value = Math.round(it.units * quote.thb);
+        it.value = value;
+        it.originalAmount = Math.round(it.units * quote.usd * 100) / 100;
+        it.fxRateUsed = Math.round((quote.thb / quote.usd) * 100) / 100;
+        it.updated = today;
+        if(!it.valueHistory) it.valueHistory = [];
+        if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
+          it.valueHistory[it.valueHistory.length-1].value = value;
+        } else {
+          it.valueHistory.push({date: today, value});
+        }
+        ok++;
+      });
+    }
   }
+
+  // Stock/ETF branch — unchanged behavior, still needs a Finnhub key. Skipped (not blocking)
+  // when there's nothing eligible for it, or when no key is configured yet.
+  if(stockEligible.length){
+    if(!key){
+      fail += stockEligible.length;
+      notes.push('ยังไม่ได้ใส่ Finnhub API key (หน้า "ตั้งค่า") — ข้ามราคาหุ้น/ETF');
+    } else {
+      let fxRate = null;
+      if(stockEligible.some(it=>it.currency==='USD')) fxRate = await fetchUsdThbRate();
+      for(const it of stockEligible){
+        try{
+          if(it.currency === 'USD' && !fxRate) throw new Error('no fx rate');
+          const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(it.symbol)}&token=${encodeURIComponent(key)}`);
+          if(!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          const price = Number(data && data.c);
+          if(!(price>0)) throw new Error('no price');
+          const value = Math.round(it.currency === 'USD' ? it.units * price * fxRate : it.units * price);
+          it.value = value;
+          it.updated = today;
+          if(!it.valueHistory) it.valueHistory = [];
+          if(it.valueHistory.length && it.valueHistory[it.valueHistory.length-1].date === today){
+            it.valueHistory[it.valueHistory.length-1].value = value;
+          } else {
+            it.valueHistory.push({date: today, value});
+          }
+          ok++;
+        }catch(e){ fail++; }
+      }
+    }
+  }
+
   saveState();
+  const noteSuffix = notes.length ? ' — ' + notes.join(' · ') : (fail ? ` — ${fail} รายการดึงราคาไม่สำเร็จ` : '');
   livePriceMsg = fail
-    ? {ok:false, html:`<div class="msg msg-err">อัพเดท ${ok}/${eligible.length} รายการ — ${fail} รายการดึงราคาไม่สำเร็จ</div>`}
-    : {ok:true, html:`<div class="msg msg-ok">อัพเดทราคาตลาดสำเร็จ ${ok}/${eligible.length} รายการ</div>`};
+    ? {ok:false, html:`<div class="msg msg-err">อัพเดท ${ok}/${total} รายการ${noteSuffix}</div>`}
+    : {ok:true, html:`<div class="msg msg-ok">อัพเดทราคาตลาดสำเร็จ ${ok}/${total} รายการ</div>`};
   render();
 }
 function addDebt(){
@@ -3075,6 +4583,62 @@ function addDebt(){
   saveState(); render();
 }
 function delDebt(id){ state.assets.debts = state.assets.debts.filter(d=>d.id!==id); saveState(); render(); }
+
+// Portfolios — user-created groupings of asset items (see PORTFOLIO_COLOR_CYCLE /
+// itemPortfolioId / assetPortfolioMeta near ASSET_CATEGORIES). Purely organizational: creating,
+// renaming or deleting one never changes any item's value or the overall net worth figures.
+function addAssetPortfolio(){
+  const input = document.getElementById('portfolioName');
+  const name = input ? input.value.trim() : '';
+  if(!name) return;
+  if(!state.assets.portfolios) state.assets.portfolios = [];
+  const created = {id:uid(), name, color: nextPortfolioColor(), createdAt: todayISO()};
+  state.assets.portfolios.push(created);
+  assetsPortfolioFilter = created.id; // jump straight to the new (empty) portfolio so adding assets into it is one less click
+  if(input) input.value = '';
+  saveState(); render();
+}
+function renameAssetPortfolio(id){
+  const p = (state.assets.portfolios||[]).find(x=>x.id===id);
+  if(!p) return;
+  const name = window.prompt('เปลี่ยนชื่อพอร์ต:', p.name);
+  if(name == null) return;
+  const trimmed = name.trim();
+  if(!trimmed) return;
+  p.name = trimmed;
+  saveState(); render();
+}
+// Any portfolio — including the original "พอร์ตหลัก" — can be deleted now, as long as at least
+// one other portfolio still exists afterward (there always has to be somewhere for items to
+// belong). Its items are never deleted: they're reassigned to whichever portfolio survives as
+// the new "first" one in the list (see mainPortfolioId), so nothing is lost either way.
+function delAssetPortfolio(id){
+  const list = state.assets.portfolios || [];
+  if(list.length <= 1){ alert('ต้องมีพอร์ตเหลืออย่างน้อย 1 พอร์ตเสมอ — สร้างพอร์ตใหม่ก่อนถึงจะลบพอร์ตนี้ได้'); return; }
+  const p = list.find(x=>x.id===id);
+  if(!p) return;
+  const remaining = list.filter(x=>x.id!==id);
+  const fallback = remaining[0]; // oldest surviving portfolio becomes the new landing spot
+  const count = assetPortfolioItemsCount(id);
+  const warn = count ? `สินทรัพย์ ${count} รายการในพอร์ตนี้จะย้ายไปที่ "${escapeHtml(fallback.name)}" (ไม่ได้ลบสินทรัพย์) ` : '';
+  if(!confirm(`ลบพอร์ต "${p.name}"? ${warn}ดำเนินการต่อ?`)) return;
+  state.assets.items.forEach(it=>{ if(itemPortfolioId(it)===id) it.portfolioId = fallback.id; });
+  state.assets.portfolios = remaining;
+  if(assetsPortfolioFilter === id) assetsPortfolioFilter = 'all';
+  saveState(); render();
+}
+function assetPortfolioItemsCount(id){ return state.assets.items.filter(it=>itemPortfolioId(it)===id).length; }
+// Moves an existing asset item into a (possibly different) portfolio — no need to delete and
+// re-add it. Used by the per-row portfolio picker in the "รายการสินทรัพย์" list. Also clears
+// needsPortfolioReview: once the person has explicitly chosen where an item belongs (even if
+// that choice happens to be พอร์ตหลัก itself), it's no longer "unsorted".
+function setItemPortfolio(id, portfolioId){
+  const it = state.assets.items.find(x=>x.id===id);
+  if(!it) return;
+  it.portfolioId = portfolioId;
+  it.needsPortfolioReview = false;
+  saveState(); render();
+}
 
 /* ---------- Settings view ---------- */
 function renderSettings(){
@@ -3106,6 +4670,7 @@ function renderSettings(){
       <input type="text" id="finnhubKey" placeholder="Finnhub API key" value="${escapeHtml(s.finnhubApiKey||'')}">
       <button class="btn" onclick="saveFinnhubSettings()">บันทึก</button>
     </div>
+    <div class="muted" style="margin-top:8px">₿ ราคาคริปโต (BTC) ในปุ่ม "รีเฟรชราคาตลาด" เดียวกันนี้ดึงจาก CoinGecko แทน — ฟรีและไม่ต้องใส่ API key ใดๆ เลย ใช้งานได้ทันทีแม้ไม่ได้ตั้งค่า Finnhub key ด้านบน</div>
   </div>
 
   <div class="panel">
@@ -3163,12 +4728,19 @@ function importAllJson(evt){
       const required = ['finance','running','work','trips','settings'];
       if(!parsed.assets) parsed.assets = {items:[], reports:[]}; // older backups won't have this yet
       if(!parsed.assets.debts) parsed.assets.debts = []; // older backups predate liabilities tracking
+      if(!parsed.assets.otherPortfolios) parsed.assets.otherPortfolios = []; // older backups predate "พอร์ตเสริม"
+      if(!parsed.assets.portfolios || !parsed.assets.portfolios.length) parsed.assets.portfolios = [{id:'default', name:'พอร์ตหลัก', color:'var(--teal)', createdAt: todayISO()}]; // older backups predate portfolios
       (parsed.assets.items||[]).forEach(it=>{
         if(!it.category) it.category = 'other';
         if(it.costBasis == null) it.costBasis = 0;
         if(!it.valueHistory) it.valueHistory = [{date: it.updated || todayISO(), value: Number(it.value)||0}];
+        if(!it.portfolioId) it.portfolioId = (parsed.assets.portfolios[0] && parsed.assets.portfolios[0].id) || 'default';
       });
       if(!parsed.calendar) parsed.calendar = {events:[]};
+      (parsed.calendar.events||[]).forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
+      if(!parsed.finance.taxByYear) parsed.finance.taxByYear = {};
+      if(parsed.running && !parsed.running.races) parsed.running.races = [];
+      if(!parsed.settings.reminderPopup) parsed.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true}, windowMode:'week', lastShownDate:null, autoShow:true};
       delete parsed.health; // module removed — drop it if an old backup still has it
       const looksValid = required.every(k=>Object.prototype.hasOwnProperty.call(parsed, k));
       if(!looksValid) throw new Error('ไฟล์นี้ไม่ใช่ backup ของ Life OS (โครงสร้างไม่ตรง)');
