@@ -231,6 +231,36 @@ a{color:inherit;}
 .sub-edit{position:absolute; top:10px; right:30px; background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:12px; padding:2px;}
 .sub-edit:hover{color:var(--purple-deep);}
 
+/* Subscriptions — Grid view: a bento-style layout, tile size driven by each item's share of
+   total monthly cost (largest = biggest tile), smallest items collapse into a narrow side rail
+   of icon+amount-only mini tiles. Purely a visual alternative to .sub-grid above — same data,
+   same subSorted() order, toggled via subViewMode (see renderSubscriptions()/renderSubGrid()). */
+.sub-grid-toggle{display:inline-flex; background:var(--bg); border-radius:12px; padding:3px; gap:2px;}
+.sub-grid-toggle button{border:none; background:none; padding:6px 14px; font-size:11.5px; font-weight:600; border-radius:9px; cursor:pointer; color:var(--ink-soft); font-family:inherit;}
+.sub-grid-toggle button.active{background:var(--panel); color:var(--ink); box-shadow:0 2px 6px -2px rgba(0,0,0,.18);}
+.sub-grid-toggle button:hover:not(.active){color:var(--ink);}
+.sub-grid-wrap{display:flex; gap:10px; align-items:stretch; margin-top:2px;}
+.sub-grid-main{flex:1; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:100px; grid-auto-flow:dense; gap:10px;}
+.sub-grid-mini{display:flex; flex-direction:column; gap:10px; width:88px; flex-shrink:0;}
+.sub-tile{border-radius:16px; padding:12px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;}
+.tile-xl{grid-column:span 2; grid-row:span 2;}
+.tile-lg{grid-column:span 2; grid-row:span 1;}
+.tile-md{grid-column:span 1; grid-row:span 1;}
+.tile-lg .tile-yearly, .tile-md .tile-yearly{display:none;}
+.tile-md .tile-name{max-width:80px;}
+.tile-pct{position:absolute; top:10px; right:10px; background:rgba(255,255,255,.8); font-size:10px; font-weight:700; padding:3px 8px; border-radius:99px; color:var(--ink);}
+.tile-logo-wrap{width:30px; height:30px; position:relative; flex-shrink:0;}
+.tile-logo-fallback{width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; color:#fff;}
+.tile-logo{position:absolute; inset:0; width:30px; height:30px; border-radius:9px; object-fit:contain; background:rgba(255,255,255,.85); padding:5px; display:none;}
+.tile-name{font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:6px;}
+.tile-price{font-size:16px; font-weight:700; margin-top:1px;}
+.tile-yearly{font-size:10px; color:var(--ink-soft); margin-top:1px;}
+.tile-mini{border-radius:14px; padding:8px; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-height:78px;}
+.tile-mini .tile-logo-wrap{width:24px; height:24px;}
+.tile-mini .tile-logo-fallback{width:24px; height:24px; font-size:11px;}
+.tile-mini .tile-logo{width:24px; height:24px;}
+.tile-mini-amt{font-size:11px; font-weight:700;}
+
 /* Health (สุขภาพ) — person/pet reminder rows */
 .health-row{display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
 .health-row:last-child{border-bottom:none;}
@@ -302,6 +332,10 @@ function pad2(n){ return String(n).padStart(2,'0'); }
 // which is what caused activities to land on the wrong weekday in charts.
 function todayISO(){ const d = new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 function fmtDate(iso){ if(!iso) return ''; const d = new Date(iso+'T00:00:00'); if(isNaN(d)) return iso; return thaiDays[d.getDay()]+' '+d.getDate()+' '+thaiMonths[d.getMonth()]; }
+// Short date (no weekday, Buddhist year) — for annual-expense due dates, which are informational
+// only (no reminder/status logic — see renderAexpRow()), so a compact "15 มี.ค. 2570" reads better
+// than the full fmtDate() weekday form.
+function fmtDateShort(iso){ if(!iso) return ''; const d = new Date(iso+'T00:00:00'); if(isNaN(d)) return iso; return d.getDate()+' '+thaiMonths[d.getMonth()]+' '+(d.getFullYear()+543); }
 function fmtMoney(n){ return (Number(n)||0).toLocaleString('th-TH'); }
 function daysUntil(iso){ const d=new Date(iso+'T00:00:00'); const t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
 
@@ -998,8 +1032,8 @@ function defaultState(){
     // was tried and explicitly not wanted; see the "อัปเดตรอบสาม" note in the project doc).
     annualExpenses: {
       items: [
-        {id:uid(), name:'ประกันรถยนต์', amount:12000, currency:'THB', category:'ประกัน', note:'', demo:true},
-        {id:uid(), name:'สมทบกองทุนสำรองเลี้ยงชีพ', amount:20000, currency:'THB', category:'กองทุน', note:'', demo:true}
+        {id:uid(), name:'ประกันรถยนต์', amount:12000, currency:'THB', category:'ประกัน', dueDate:'2027-03-15', note:'', demo:true},
+        {id:uid(), name:'สมทบกองทุนสำรองเลี้ยงชีพ', amount:20000, currency:'THB', category:'กองทุน', dueDate:'', note:'', demo:true}
       ],
       currencies: DEFAULT_SUB_CURRENCIES.slice()
     },
@@ -1354,9 +1388,10 @@ function rememberSubCurrency(cur){
 }
 
 /* ---------- Annual expenses (ค่าใช้จ่ายรายปี) — separate from subscriptions above: big
-   once-a-year payments (insurance, fund contributions, etc.). Deliberately just a plain list —
-   no due date / payment reminder tracking (tried once, explicitly not wanted — see project
-   doc). Sorted by amount (largest first) so the list itself is the useful view. ---------- */
+   once-a-year payments (insurance, fund contributions, etc.). A plain list — no reminder
+   popups or calendar wiring (that was tried once and explicitly not wanted — see project doc) —
+   but each item can optionally carry a due date, shown on its row, purely as reference info.
+   Sorted by amount (largest first) so the list itself is the useful view. ---------- */
 function aexpSorted(){
   return [...state.annualExpenses.items].sort((a,b)=> (Number(b.amount)||0) - (Number(a.amount)||0));
 }
@@ -2315,11 +2350,17 @@ async function syncIntervals(){
 
 /* ---------- Subscriptions view (สมาชิก) ---------- */
 const SUB_LOGO_COLOR_CYCLE = ['var(--cyan)','var(--purple)','var(--coral)','var(--amber)','var(--teal)','var(--indigo)','var(--sienna)','var(--rose)'];
+// Same cycle, pale versions — used as the Grid view's tile background tint (see renderSubGrid()).
+const SUB_TILE_PALE_CYCLE = ['var(--cyan-pale)','var(--purple-pale)','var(--coral-pale)','var(--amber-pale)','var(--teal-pale)','var(--indigo-pale)','var(--sienna-pale)','var(--rose-pale)'];
 // Which item (if any) is currently open for editing — reuses the existing "+ เพิ่ม" form as
 // the edit form too (same field ids, just prefilled + relabeled) rather than building a
 // second, cramped inline form inside the narrow grid card.
 let editingSubId = null;
 let editingAexpId = null;
+// List (.sub-card cards) or Grid (bento tiles sized by cost share) — a display toggle only,
+// same subSorted() data either way. See renderSubscriptions()/renderSubGrid().
+let subViewMode = 'list';
+function setSubViewMode(mode){ subViewMode = mode; render(); }
 function renderSubCard(it, idx){
   const logos = subLogoUrls(it.url);
   const initial = (it.name||'?').trim().charAt(0).toUpperCase() || '?';
@@ -2346,6 +2387,65 @@ function renderSubCard(it, idx){
     </div>
   </div>`;
 }
+// One shared tile template for the Grid view — size (xl/lg/md, full card; mini, rail-only)
+// comes from the caller via `cls`, driven by the item's % share of total monthly cost
+// (see renderSubGrid()). Percentage badge + name/price/yearly are hidden on mini via CSS
+// (.tile-md .tile-yearly, and the mini branch below skips them entirely) rather than by
+// building a second template, so both stay visually consistent with one source of truth.
+function renderSubGridTile(it, idx, pct, cls){
+  const logos = subLogoUrls(it.url);
+  const initial = (it.name||'?').trim().charAt(0).toUpperCase() || '?';
+  const color = SUB_LOGO_COLOR_CYCLE[idx % SUB_LOGO_COLOR_CYCLE.length];
+  const pale = SUB_TILE_PALE_CYCLE[idx % SUB_TILE_PALE_CYCLE.length];
+  const priceLabel = it.currency==='THB' ? ('฿'+fmtMoney(it.price)) : (fmtMoney(it.price)+' '+escapeHtml(it.currency));
+  const yearlyLabel = it.currency==='THB' ? ('฿'+fmtMoney(Math.round(subMonthlyEquivalent(it)*12))) : (fmtMoney(Math.round(subMonthlyEquivalent(it)*12))+' '+escapeHtml(it.currency));
+  const logoImg = logos ? `<img class="tile-logo" src="${logos.clearbit}" data-fallback="${logos.favicon}" data-stage="1" onload="this.style.display='block'" onerror="handleLogoError(this)" alt="">` : '';
+  if(cls === 'tile-mini'){
+    return `
+    <div class="sub-tile tile-mini" style="background:linear-gradient(155deg, ${pale} 0%, #fff 150%)" title="${escapeHtml(it.name)}">
+      <div class="tile-logo-wrap">
+        <div class="tile-logo-fallback" style="background:${color}">${escapeHtml(initial)}</div>
+        ${logoImg}
+      </div>
+      <div class="tile-mini-amt mono">${priceLabel}</div>
+    </div>`;
+  }
+  return `
+  <div class="sub-tile ${cls}" style="background:linear-gradient(155deg, ${pale} 0%, #fff 150%)">
+    <div class="tile-pct">${Math.round(pct)}%</div>
+    <div class="tile-logo-wrap">
+      <div class="tile-logo-fallback" style="background:${color}">${escapeHtml(initial)}</div>
+      ${logoImg}
+    </div>
+    <div>
+      <div class="tile-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
+      <div class="tile-price mono">${priceLabel}</div>
+      <div class="tile-yearly">~${yearlyLabel}/ปี</div>
+    </div>
+  </div>`;
+}
+// Bento grid: tile size = item's share of total monthly-equivalent cost across ALL subscriptions
+// (currencies pooled together for sizing only — same simplification the reference design uses;
+// the currency-accurate totals live in the "สรุปค่าใช้จ่าย" panel above, split per currency).
+// Items under 6% of the total collapse into the narrow mini-tile rail on the right so the main
+// grid doesn't get cluttered with slivers.
+function renderSubGrid(){
+  const ranked = subSorted();
+  if(!ranked.length) return '<div class="muted">ยังไม่มีรายการ — เพิ่มด้านล่าง</div>';
+  const totalMonthly = ranked.reduce((s,it)=> s + subMonthlyEquivalent(it), 0) || 1;
+  const main = [], mini = [];
+  ranked.forEach((it,idx)=>{
+    const pct = (subMonthlyEquivalent(it)/totalMonthly)*100;
+    const cls = pct>=25 ? 'tile-xl' : pct>=14 ? 'tile-lg' : pct>=6 ? 'tile-md' : 'tile-mini';
+    const html = renderSubGridTile(it, idx, pct, cls);
+    (cls==='tile-mini' ? mini : main).push(html);
+  });
+  return `
+  <div class="sub-grid-wrap">
+    <div class="sub-grid-main">${main.join('')}</div>
+    ${mini.length ? `<div class="sub-grid-mini">${mini.join('')}</div>` : ''}
+  </div>`;
+}
 function renderSubscriptions(){
   const ranked = subSorted();
   const totals = subTotalsByCurrency();
@@ -2353,10 +2453,10 @@ function renderSubscriptions(){
   const editingSub = editingSubId ? state.subscriptions.items.find(x=>x.id===editingSubId) : null;
   return `
   <div class="section-title">Annual Expenses & Subscribe</div>
-  <div class="section-sub">ค่าสมาชิก/บริการรายรอบ และค่าใช้จ่ายรายปี (ประกัน กองทุน ฯลฯ) รวมไว้ในที่เดียว — ลิสต์ไว้เฉยๆ ไม่ต้องระบุ/แจ้งเตือนวันจ่าย</div>
+  <div class="section-sub">ค่าสมาชิก/บริการรายรอบ และค่าใช้จ่ายรายปี (ประกัน กองทุน ฯลฯ) รวมไว้ในที่เดียว — สมาชิกเป็นลิสต์เฉยๆ ไม่มีวันครบกำหนด ส่วนค่าใช้จ่ายรายปีระบุวันครบกำหนดได้ (ไม่บังคับ) เป็นข้อมูลอ้างอิง ไม่มีการแจ้งเตือน</div>
 
   <div class="section-title" style="font-size:16px; margin-top:4px">สมาชิก / บริการรายรอบ</div>
-  <div class="section-sub">แอป/บริการที่สมัครสมาชิกไว้ทั้งหมด ในมุมมอง grid — พิมพ์หรือวางเว็บไซต์ของบริการนั้น ระบบจะดึงโลโก้มาให้อัตโนมัติ</div>
+  <div class="section-sub">แอป/บริการที่สมัครสมาชิกไว้ทั้งหมด — พิมพ์หรือวางเว็บไซต์ของบริการนั้น ระบบจะดึงโลโก้มาให้อัตโนมัติ</div>
 
   <div class="panel">
     <h3>สรุปค่าใช้จ่าย</h3>
@@ -2374,10 +2474,17 @@ function renderSubscriptions(){
   </div>
 
   <div class="panel">
-    <h3>รายการทั้งหมด (${ranked.length}) — เรียงตามค่าใช้จ่ายต่อเดือนมากไปน้อย</h3>
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px">
+      <h3 style="margin:0">รายการทั้งหมด (${ranked.length}) — เรียงตามค่าใช้จ่ายต่อเดือนมากไปน้อย</h3>
+      <div class="sub-grid-toggle">
+        <button class="${subViewMode==='list'?'active':''}" onclick="setSubViewMode('list')">รายการ</button>
+        <button class="${subViewMode==='grid'?'active':''}" onclick="setSubViewMode('grid')">Grid</button>
+      </div>
+    </div>
+    ${subViewMode==='grid' ? renderSubGrid() : `
     <div class="sub-grid">
       ${ranked.map((it,i)=>renderSubCard(it,i)).join('') || '<div class="muted">ยังไม่มีรายการ — เพิ่มด้านล่าง</div>'}
-    </div>
+    </div>`}
   </div>
 
   <div class="panel">
@@ -2404,13 +2511,13 @@ function renderSubscriptions(){
   </div>
 
   <div class="section-title" style="font-size:16px; margin-top:8px">ค่าใช้จ่ายรายปี</div>
-  <div class="section-sub">รายการที่ต้องจ่ายปีละครั้ง เช่น ประกัน กองทุน ภาษี — แยกต่างหากจากสมาชิกรายเดือน/สัปดาห์ด้านบน ลิสต์ไว้เฉยๆ ไม่ต้องระบุวันที่จ่าย/แจ้งเตือน</div>
+  <div class="section-sub">รายการที่ต้องจ่ายปีละครั้ง เช่น ประกัน กองทุน ภาษี — แยกต่างหากจากสมาชิกรายเดือน/สัปดาห์ด้านบน ระบุวันครบกำหนดได้ (ไม่บังคับ) ไว้เป็นข้อมูลอ้างอิง แต่ไม่มีการแจ้งเตือนอัตโนมัติ</div>
   ${renderAnnualExpenses()}
   `;
 }
 /* ---------- Annual expenses section (ค่าใช้จ่ายรายปี) — rendered inside renderSubscriptions()
-   above. Deliberately a plain list: no due date, no payment reminder — just name/category/
-   amount, with edit-in-place support. ---------- */
+   above. A plain list — no payment reminder — with an optional reference-only due date per item,
+   plus edit-in-place support. ---------- */
 function renderAexpRow(it){
   const initial = (it.name||'?').trim().charAt(0).toUpperCase() || '?';
   const amountLabel = it.currency==='THB' ? ('฿'+fmtMoney(it.amount)) : (fmtMoney(it.amount)+' '+escapeHtml(it.currency));
@@ -2420,6 +2527,7 @@ function renderAexpRow(it){
     <div style="min-width:0; flex:1">
       <div style="font-weight:600; font-size:13.5px">${escapeHtml(it.name)}</div>
       <div class="sub-cycle">${it.category ? escapeHtml(it.category)+' · ' : ''}${amountLabel} / ปี</div>
+      ${it.dueDate ? `<div class="sub-cycle" style="color:var(--sienna); margin-top:1px">ครบกำหนด ${fmtDateShort(it.dueDate)}</div>` : ''}
     </div>
     <button class="btn btn-ghost btn-sm" onclick="editAnnualExpense('${it.id}')">✎ แก้ไข</button>
     <button class="sub-del" style="position:static" onclick="delAnnualExpense('${it.id}')" title="ลบ">✕</button>
@@ -2459,6 +2567,10 @@ function renderAnnualExpenses(){
     <div class="form-row" style="align-items:center">
       <input type="number" id="aexpAmount" placeholder="จำนวนเงิน" value="${editingAexp ? editingAexp.amount : ''}" style="max-width:130px">
       <select id="aexpCurrency">${state.annualExpenses.currencies.map(c=>`<option value="${escapeHtml(c)}" ${editingAexp && editingAexp.currency===c ? 'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+      <div style="display:flex; flex-direction:column; gap:3px">
+        <label style="font-size:10px; color:var(--ink-soft)">วันครบกำหนด (ไม่บังคับ)</label>
+        <input type="date" id="aexpDueDate" value="${editingAexp ? (editingAexp.dueDate||'') : ''}" style="max-width:150px">
+      </div>
       ${editingAexp ? `
         <button class="btn" onclick="saveEditAexp()">✓ บันทึกการแก้ไข</button>
         <button class="btn btn-ghost" onclick="cancelEditAexp()">ยกเลิก</button>
@@ -2473,8 +2585,9 @@ function addAnnualExpense(){
   const category = document.getElementById('aexpCategory').value.trim();
   const amount = parseFloat(document.getElementById('aexpAmount').value) || 0;
   const currency = document.getElementById('aexpCurrency').value || 'THB';
+  const dueDate = document.getElementById('aexpDueDate').value || '';
   rememberAexpCurrency(currency);
-  state.annualExpenses.items.push({id:uid(), name, amount, currency, category, note:''});
+  state.annualExpenses.items.push({id:uid(), name, amount, currency, category, dueDate, note:''});
   saveState(); render();
 }
 function delAnnualExpense(id){
@@ -2493,6 +2606,7 @@ function saveEditAexp(){
   it.category = document.getElementById('aexpCategory').value.trim();
   it.amount = parseFloat(document.getElementById('aexpAmount').value) || 0;
   it.currency = document.getElementById('aexpCurrency').value || 'THB';
+  it.dueDate = document.getElementById('aexpDueDate').value || '';
   rememberAexpCurrency(it.currency);
   editingAexpId = null;
   saveState(); render();
