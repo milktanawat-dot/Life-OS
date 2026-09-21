@@ -228,6 +228,8 @@ a{color:inherit;}
 .sub-due{font-size:10.5px; padding:3.5px 10px; border-radius:99px; font-weight:600; display:inline-block; width:fit-content;}
 .sub-del{position:absolute; top:10px; right:10px; background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:12px; padding:2px;}
 .sub-del:hover{color:var(--coral);}
+.sub-edit{position:absolute; top:10px; right:30px; background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:12px; padding:2px;}
+.sub-edit:hover{color:var(--purple-deep);}
 
 /* Health (สุขภาพ) — person/pet reminder rows */
 .health-row{display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
@@ -991,12 +993,12 @@ function defaultState(){
     },
     // Annual expenses (ค่าใช้จ่ายรายปี) — kept as its own list, separate from the recurring
     // subscriptions above: big once-a-year payments (insurance premiums, fund contributions,
-    // etc.) rather than a monthly/weekly billing cycle. Next-due date is always derived live
-    // from lastPaidDate/dueDate rolled forward a year at a time — see aexpNextDue().
+    // etc.). Deliberately just a plain list — no due date / payment reminder tracking (that
+    // was tried and explicitly not wanted; see the "อัปเดตรอบสาม" note in the project doc).
     annualExpenses: {
       items: [
-        {id:uid(), name:'ประกันรถยนต์', amount:12000, currency:'THB', category:'ประกัน', dueDate:t, lastPaidDate:null, note:'', demo:true},
-        {id:uid(), name:'สมทบกองทุนสำรองเลี้ยงชีพ', amount:20000, currency:'THB', category:'กองทุน', dueDate:addDays(t,75), lastPaidDate:null, note:'', demo:true}
+        {id:uid(), name:'ประกันรถยนต์', amount:12000, currency:'THB', category:'ประกัน', note:'', demo:true},
+        {id:uid(), name:'สมทบกองทุนสำรองเลี้ยงชีพ', amount:20000, currency:'THB', category:'กองทุน', note:'', demo:true}
       ],
       currencies: DEFAULT_SUB_CURRENCIES.slice()
     },
@@ -1280,7 +1282,6 @@ const RACE_CATEGORY = {key:'race', label:'ซ้อม/แข่งขัน', c
 // (subscription renewals). See gatherReminders()/dayEvents() where each is wired in.
 const HEALTH_CATEGORY = {key:'health', label:'สุขภาพ', color:'var(--rose)'};
 const SUB_CATEGORY = {key:'subscription', label:'ค่าสมาชิก/บริการ', color:'var(--cyan)'};
-const ANNUAL_EXPENSE_CATEGORY = {key:'annualExpense', label:'ค่าใช้จ่ายรายปี', color:'var(--sienna)'};
 function calCategoryMeta(key){ return CAL_CATEGORIES.find(c=>c.key===key) || CAL_CATEGORIES[CAL_CATEGORIES.length-1]; }
 
 /* ---------- Subscriptions (สมาชิก) — logo lookup + due-date/cost helpers ---------- */
@@ -1375,29 +1376,11 @@ function rememberSubCurrency(cur){
 }
 
 /* ---------- Annual expenses (ค่าใช้จ่ายรายปี) — separate from subscriptions above: big
-   once-a-year payments (insurance, fund contributions, etc.) rather than a monthly/weekly
-   billing cycle. Same "always derive due date live, never store it" philosophy as
-   subNextRenewal()/carItemStatus(), just always rolled forward 12 months at a time. ---------- */
-function aexpNextDue(item){
-  const anchor = item.lastPaidDate || item.dueDate || todayISO();
-  const t = todayISO();
-  let due = anchor, guard = 0;
-  while(due < t && guard < 200){ due = addMonths(due, 12); guard++; }
-  return due;
-}
-// Annual payments are usually bigger/harder to react to at the last minute than a subscription
-// renewal, so "soon" gets a wider 30-day heads-up window instead of subStatusMeta()'s 5 days.
-function aexpStatusMeta(due){
-  const d = daysUntil(due);
-  if(d<=0) return {status:'due', color:'var(--coral)', label: d===0 ? 'ถึงกำหนดวันนี้' : 'เลยกำหนด'};
-  if(d<=30) return {status:'soon', color:'var(--amber)', label:'อีก '+d+' วัน'};
-  return {status:'ok', color:'var(--teal)', label:'อีก '+d+' วัน'};
-}
-function aexpUpcoming(n){
-  return [...state.annualExpenses.items]
-    .map(it=>({it, due:aexpNextDue(it), st:aexpStatusMeta(aexpNextDue(it))}))
-    .sort((a,b)=>String(a.due).localeCompare(String(b.due)))
-    .slice(0, n||state.annualExpenses.items.length);
+   once-a-year payments (insurance, fund contributions, etc.). Deliberately just a plain list —
+   no due date / payment reminder tracking (tried once, explicitly not wanted — see project
+   doc). Sorted by amount (largest first) so the list itself is the useful view. ---------- */
+function aexpSorted(){
+  return [...state.annualExpenses.items].sort((a,b)=> (Number(b.amount)||0) - (Number(a.amount)||0));
 }
 // One yearly total per currency — same reasoning as subTotalsByCurrency() for not converting
 // across currencies (no live FX fetch, so nothing to go stale).
@@ -1526,12 +1509,8 @@ function gatherReminders(mode){
       out.push({date:due, time:'', title: it.name+' — '+(it.currency==='THB'?'฿':it.currency+' ')+fmtMoney(it.price), category:'subscription', catLabel:SUB_CATEGORY.label, color:SUB_CATEGORY.color});
     }
   });
-  state.annualExpenses.items.forEach(it=>{
-    const due = aexpNextDue(it);
-    if(due >= t && due <= end){
-      out.push({date:due, time:'', title: it.name+' ครบกำหนดชำระ — '+(it.currency==='THB'?'฿':it.currency+' ')+fmtMoney(it.amount), category:'annualExpense', catLabel:ANNUAL_EXPENSE_CATEGORY.label, color:ANNUAL_EXPENSE_CATEGORY.color});
-    }
-  });
+  // Annual expenses (ค่าใช้จ่ายรายปี) are a plain list with no due date, so they're
+  // deliberately NOT wired into reminders/calendar — see renderAnnualExpenses() instead.
   return out.sort((a,b)=> String(a.date+a.time).localeCompare(String(b.date+b.time)));
 }
 function reminderPopupCount(){
@@ -1562,7 +1541,7 @@ function reminderRowHtml(r){
 // so toggling the window or a category filter in either place stays in sync with the other.
 function renderUpcomingRibbon(){
   const p = state.settings.reminderPopup;
-  const cats = [...CAL_CATEGORIES, RACE_CATEGORY, HEALTH_CATEGORY, SUB_CATEGORY, ANNUAL_EXPENSE_CATEGORY];
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY, HEALTH_CATEGORY, SUB_CATEGORY];
   const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
   return `
   <div class="ribbon">
@@ -1584,7 +1563,7 @@ function renderUpcomingRibbon(){
 }
 function renderReminderPopup(){
   const p = state.settings.reminderPopup;
-  const cats = [...CAL_CATEGORIES, RACE_CATEGORY, HEALTH_CATEGORY, SUB_CATEGORY, ANNUAL_EXPENSE_CATEGORY];
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY, HEALTH_CATEGORY, SUB_CATEGORY];
   const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
   return `
   <div class="modal-head">
@@ -1685,15 +1664,8 @@ function renderToday(){
   const subUpcomingList = subUpcoming(5);
   const subTotals = subTotalsByCurrency();
   const subOtherCurLine = Object.entries(subTotals).filter(([cur])=>cur!=='THB').map(([cur,v])=>cur+' '+fmtMoney(Math.round(v.monthly))).join(' · ');
-  const aexpUpcomingList = aexpUpcoming(5);
   const aexpTotals = aexpTotalsByCurrency();
   const aexpOtherCurLine = Object.entries(aexpTotals).filter(([cur])=>cur!=='THB').map(([cur,v])=>cur+' '+fmtMoney(Math.round(v.yearly))).join(' · ');
-  // Combined "รายปี · สมาชิก" card below shows subscriptions + annual expenses together,
-  // sorted by whichever is due soonest, since they now live under one renamed module.
-  const combinedDueList = [
-    ...subUpcomingList.map(x=>({label:x.it.name, due:x.due, st:x.st, tag:'⟳'})),
-    ...aexpUpcomingList.map(x=>({label:x.it.name, due:x.due, st:x.st, tag:'📅'}))
-  ].sort((a,b)=>String(a.due).localeCompare(String(b.due))).slice(0,4);
   const healthUpcomingList = allHealthReminders().map(x=>({...x, st:healthStatusMeta(x.due)}));
 
   const dayEvents = (d)=>{
@@ -1704,7 +1676,6 @@ function renderToday(){
     state.running.races.forEach(r=>{ if(r.date===d) out.push({label:'🏁 '+r.name+(r.distanceKm?(' ('+r.distanceKm+'K)'):''), color:RACE_CATEGORY.color, gcalTitle:'แข่ง: '+r.name}); });
     allHealthReminders().forEach(({member,rem,due})=>{ if(due===d) out.push({label:'✚ '+member.name+': '+rem.title, color:HEALTH_CATEGORY.color, gcalTitle:member.name+': '+rem.title}); });
     state.subscriptions.items.forEach(it=>{ if(subNextRenewal(it)===d) out.push({label:'⟳ '+it.name+' ต่ออายุ', color:SUB_CATEGORY.color, gcalTitle:'ต่ออายุ '+it.name}); });
-    state.annualExpenses.items.forEach(it=>{ if(aexpNextDue(it)===d) out.push({label:'📅 '+it.name+' ครบกำหนดชำระ', color:ANNUAL_EXPENSE_CATEGORY.color, gcalTitle:it.name+' ครบกำหนดชำระ'}); });
     return out;
   };
   // Which month the calendar grid shows — defaults to the current month, but calMonthShift() lets
@@ -1782,17 +1753,17 @@ function renderToday(){
     <div class="card">
       <div class="card-head">
         <div class="card-title"><div class="card-icon icon-subs">⟳</div><div><h3>รายปี · สมาชิก</h3><div class="card-sub">${state.subscriptions.items.length} สมาชิก · ${state.annualExpenses.items.length} รายจ่ายรายปี</div></div></div>
-        ${combinedDueList.length ? `<div class="pill ${combinedDueList[0].st.status==='due'?'pill-coral':combinedDueList[0].st.status==='soon'?'pill-amber':'pill-teal'}">${combinedDueList[0].st.label}</div>` : ''}
+        ${subUpcomingList.length ? `<div class="pill ${subUpcomingList[0].st.status==='due'?'pill-coral':subUpcomingList[0].st.status==='soon'?'pill-amber':'pill-teal'}">${subUpcomingList[0].st.label}</div>` : ''}
       </div>
       <div class="big-stat mono">฿${fmtMoney(Math.round((subTotals.THB && subTotals.THB.monthly) || 0))} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">บาท/เดือน (สมาชิก)</span></div>
       ${subOtherCurLine ? `<div class="stat-note" style="margin-top:-6px">${subOtherCurLine}</div>` : ''}
       <div class="stat-note" style="margin-top:${subOtherCurLine?'0':'-6px'}">+ ฿${fmtMoney(Math.round((aexpTotals.THB && aexpTotals.THB.yearly) || 0))} ค่าใช้จ่ายรายปี${aexpOtherCurLine ? (' · '+aexpOtherCurLine) : ''}</div>
-      ${combinedDueList.length ? combinedDueList.map(x=>`
+      ${subUpcomingList.length ? subUpcomingList.slice(0,3).map(({it,due,st})=>`
         <div class="bar-row" style="align-items:center">
-          <div class="tl-dot" style="background:${x.st.color}; margin-right:6px"></div>
-          <div class="bar-label" style="flex:1 1 auto; font-weight:500">${x.tag} ${escapeHtml(x.label)}</div>
-          <div class="bar-val" style="font-size:12px; color:var(--ink-soft)">${fmtDate(x.due)}</div>
-        </div>`).join('') : '<div class="muted">ยังไม่มีรายการ</div>'}
+          <div class="tl-dot" style="background:${st.color}; margin-right:6px"></div>
+          <div class="bar-label" style="flex:1 1 auto; font-weight:500">⟳ ${escapeHtml(it.name)}</div>
+          <div class="bar-val" style="font-size:12px; color:var(--ink-soft)">${fmtDate(due)}</div>
+        </div>`).join('') : '<div class="muted">ยังไม่มีรายการสมาชิก</div>'}
     </div>
 
     <div class="card">
@@ -1845,7 +1816,6 @@ function renderToday(){
         const dayRaces = state.running.races.filter(r=>r.date===d);
         const dayHealth = allHealthReminders().filter(x=>x.due===d);
         const daySubs = state.subscriptions.items.filter(it=>subNextRenewal(it)===d);
-        const dayAexp = state.annualExpenses.items.filter(it=>aexpNextDue(it)===d);
         // One dot per category actually present that day (custom events grouped by their own
         // category, plus EGAT tasks/trips/race day) — dedupe categories so a day with three
         // "other" appointments doesn't get three identical blue dots.
@@ -1856,14 +1826,13 @@ function renderToday(){
         if(dayRaces.length) dots.push({color:RACE_CATEGORY.color});
         if(dayHealth.length) dots.push({color:HEALTH_CATEGORY.color});
         if(daySubs.length) dots.push({color:SUB_CATEGORY.color});
-        if(dayAexp.length) dots.push({color:ANNUAL_EXPENSE_CATEGORY.color});
         return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
           <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
           <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
         </button>`;
       }).join('')}
     </div>
-    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดแดง = นัดหมอ · จุดฟ้า = นัดหมายอื่นๆ · จุดม่วง = วันในทริป · จุดเขียว = วันแข่ง/ซ้อม · จุดชมพู = สุขภาพ · จุดฟ้าอมเขียว = ค่าสมาชิก/บริการ · จุดน้ำตาล = ค่าใช้จ่ายรายปี — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดแดง = นัดหมอ · จุดฟ้า = นัดหมายอื่นๆ · จุดม่วง = วันในทริป · จุดเขียว = วันแข่ง/ซ้อม · จุดชมพู = สุขภาพ · จุดฟ้าอมเขียว = ค่าสมาชิก/บริการ — คลิกวันที่เพื่อดูรายละเอียด</div>
     <div style="border-top:1px solid var(--line); padding-top:12px">
       <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
       ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
@@ -2378,6 +2347,11 @@ async function syncIntervals(){
 
 /* ---------- Subscriptions view (สมาชิก) ---------- */
 const SUB_LOGO_COLOR_CYCLE = ['var(--cyan)','var(--purple)','var(--coral)','var(--amber)','var(--teal)','var(--indigo)','var(--sienna)','var(--rose)'];
+// Which item (if any) is currently open for editing — reuses the existing "+ เพิ่ม" form as
+// the edit form too (same field ids, just prefilled + relabeled) rather than building a
+// second, cramped inline form inside the narrow grid card.
+let editingSubId = null;
+let editingAexpId = null;
 function renderSubCard(it, idx){
   const due = subNextRenewal(it);
   const st = subStatusMeta(due);
@@ -2388,6 +2362,7 @@ function renderSubCard(it, idx){
   const priceLabel = it.currency==='THB' ? ('฿'+fmtMoney(it.price)) : (fmtMoney(it.price)+' '+escapeHtml(it.currency));
   return `
   <div class="sub-card">
+    <button class="sub-edit" onclick="editSubscription('${it.id}')" title="แก้ไข">✎</button>
     <button class="sub-del" onclick="delSubscription('${it.id}')" title="ลบ">✕</button>
     <div class="sub-card-top">
       <div class="sub-logo-wrap">
@@ -2411,6 +2386,7 @@ function renderSubscriptions(){
   const ranked = subUpcoming();
   const totals = subTotalsByCurrency();
   const currencies = Object.keys(totals);
+  const editingSub = editingSubId ? state.subscriptions.items.find(x=>x.id===editingSubId) : null;
   return `
   <div class="section-title">Annual Expenses & Subscribe</div>
   <div class="section-sub">ค่าสมาชิก/บริการรายรอบ และค่าใช้จ่ายรายปี (ประกัน กองทุน ฯลฯ) รวมไว้ในที่เดียว</div>
@@ -2441,40 +2417,43 @@ function renderSubscriptions(){
   </div>
 
   <div class="panel">
-    <h3>+ เพิ่มรายการใหม่</h3>
+    <h3>${editingSub ? '✎ แก้ไขรายการ: '+escapeHtml(editingSub.name) : '+ เพิ่มรายการใหม่'}</h3>
     <div class="form-row">
-      <input type="text" id="subName" placeholder="ชื่อบริการ เช่น Netflix">
-      <input type="text" id="subUrl" placeholder="เว็บไซต์ (พิมพ์/วาง เพื่อดึงโลโก้อัตโนมัติ)" oninput="previewSubLogo()" style="flex:2; min-width:220px">
+      <input type="text" id="subName" placeholder="ชื่อบริการ เช่น Netflix" value="${editingSub ? escapeHtml(editingSub.name) : ''}">
+      <input type="text" id="subUrl" placeholder="เว็บไซต์ (พิมพ์/วาง เพื่อดึงโลโก้อัตโนมัติ)" value="${editingSub ? escapeHtml(editingSub.url||'') : ''}" oninput="previewSubLogo()" style="flex:2; min-width:220px">
     </div>
     <div class="form-row" style="align-items:center">
       <div id="subLogoPreview" style="width:40px; height:40px; flex-shrink:0"></div>
-      <input type="number" id="subPrice" placeholder="ราคา" style="max-width:110px">
-      <select id="subCurrency">${state.subscriptions.currencies.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+      <input type="number" id="subPrice" placeholder="ราคา" value="${editingSub ? editingSub.price : ''}" style="max-width:110px">
+      <select id="subCurrency">${state.subscriptions.currencies.map(c=>`<option value="${escapeHtml(c)}" ${editingSub && editingSub.currency===c ? 'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
       <select id="subCycle">
-        <option value="monthly">รายเดือน</option>
-        <option value="yearly">รายปี</option>
-        <option value="weekly">รายสัปดาห์</option>
+        <option value="monthly" ${editingSub && editingSub.billingCycle==='monthly' ? 'selected':''}>รายเดือน</option>
+        <option value="yearly" ${editingSub && editingSub.billingCycle==='yearly' ? 'selected':''}>รายปี</option>
+        <option value="weekly" ${editingSub && editingSub.billingCycle==='weekly' ? 'selected':''}>รายสัปดาห์</option>
       </select>
-      <input type="text" id="subCategory" placeholder="หมวด (ไม่บังคับ)" style="max-width:150px">
+      <input type="text" id="subCategory" placeholder="หมวด (ไม่บังคับ)" value="${editingSub ? escapeHtml(editingSub.category||'') : ''}" style="max-width:150px">
     </div>
     <div class="form-row">
       <div style="min-width:170px">
         <div class="muted" style="font-size:11px">วันที่เริ่ม/รอบล่าสุดที่จ่าย</div>
-        <input type="date" id="subStartDate" value="${todayISO()}">
+        <input type="date" id="subStartDate" value="${editingSub ? (editingSub.lastRenewedDate||editingSub.startDate) : todayISO()}">
       </div>
-      <button class="btn" onclick="addSubscription()">+ เพิ่ม</button>
+      ${editingSub ? `
+        <button class="btn" onclick="saveEditSub()">✓ บันทึกการแก้ไข</button>
+        <button class="btn btn-ghost" onclick="cancelEditSub()">ยกเลิก</button>
+      ` : `<button class="btn" onclick="addSubscription()">+ เพิ่ม</button>`}
     </div>
   </div>
 
   <div class="section-title" style="font-size:16px; margin-top:8px">ค่าใช้จ่ายรายปี</div>
-  <div class="section-sub">รายการที่ต้องจ่ายปีละครั้ง เช่น ประกัน กองทุน ภาษี — แยกต่างหากจากสมาชิกรายเดือน/สัปดาห์ด้านบน</div>
+  <div class="section-sub">รายการที่ต้องจ่ายปีละครั้ง เช่น ประกัน กองทุน ภาษี — แยกต่างหากจากสมาชิกรายเดือน/สัปดาห์ด้านบน ลิสต์ไว้เฉยๆ ไม่ต้องระบุวันที่จ่าย/แจ้งเตือน</div>
   ${renderAnnualExpenses()}
   `;
 }
-/* ---------- Annual expenses section (ค่าใช้จ่ายรายปี) — rendered inside renderSubscriptions() above ---------- */
+/* ---------- Annual expenses section (ค่าใช้จ่ายรายปี) — rendered inside renderSubscriptions()
+   above. Deliberately a plain list: no due date, no payment reminder — just name/category/
+   amount, with edit-in-place support. ---------- */
 function renderAexpRow(it){
-  const due = aexpNextDue(it);
-  const st = aexpStatusMeta(due);
   const initial = (it.name||'?').trim().charAt(0).toUpperCase() || '?';
   const amountLabel = it.currency==='THB' ? ('฿'+fmtMoney(it.amount)) : (fmtMoney(it.amount)+' '+escapeHtml(it.currency));
   return `
@@ -2484,15 +2463,15 @@ function renderAexpRow(it){
       <div style="font-weight:600; font-size:13.5px">${escapeHtml(it.name)}</div>
       <div class="sub-cycle">${it.category ? escapeHtml(it.category)+' · ' : ''}${amountLabel} / ปี</div>
     </div>
-    <span class="sub-due" style="background:${st.color}22; color:${st.color}">${fmtDate(due)} · ${st.label}</span>
-    <button class="btn btn-ghost btn-sm" onclick="payAnnualExpense('${it.id}')">✓ จ่ายแล้ว</button>
+    <button class="btn btn-ghost btn-sm" onclick="editAnnualExpense('${it.id}')">✎ แก้ไข</button>
     <button class="sub-del" style="position:static" onclick="delAnnualExpense('${it.id}')" title="ลบ">✕</button>
   </div>`;
 }
 function renderAnnualExpenses(){
-  const ranked = aexpUpcoming();
+  const ranked = aexpSorted();
   const totals = aexpTotalsByCurrency();
   const currencies = Object.keys(totals);
+  const editingAexp = editingAexpId ? state.annualExpenses.items.find(x=>x.id===editingAexpId) : null;
   return `
   <div class="panel">
     <h3>สรุปค่าใช้จ่ายรายปี</h3>
@@ -2509,24 +2488,23 @@ function renderAnnualExpenses(){
   </div>
 
   <div class="panel">
-    <h3>รายการทั้งหมด (${ranked.length}) — เรียงตามวันครบกำหนดถัดไป</h3>
-    ${ranked.map(({it})=>renderAexpRow(it)).join('') || '<div class="muted">ยังไม่มีรายการ — เพิ่มด้านล่าง</div>'}
+    <h3>รายการทั้งหมด (${ranked.length}) — เรียงตามยอดเงินมากไปน้อย</h3>
+    ${ranked.map(it=>renderAexpRow(it)).join('') || '<div class="muted">ยังไม่มีรายการ — เพิ่มด้านล่าง</div>'}
   </div>
 
   <div class="panel">
-    <h3>+ เพิ่มค่าใช้จ่ายรายปีใหม่</h3>
+    <h3>${editingAexp ? '✎ แก้ไขรายการ: '+escapeHtml(editingAexp.name) : '+ เพิ่มค่าใช้จ่ายรายปีใหม่'}</h3>
     <div class="form-row">
-      <input type="text" id="aexpName" placeholder="ชื่อรายการ เช่น ประกันรถยนต์">
-      <input type="text" id="aexpCategory" placeholder="หมวด (ไม่บังคับ) เช่น ประกัน, กองทุน" style="max-width:180px">
+      <input type="text" id="aexpName" placeholder="ชื่อรายการ เช่น ประกันรถยนต์" value="${editingAexp ? escapeHtml(editingAexp.name) : ''}">
+      <input type="text" id="aexpCategory" placeholder="หมวด (ไม่บังคับ) เช่น ประกัน, กองทุน" value="${editingAexp ? escapeHtml(editingAexp.category||'') : ''}" style="max-width:180px">
     </div>
     <div class="form-row" style="align-items:center">
-      <input type="number" id="aexpAmount" placeholder="จำนวนเงิน" style="max-width:130px">
-      <select id="aexpCurrency">${state.annualExpenses.currencies.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
-      <div style="min-width:170px">
-        <div class="muted" style="font-size:11px">ครบกำหนดจ่ายครั้งถัดไป/รอบล่าสุดที่จ่าย</div>
-        <input type="date" id="aexpDueDate" value="${todayISO()}">
-      </div>
-      <button class="btn" onclick="addAnnualExpense()">+ เพิ่ม</button>
+      <input type="number" id="aexpAmount" placeholder="จำนวนเงิน" value="${editingAexp ? editingAexp.amount : ''}" style="max-width:130px">
+      <select id="aexpCurrency">${state.annualExpenses.currencies.map(c=>`<option value="${escapeHtml(c)}" ${editingAexp && editingAexp.currency===c ? 'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+      ${editingAexp ? `
+        <button class="btn" onclick="saveEditAexp()">✓ บันทึกการแก้ไข</button>
+        <button class="btn btn-ghost" onclick="cancelEditAexp()">ยกเลิก</button>
+      ` : `<button class="btn" onclick="addAnnualExpense()">+ เพิ่ม</button>`}
     </div>
   </div>
   `;
@@ -2537,17 +2515,28 @@ function addAnnualExpense(){
   const category = document.getElementById('aexpCategory').value.trim();
   const amount = parseFloat(document.getElementById('aexpAmount').value) || 0;
   const currency = document.getElementById('aexpCurrency').value || 'THB';
-  const dueDate = document.getElementById('aexpDueDate').value || todayISO();
   rememberAexpCurrency(currency);
-  state.annualExpenses.items.push({id:uid(), name, amount, currency, category, dueDate, lastPaidDate:null, note:''});
+  state.annualExpenses.items.push({id:uid(), name, amount, currency, category, note:''});
   saveState(); render();
 }
-function delAnnualExpense(id){ state.annualExpenses.items = state.annualExpenses.items.filter(x=>x.id!==id); saveState(); render(); }
-// "จ่ายแล้ว" — anchors the next-due countdown to today, same pattern as renewSubscription().
-function payAnnualExpense(id){
-  const it = state.annualExpenses.items.find(x=>x.id===id);
+function delAnnualExpense(id){
+  state.annualExpenses.items = state.annualExpenses.items.filter(x=>x.id!==id);
+  if(editingAexpId===id) editingAexpId = null;
+  saveState(); render();
+}
+function editAnnualExpense(id){ editingAexpId = id; render(); }
+function cancelEditAexp(){ editingAexpId = null; render(); }
+function saveEditAexp(){
+  const it = state.annualExpenses.items.find(x=>x.id===editingAexpId);
   if(!it) return;
-  it.lastPaidDate = todayISO();
+  const name = document.getElementById('aexpName').value.trim();
+  if(!name) return;
+  it.name = name;
+  it.category = document.getElementById('aexpCategory').value.trim();
+  it.amount = parseFloat(document.getElementById('aexpAmount').value) || 0;
+  it.currency = document.getElementById('aexpCurrency').value || 'THB';
+  rememberAexpCurrency(it.currency);
+  editingAexpId = null;
   saveState(); render();
 }
 // Chained onerror fallback for a subscription logo <img> — see subLogoUrls()/handleLogoError()
@@ -2577,7 +2566,35 @@ function addSubscription(){
   state.subscriptions.items.push({id:uid(), name, url, price, currency, billingCycle, category, note:'', startDate, lastRenewedDate:null});
   saveState(); render();
 }
-function delSubscription(id){ state.subscriptions.items = state.subscriptions.items.filter(x=>x.id!==id); saveState(); render(); }
+function delSubscription(id){
+  state.subscriptions.items = state.subscriptions.items.filter(x=>x.id!==id);
+  if(editingSubId===id) editingSubId = null;
+  saveState(); render();
+}
+function editSubscription(id){ editingSubId = id; render(); }
+function cancelEditSub(){ editingSubId = null; render(); }
+// Saves the edit form's fields onto the item being edited — does NOT touch lastRenewedDate
+// (unless the person deliberately changes the date field), so correcting a typo in the name
+// doesn't reset the renewal countdown.
+function saveEditSub(){
+  const it = state.subscriptions.items.find(x=>x.id===editingSubId);
+  if(!it) return;
+  const name = document.getElementById('subName').value.trim();
+  if(!name) return;
+  it.name = name;
+  it.url = document.getElementById('subUrl').value.trim();
+  it.price = parseFloat(document.getElementById('subPrice').value) || 0;
+  it.currency = document.getElementById('subCurrency').value || 'THB';
+  it.billingCycle = document.getElementById('subCycle').value || 'monthly';
+  it.category = document.getElementById('subCategory').value.trim();
+  const dateVal = document.getElementById('subStartDate').value || todayISO();
+  // The date field showed lastRenewedDate if the item had one, else startDate — write back
+  // to whichever one it represented so we don't invent a fake renewal history.
+  if(it.lastRenewedDate) it.lastRenewedDate = dateVal; else it.startDate = dateVal;
+  rememberSubCurrency(it.currency);
+  editingSubId = null;
+  saveState(); render();
+}
 // "ต่ออายุแล้ว" — anchors the next-renewal countdown to today (mirrors car's
 // logCarService() rolling lastServiceDate forward once serviced).
 function renewSubscription(id){
