@@ -19,6 +19,8 @@
   --sienna:#C97B4A; --sienna-pale:#F5E6DA;
   --indigo:#5B6EF5; --indigo-pale:#E6E9FD;
   --btc:#F7931A; --btc-pale:#FDEAD1;
+  --rose:#EC6FA0; --rose-pale:#FCE7F0;
+  --cyan:#2BB6C9; --cyan-pale:#DFF5F8;
   --radius:20px; --radius-sm:14px;
   --shadow-card:0 2px 6px rgba(30,41,79,.04), 0 16px 32px -20px rgba(30,41,79,.20);
   --shadow-card-hover:0 4px 10px rgba(30,41,79,.06), 0 20px 40px -18px rgba(30,41,79,.24);
@@ -78,6 +80,8 @@ a{color:inherit;}
 .icon-car{background:linear-gradient(135deg,var(--indigo),#8B98FF); box-shadow:0 6px 14px -6px rgba(91,110,245,.5);}
 .icon-capture{background:linear-gradient(135deg,var(--purple),#A79BEE); box-shadow:0 6px 14px -6px rgba(139,127,209,.5);}
 .icon-settings{background:linear-gradient(135deg,var(--amber),#F8BC5A); box-shadow:0 6px 14px -6px rgba(245,166,35,.5);}
+.icon-subs{background:linear-gradient(135deg,var(--cyan),#5FD1E0); box-shadow:0 6px 14px -6px rgba(43,182,201,.5);}
+.icon-health{background:linear-gradient(135deg,var(--rose),#F58FB8); box-shadow:0 6px 14px -6px rgba(236,111,160,.5);}
 .pill-coral{background:var(--coral-pale); color:var(--coral);}
 .pill-teal{background:var(--teal-pale); color:var(--teal);}
 .pill-amber{background:var(--amber-pale); color:var(--amber);}
@@ -209,6 +213,26 @@ a{color:inherit;}
 .race-info{flex:1; min-width:0;}
 .race-info .name{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .race-info .meta{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+
+/* Subscriptions (สมาชิก) — logo grid */
+.sub-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; margin-top:2px;}
+.sub-card{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow-card); transition:box-shadow .18s ease, transform .18s ease; position:relative;}
+.sub-card:hover{box-shadow:var(--shadow-card-hover); transform:translateY(-2px);}
+.sub-card-top{display:flex; align-items:center; gap:10px;}
+.sub-logo-wrap{position:relative; width:40px; height:40px; flex-shrink:0;}
+.sub-logo-fallback{width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; color:#fff;}
+.sub-logo{position:absolute; inset:0; width:40px; height:40px; border-radius:11px; object-fit:contain; background:var(--panel); padding:6px; display:none; border:1px solid var(--line);}
+.sub-name{font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.sub-price{font-size:19px; font-weight:700;}
+.sub-cycle{font-size:11px; color:var(--ink-soft);}
+.sub-due{font-size:10.5px; padding:3.5px 10px; border-radius:99px; font-weight:600; display:inline-block; width:fit-content;}
+.sub-del{position:absolute; top:10px; right:10px; background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:12px; padding:2px;}
+.sub-del:hover{color:var(--coral);}
+
+/* Health (สุขภาพ) — person/pet reminder rows */
+.health-row{display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+.health-row:last-child{border-bottom:none;}
+.health-avatar{width:34px; height:34px; border-radius:50%; background:var(--rose-pale); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -217,7 +241,9 @@ a{color:inherit;}
   <div class="brand"><span>M</span>Life OS</div>
   <button class="nav-item" data-view="today" onclick="nav('today')"><div class="icon">◆</div>วันนี้</button>
   <button class="nav-item" data-view="finance" onclick="nav('finance')"><div class="icon">฿</div>เงิน</button>
+  <button class="nav-item" data-view="subscriptions" onclick="nav('subscriptions')"><div class="icon">⟳</div>สมาชิก</button>
   <button class="nav-item" data-view="running" onclick="nav('running')"><div class="icon">➤</div>กิจกรรม</button>
+  <button class="nav-item" data-view="health" onclick="nav('health')"><div class="icon">✚</div>สุขภาพ</button>
   <button class="nav-item" data-view="work" onclick="nav('work')"><div class="icon">▣</div>งาน</button>
   <button class="nav-item" data-view="trips" onclick="nav('trips')"><div class="icon">✈</div>ทริป</button>
   <button class="nav-item" data-view="assets" onclick="nav('assets')"><div class="icon">◎</div>ทรัพย์สิน</button>
@@ -260,6 +286,7 @@ const thaiDays = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 // rememberTripCurrency) so it shows up as a choice again next time, across every trip.
 const DEFAULT_TRIP_CATEGORIES = ['เดินทาง','ที่พัก','อาหาร','อื่นๆ'];
 const DEFAULT_TRIP_CURRENCIES = ['THB','USD','EUR','JPY','GBP','SGD','KRW','CNY','AUD','HKD','TWD','VND','LAK','PHP','IDR','MYR','INR'];
+const DEFAULT_SUB_CURRENCIES = ['THB','USD','EUR','JPY','GBP','SGD','KRW','CNY','AUD'];
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function pad2(n){ return String(n).padStart(2,'0'); }
@@ -354,10 +381,12 @@ function buildWeeklyActivityBuckets(weekDays){
     return { label: weekdayShort[i], date: d, byType, total, count: acts.length };
   });
 }
-// One bucket per calendar month, most recent n months (oldest first).
-function buildMonthlyActivityBuckets(n){
+// One bucket per calendar month, n months ending at (and including) endYM — defaults to the
+// current month, but the "กิจกรรม" page's month-history navigation (see activityMonthShift())
+// passes an earlier endYM to browse a past 9-month window instead of always "up to today".
+function buildMonthlyActivityBuckets(n, endYM){
   const months = [];
-  let ym = todayISO().slice(0,7);
+  let ym = endYM || todayISO().slice(0,7);
   for(let i=0;i<n;i++){ months.unshift(ym); ym = shiftYM(ym,-1); }
   return months.map(ym=>{
     const acts = state.running.activities.filter(a=>monthKey(a.date)===ym);
@@ -944,6 +973,33 @@ function defaultState(){
         {id:uid(), date:t, time:'14:00', title:'ประชุมทีมออกแบบ', category:'other', demo:true}
       ]
     },
+    // Subscriptions / recurring services (สมาชิก) — each item's "next renewal" is always
+    // derived live from startDate/lastRenewedDate + billingCycle (see subNextRenewal()),
+    // never stored, so it stays correct even if the app isn't opened for a while.
+    subscriptions: {
+      items: [
+        {id:uid(), name:'Netflix', url:'netflix.com', price:349, currency:'THB', billingCycle:'monthly', category:'สตรีมมิ่ง', note:'', startDate:t, lastRenewedDate:null, demo:true},
+        {id:uid(), name:'Spotify', url:'spotify.com', price:151, currency:'THB', billingCycle:'monthly', category:'สตรีมมิ่ง', note:'', startDate:t, lastRenewedDate:null, demo:true},
+        {id:uid(), name:'iCloud+ 200GB', url:'icloud.com', price:99, currency:'THB', billingCycle:'monthly', category:'คลาวด์/พื้นที่เก็บข้อมูล', note:'', startDate:addDays(t,-10), lastRenewedDate:null, demo:true}
+      ],
+      currencies: DEFAULT_SUB_CURRENCIES.slice()
+    },
+    // Health tracking (สุขภาพ) — any number of people + pets, each with their own list of
+    // reminders. A reminder is either recurring (interval + unit, next due always derived from
+    // lastDoneDate/createdDate — see healthNextDue()) or one-off (a fixed dueDate).
+    health: {
+      members: [
+        {id:uid(), name:'Milk', isPet:false, avatar:'🧑', species:'', demo:true,
+          reminders:[
+            {id:uid(), title:'ตรวจสุขภาพประจำปี', note:'', recurring:true, intervalValue:12, intervalUnit:'month', lastDoneDate:null, createdDate:t, demo:true}
+          ]},
+        {id:uid(), name:'ลูฟี่', isPet:true, avatar:'🐱', species:'แมว (American Shorthair mix)', demo:true,
+          reminders:[
+            {id:uid(), title:'วัคซีนประจำปี', note:'', recurring:true, intervalValue:12, intervalUnit:'month', lastDoneDate:null, createdDate:t, demo:true},
+            {id:uid(), title:'ถ่ายพยาธิ', note:'', recurring:true, intervalValue:3, intervalUnit:'month', lastDoneDate:null, createdDate:t, demo:true}
+          ]}
+      ]
+    },
     settings: {
       intervalsApiKey: '',
       intervalsAthleteId: '0',
@@ -951,7 +1007,7 @@ function defaultState(){
       // Reminder popup (Today overview) — which categories show, which time window, and
       // when it last auto-opened so it only pops up once per day rather than on every render.
       reminderPopup: {
-        enabledCats: {egat:true, doctor:true, other:true, race:true},
+        enabledCats: {egat:true, doctor:true, other:true, race:true, health:true, subscription:true},
         windowMode: 'week', // 'week' | 'month'
         lastShownDate: null,
         autoShow: true
@@ -978,8 +1034,10 @@ function loadState(){
       s.calendar.events.forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
       if(!s.finance.taxByYear) s.finance.taxByYear = {};
       if(!s.settings) s.settings = {};
-      if(!s.settings.reminderPopup) s.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true}, windowMode:'week', lastShownDate:null, autoShow:true};
-      if(!s.settings.reminderPopup.enabledCats) s.settings.reminderPopup.enabledCats = {egat:true,doctor:true,other:true,race:true};
+      if(!s.settings.reminderPopup) s.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true,health:true,subscription:true}, windowMode:'week', lastShownDate:null, autoShow:true};
+      if(!s.settings.reminderPopup.enabledCats) s.settings.reminderPopup.enabledCats = {egat:true,doctor:true,other:true,race:true,health:true,subscription:true};
+      if(s.settings.reminderPopup.enabledCats.health == null) s.settings.reminderPopup.enabledCats.health = true;
+      if(s.settings.reminderPopup.enabledCats.subscription == null) s.settings.reminderPopup.enabledCats.subscription = true;
       if(s.running && !s.running.races) s.running.races = [];
       if(!s.assets) s.assets = {items:[], reports:[]};
       if(!s.assets.items) s.assets.items = [];
@@ -1093,7 +1151,17 @@ function loadState(){
           else if(a.type === 'run') a.type = 'run_road';
         });
       }
-      delete s.health; // module removed — family health tracking is gone from this build
+      // Health tracking (สุขภาพ) — re-added with a different shape (people+pets, each with
+      // their own reminders list) after being fully removed in an earlier build. An old save
+      // might still have a leftover s.health in the OLD (incompatible) shape, or none at all —
+      // only trust it if it already looks like the new shape; otherwise seed the same fresh
+      // defaults a brand-new install gets (mirrors how `car` was backfilled below when it was
+      // added after some installs already existed).
+      if(!s.health || !Array.isArray(s.health.members)) s.health = defaultState().health;
+      (s.health.members||[]).forEach(m=>{ if(!m.reminders) m.reminders = []; });
+      // Subscriptions (สมาชิก) — brand-new module, same backfill convention as car/health above.
+      if(!s.subscriptions || !Array.isArray(s.subscriptions.items)) s.subscriptions = defaultState().subscriptions;
+      if(!s.subscriptions.currencies) s.subscriptions.currencies = DEFAULT_SUB_CURRENCIES.slice();
       // Backfill for the car/Tesla maintenance tracker and the trip day-activities / bill-split
       // fields — both added after some browsers already had a saved state. car is seeded fresh
       // (same as defaultState()) since there's no prior data to preserve; the trips fields just
@@ -1186,7 +1254,134 @@ const CAL_CATEGORIES = [
   {key:'other', label:'นัดหมายอื่นๆ', color:'var(--blue)'}
 ];
 const RACE_CATEGORY = {key:'race', label:'ซ้อม/แข่งขัน', color:'var(--green-deep)'};
+// Same pattern as RACE_CATEGORY above — not chosen on the calendar-event form, assigned
+// automatically to items pulled from state.health.members (health) / state.subscriptions.items
+// (subscription renewals). See gatherReminders()/dayEvents() where each is wired in.
+const HEALTH_CATEGORY = {key:'health', label:'สุขภาพ', color:'var(--rose)'};
+const SUB_CATEGORY = {key:'subscription', label:'ค่าสมาชิก/บริการ', color:'var(--cyan)'};
 function calCategoryMeta(key){ return CAL_CATEGORIES.find(c=>c.key===key) || CAL_CATEGORIES[CAL_CATEGORIES.length-1]; }
+
+/* ---------- Subscriptions (สมาชิก) — logo lookup + due-date/cost helpers ---------- */
+// Pulls a bare domain out of whatever the person typed/pasted (a full URL, "www.x.com", or
+// just "x.com") so it can be handed to a favicon/logo service. Returns '' if it doesn't look
+// like a usable domain at all (e.g. still empty, or just a plain service name with no dot).
+function extractDomain(input){
+  if(!input) return '';
+  let s = String(input).trim();
+  if(!s) return '';
+  if(!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  try{
+    const host = new URL(s).hostname.replace(/^www\./i,'');
+    return host.includes('.') ? host : '';
+  }catch(e){ return ''; }
+}
+// Two independent, no-API-key logo/favicon services — Clearbit first (nicer, higher-res
+// brand logos), Google's favicon service as the automatic fallback (see handleLogoError()
+// below), so a domain Clearbit doesn't have still usually gets *something* recognizable.
+function subLogoUrls(url){
+  const domain = extractDomain(url);
+  if(!domain) return null;
+  return {
+    clearbit: `https://logo.clearbit.com/${domain}?size=128`,
+    favicon: `https://www.google.com/s2/favicons?sz=128&domain=${domain}`
+  };
+}
+// Wired to <img onerror="handleLogoError(this)">. First failure (data-stage 1, Clearbit) swaps
+// to the Google favicon fallback URL and tries again; a second failure just hides the <img>,
+// which reveals the colored initial-letter fallback div sitting underneath it (see .sub-logo /
+// .sub-logo-fallback CSS) — so a card never shows a broken-image icon, worst case it shows the
+// initial-letter avatar exactly like it would if the person had typed no URL at all.
+function handleLogoError(img){
+  if(img.dataset.stage === '1' && img.dataset.fallback){
+    img.dataset.stage = '2';
+    img.src = img.dataset.fallback;
+  } else {
+    img.style.display = 'none';
+  }
+}
+function subMonthlyEquivalent(item){
+  const p = Number(item.price)||0;
+  if(item.billingCycle === 'yearly') return p/12;
+  if(item.billingCycle === 'weekly') return p*4.345; // avg weeks/month
+  return p; // monthly
+}
+// Next renewal date, always derived live from lastRenewedDate (or startDate, if never marked
+// renewed) rolled forward to the first occurrence on/after today — never stored, so it can't go
+// stale if the app sits unopened for a while (same philosophy as carItemStatus()'s due dates).
+function subNextRenewal(item){
+  const anchor = item.lastRenewedDate || item.startDate || todayISO();
+  const t = todayISO();
+  let due = anchor, guard = 0;
+  if(item.billingCycle === 'yearly'){
+    while(due < t && guard < 200){ due = addMonths(due, 12); guard++; }
+  } else if(item.billingCycle === 'weekly'){
+    while(due < t && guard < 3000){ due = addDays(due, 7); guard++; }
+  } else { // monthly
+    while(due < t && guard < 1200){ due = addMonths(due, 1); guard++; }
+  }
+  return due;
+}
+function subStatusMeta(due){
+  const d = daysUntil(due);
+  if(d<=0) return {status:'due', color:'var(--coral)', label: d===0 ? 'ถึงกำหนดวันนี้' : 'เลยกำหนด'};
+  if(d<=5) return {status:'soon', color:'var(--amber)', label:'อีก '+d+' วัน'};
+  return {status:'ok', color:'var(--teal)', label:'อีก '+d+' วัน'};
+}
+function subUpcoming(n){
+  return [...state.subscriptions.items]
+    .map(it=>({it, due:subNextRenewal(it), st:subStatusMeta(subNextRenewal(it))}))
+    .sort((a,b)=>String(a.due).localeCompare(String(b.due)))
+    .slice(0, n||state.subscriptions.items.length);
+}
+// One {monthly, yearly} rollup per currency — deliberately NOT converted into one combined
+// number (exchange rates would need a live fetch and could go stale) — see renderSubscriptions().
+function subTotalsByCurrency(){
+  const out = {};
+  state.subscriptions.items.forEach(it=>{
+    const cur = it.currency || 'THB';
+    if(!out[cur]) out[cur] = {monthly:0, yearly:0};
+    const m = subMonthlyEquivalent(it);
+    out[cur].monthly += m;
+    out[cur].yearly += m*12;
+  });
+  return out;
+}
+function rememberSubCurrency(cur){
+  cur = (cur||'').trim().toUpperCase();
+  if(!cur) return;
+  if(!state.subscriptions.currencies.includes(cur)) state.subscriptions.currencies.push(cur);
+}
+
+/* ---------- Health (สุขภาพ) — people + pets, each with their own reminder list ---------- */
+function healthUnitLabel(u){ return u==='day'?'วัน':u==='week'?'สัปดาห์':u==='year'?'ปี':'เดือน'; }
+// A recurring reminder's next due date always counts forward from the last time it was marked
+// done (lastDoneDate), or from when it was created if it's never been done yet (createdDate) —
+// same "count from a baseline, roll forward once actually done" idea as the car module's
+// carItemStatus(). A one-off reminder just uses its own fixed dueDate.
+function healthNextDue(rem){
+  if(!rem.recurring) return rem.dueDate || todayISO();
+  const anchor = rem.lastDoneDate || rem.createdDate || todayISO();
+  const v = Number(rem.intervalValue) || 1;
+  if(rem.intervalUnit === 'year') return addMonths(anchor, v*12);
+  if(rem.intervalUnit === 'month') return addMonths(anchor, v);
+  if(rem.intervalUnit === 'week') return addDays(anchor, v*7);
+  return addDays(anchor, v); // day
+}
+function healthStatusMeta(due){
+  const d = daysUntil(due);
+  if(d<0) return {status:'overdue', color:'var(--coral)', label:'เลยกำหนด '+Math.abs(d)+' วัน'};
+  if(d<=7) return {status:'soon', color:'var(--amber)', label: d===0 ? 'ถึงกำหนดวันนี้' : 'อีก '+d+' วัน'};
+  return {status:'ok', color:'var(--teal)', label:'อีก '+d+' วัน'};
+}
+// Every reminder across every member, flattened + sorted soonest-due-first — used by the Health
+// page's "ใกล้ถึงกำหนด" summary, the Today overview card, and the reminder popup/calendar wiring.
+function allHealthReminders(){
+  const out = [];
+  (state.health.members||[]).forEach(member=>{
+    (member.reminders||[]).forEach(rem=>{ out.push({member, rem, due: healthNextDue(rem)}); });
+  });
+  return out.sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+}
 function addCalEvent(){
   const dateEl = document.getElementById('calEvDate');
   const timeEl = document.getElementById('calEvTime');
@@ -1256,6 +1451,17 @@ function gatherReminders(mode){
       out.push({date:r.date, time:'', title:r.name + (r.distanceKm?(' ('+r.distanceKm+'K)'):''), category:'race', catLabel:'ซ้อม/แข่งขัน', color:RACE_CATEGORY.color});
     }
   });
+  allHealthReminders().forEach(({member,rem,due})=>{
+    if(due >= t && due <= end){
+      out.push({date:due, time:'', title: member.name+': '+rem.title, category:'health', catLabel:HEALTH_CATEGORY.label, color:HEALTH_CATEGORY.color});
+    }
+  });
+  state.subscriptions.items.forEach(it=>{
+    const due = subNextRenewal(it);
+    if(due >= t && due <= end){
+      out.push({date:due, time:'', title: it.name+' — '+(it.currency==='THB'?'฿':it.currency+' ')+fmtMoney(it.price), category:'subscription', catLabel:SUB_CATEGORY.label, color:SUB_CATEGORY.color});
+    }
+  });
   return out.sort((a,b)=> String(a.date+a.time).localeCompare(String(b.date+b.time)));
 }
 function reminderPopupCount(){
@@ -1286,7 +1492,7 @@ function reminderRowHtml(r){
 // so toggling the window or a category filter in either place stays in sync with the other.
 function renderUpcomingRibbon(){
   const p = state.settings.reminderPopup;
-  const cats = [...CAL_CATEGORIES, RACE_CATEGORY];
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY, HEALTH_CATEGORY, SUB_CATEGORY];
   const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
   return `
   <div class="ribbon">
@@ -1308,7 +1514,7 @@ function renderUpcomingRibbon(){
 }
 function renderReminderPopup(){
   const p = state.settings.reminderPopup;
-  const cats = [...CAL_CATEGORIES, RACE_CATEGORY];
+  const cats = [...CAL_CATEGORIES, RACE_CATEGORY, HEALTH_CATEGORY, SUB_CATEGORY];
   const items = gatherReminders(p.windowMode).filter(r=>p.enabledCats[r.category]);
   return `
   <div class="modal-head">
@@ -1383,7 +1589,7 @@ function render(){
   const h = new Date().getHours();
   document.getElementById('greetingText').textContent = (h<12 ? 'สวัสดีตอนเช้า, Milk' : h<18 ? 'สวัสดีตอนบ่าย, Milk' : 'สวัสดีตอนเย็น, Milk');
   const root = document.getElementById('viewRoot');
-  const renderers = {today:renderToday, finance:renderFinance, running:renderRunning, work:renderWork, trips:renderTrips, assets:renderAssets, car:renderCar, settings:renderSettings};
+  const renderers = {today:renderToday, finance:renderFinance, subscriptions:renderSubscriptions, running:renderRunning, health:renderHealth, work:renderWork, trips:renderTrips, assets:renderAssets, car:renderCar, settings:renderSettings};
   root.innerHTML = (renderers[currentView] || renderToday)();
   updateBellBadge();
   if(currentView === 'today') maybeAutoShowReminderPopup();
@@ -1406,6 +1612,10 @@ function renderToday(){
   const netWorth = assetsNetWorth();
   const mom = assetsMoM();
   const nearRace = nearestRace();
+  const subUpcomingList = subUpcoming(5);
+  const subTotals = subTotalsByCurrency();
+  const subOtherCurLine = Object.entries(subTotals).filter(([cur])=>cur!=='THB').map(([cur,v])=>cur+' '+fmtMoney(Math.round(v.monthly))).join(' · ');
+  const healthUpcomingList = allHealthReminders().map(x=>({...x, st:healthStatusMeta(x.due)}));
 
   const dayEvents = (d)=>{
     const out = [];
@@ -1413,6 +1623,8 @@ function renderToday(){
     work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10)===d) out.push({label:(tk.done?'✓ ':'')+tk.text, color:'var(--amber)', gcalTitle:tk.text}); });
     trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
     state.running.races.forEach(r=>{ if(r.date===d) out.push({label:'🏁 '+r.name+(r.distanceKm?(' ('+r.distanceKm+'K)'):''), color:RACE_CATEGORY.color, gcalTitle:'แข่ง: '+r.name}); });
+    allHealthReminders().forEach(({member,rem,due})=>{ if(due===d) out.push({label:'✚ '+member.name+': '+rem.title, color:HEALTH_CATEGORY.color, gcalTitle:member.name+': '+rem.title}); });
+    state.subscriptions.items.forEach(it=>{ if(subNextRenewal(it)===d) out.push({label:'⟳ '+it.name+' ต่ออายุ', color:SUB_CATEGORY.color, gcalTitle:'ต่ออายุ '+it.name}); });
     return out;
   };
   // Which month the calendar grid shows — defaults to the current month, but calMonthShift() lets
@@ -1489,6 +1701,34 @@ function renderToday(){
 
     <div class="card">
       <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-subs">⟳</div><div><h3>สมาชิก</h3><div class="card-sub">${state.subscriptions.items.length} รายการ</div></div></div>
+        ${subUpcomingList.length ? `<div class="pill ${subUpcomingList[0].st.status==='due'?'pill-coral':subUpcomingList[0].st.status==='soon'?'pill-amber':'pill-teal'}">${subUpcomingList[0].st.label}</div>` : ''}
+      </div>
+      <div class="big-stat mono">฿${fmtMoney(Math.round((subTotals.THB && subTotals.THB.monthly) || 0))} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">บาท/เดือน</span></div>
+      ${subOtherCurLine ? `<div class="stat-note" style="margin-top:-6px">${subOtherCurLine}</div>` : ''}
+      ${subUpcomingList.length ? subUpcomingList.slice(0,3).map(({it,due,st})=>`
+        <div class="bar-row" style="align-items:center">
+          <div class="tl-dot" style="background:${st.color}; margin-right:6px"></div>
+          <div class="bar-label" style="flex:1 1 auto; font-weight:500">${escapeHtml(it.name)}</div>
+          <div class="bar-val" style="font-size:12px; color:var(--ink-soft)">${fmtDate(due)}</div>
+        </div>`).join('') : '<div class="muted">ยังไม่มีรายการสมาชิก</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-icon icon-health">✚</div><div><h3>สุขภาพ</h3><div class="card-sub">${state.health.members.length} คน/สัตว์เลี้ยง</div></div></div>
+        ${healthUpcomingList.length ? `<div class="pill ${healthUpcomingList[0].st.status==='overdue'?'pill-coral':healthUpcomingList[0].st.status==='soon'?'pill-amber':'pill-teal'}">${healthUpcomingList[0].st.status==='overdue'?'เลยกำหนด':healthUpcomingList[0].st.status==='soon'?'ใกล้ถึงกำหนด':'ปกติ'}</div>` : ''}
+      </div>
+      ${healthUpcomingList.length ? healthUpcomingList.slice(0,4).map(({member,rem,due,st})=>`
+        <div class="bar-row" style="align-items:center">
+          <div class="tl-dot" style="background:${st.color}; margin-right:6px"></div>
+          <div class="bar-label" style="flex:1 1 auto; font-weight:500">${escapeHtml(member.name)} — ${escapeHtml(rem.title)}</div>
+          <div class="bar-val" style="font-size:12px; color:var(--ink-soft)">${fmtDate(due)}</div>
+        </div>`).join('') : '<div class="muted">ยังไม่มีรายการเตือน</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
         <div class="card-title"><div class="card-icon icon-capture">✎</div><div><h3>Quick Capture</h3><div class="card-sub">พิมพ์ทีเดียว ระบบแยกให้เอง</div></div></div>
       </div>
       <div class="capture-box">
@@ -1522,6 +1762,8 @@ function renderToday(){
         const dayTrips = []; trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) dayTrips.push(td.place || tr.name); }));
         const dayEv = state.calendar.events.filter(ev=>ev.date===d);
         const dayRaces = state.running.races.filter(r=>r.date===d);
+        const dayHealth = allHealthReminders().filter(x=>x.due===d);
+        const daySubs = state.subscriptions.items.filter(it=>subNextRenewal(it)===d);
         // One dot per category actually present that day (custom events grouped by their own
         // category, plus EGAT tasks/trips/race day) — dedupe categories so a day with three
         // "other" appointments doesn't get three identical blue dots.
@@ -1530,13 +1772,15 @@ function renderToday(){
         if(dayTasks.length) dots.push({color:'var(--amber)'});
         if(dayTrips.length) dots.push({color:'var(--purple)'});
         if(dayRaces.length) dots.push({color:RACE_CATEGORY.color});
+        if(dayHealth.length) dots.push({color:HEALTH_CATEGORY.color});
+        if(daySubs.length) dots.push({color:SUB_CATEGORY.color});
         return `<button type="button" class="cal-day ${inMonth?'':'cal-day-out'} ${isToday?'cal-day-today':''} ${isSel?'cal-day-sel':''}" onclick="selectCalDay('${d}')">
           <div class="cal-day-num">${parseInt(d.slice(8,10),10)}</div>
           <div class="cal-dots">${dots.map(x=>`<span class="cal-dot" style="background:${x.color}"></span>`).join('')}</div>
         </button>`;
       }).join('')}
     </div>
-    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดแดง = นัดหมอ · จุดฟ้า = นัดหมายอื่นๆ · จุดม่วง = วันในทริป · จุดเขียว = วันแข่ง/ซ้อม — คลิกวันที่เพื่อดูรายละเอียด</div>
+    <div class="muted" style="margin:10px 0">จุดส้ม = งาน EGAT · จุดแดง = นัดหมอ · จุดฟ้า = นัดหมายอื่นๆ · จุดม่วง = วันในทริป · จุดเขียว = วันแข่ง/ซ้อม · จุดชมพู = สุขภาพ · จุดฟ้าอมเขียว = ค่าสมาชิก/บริการ — คลิกวันที่เพื่อดูรายละเอียด</div>
     <div style="border-top:1px solid var(--line); padding-top:12px">
       <div style="font-size:13px; font-weight:600; margin-bottom:8px">${fmtDate(selDay)}${selDay===t?' (วันนี้)':''}</div>
       ${selEvents.length ? selEvents.map(e=>`<div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px;">
@@ -1832,6 +2076,23 @@ const weekdayShort = ['จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.']; /
 
 let activityChartMode = 'week'; // 'week' | 'month' — toggled on the "กิจกรรม" page, chart-only state
 function setActivityChartMode(mode){ activityChartMode = mode; render(); }
+// Which week/month the "ภาพรวมกิจกรรม" chart is browsing — independent of activityChartMode
+// (that's just week-vs-month display; these two track *which* week/month within each mode),
+// and independent of the "สรุปสัปดาห์นี้" goal card below, which always stays pinned to the
+// real current week regardless of what history is being browsed up top.
+let activityViewWeekBase = todayISO(); // any date within the browsed week
+let activityViewMonthEnd = todayISO().slice(0,7); // end (most recent) month of the browsed 9-month window
+function activityWeekShift(delta){ activityViewWeekBase = addDays(activityViewWeekBase, delta*7); render(); }
+function activityMonthShift(delta){ activityViewMonthEnd = shiftYM(activityViewMonthEnd, delta); render(); }
+function activityGoToToday(){ activityViewWeekBase = todayISO(); activityViewMonthEnd = todayISO().slice(0,7); render(); }
+// "16–22 ก.ย. 2569" (same month) or "30 ส.ค.–5 ก.ย. 2569" (crosses a month boundary).
+function weekRangeLabel(days){
+  const first = days[0], last = days[days.length-1];
+  const fd = new Date(first+'T00:00:00'), ld = new Date(last+'T00:00:00');
+  const sameMonth = fd.getMonth()===ld.getMonth() && fd.getFullYear()===ld.getFullYear();
+  if(sameMonth) return fd.getDate()+'–'+ld.getDate()+' '+thaiMonths[fd.getMonth()]+' '+(fd.getFullYear()+543);
+  return fd.getDate()+' '+thaiMonths[fd.getMonth()]+'–'+ld.getDate()+' '+thaiMonths[ld.getMonth()]+' '+(ld.getFullYear()+543);
+}
 
 function renderRunning(){
   const r = state.running;
@@ -1841,8 +2102,11 @@ function renderRunning(){
   const weekKm = weekActivities.reduce((s,a)=>s+(a.distance_km||0),0);
 
   const isWeek = activityChartMode === 'week';
-  const buckets = isWeek ? buildWeeklyActivityBuckets(weekDays) : buildMonthlyActivityBuckets(9);
-  const chartPeriodActivities = isWeek ? weekActivities : r.activities.filter(a=>monthKey(a.date)===todayISO().slice(0,7));
+  const chartWeekDays = currentWeekMondayToSunday(activityViewWeekBase);
+  const chartWeekSet = new Set(chartWeekDays);
+  const buckets = isWeek ? buildWeeklyActivityBuckets(chartWeekDays) : buildMonthlyActivityBuckets(9, activityViewMonthEnd);
+  const chartPeriodActivities = isWeek ? r.activities.filter(a=>chartWeekSet.has(a.date)) : r.activities.filter(a=>monthKey(a.date)===activityViewMonthEnd);
+  const isBrowsingPast = isWeek ? (chartWeekDays[0] !== weekDays[0]) : (activityViewMonthEnd !== todayISO().slice(0,7));
   const sortedActivities = [...r.activities].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 
   return `
@@ -1850,20 +2114,25 @@ function renderRunning(){
   <div class="section-sub">รวมทุกประเภท — วิ่ง ปั่นจักรยาน เวทเทรนนิ่ง และอื่นๆ · sync อัตโนมัติจาก intervals.icu หรือบันทึกเอง</div>
 
   <div class="panel">
-    <div class="ribbon-head" style="margin-bottom:14px">
-      <h3>ภาพรวมกิจกรรม</h3>
-      <div style="display:flex; gap:6px">
+    <div class="ribbon-head" style="margin-bottom:14px; flex-wrap:wrap; row-gap:8px">
+      <h3>ภาพรวมกิจกรรม — ดูย้อนหลังได้</h3>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="${isWeek?'activityWeekShift(-1)':'activityMonthShift(-1)'}" title="ก่อนหน้า">‹</button>
+        <span class="muted mono" style="min-width:150px; text-align:center; display:inline-block">${isWeek ? weekRangeLabel(chartWeekDays) : ('9 เดือนถึง '+ymLabel(activityViewMonthEnd))}</span>
+        <button class="btn btn-ghost btn-sm" onclick="${isWeek?'activityWeekShift(1)':'activityMonthShift(1)'}" title="ถัดไป">›</button>
+        ${isBrowsingPast ? `<button class="btn btn-ghost btn-sm" onclick="activityGoToToday()">วันนี้</button>` : ''}
+        <span style="width:1px; height:18px; background:var(--line); margin:0 4px"></span>
         <button class="btn ${isWeek?'':'btn-ghost'} btn-sm" onclick="setActivityChartMode('week')">รายสัปดาห์</button>
         <button class="btn ${!isWeek?'':'btn-ghost'} btn-sm" onclick="setActivityChartMode('month')">รายเดือน</button>
       </div>
     </div>
     <div class="two-col">
       <div>
-        <div class="muted" style="margin-bottom:4px">${isWeek ? 'สัปดาห์นี้ (จ.–อา.) แยกสีตามประเภทกิจกรรม' : '9 เดือนล่าสุด แยกสีตามประเภทกิจกรรม'}</div>
+        <div class="muted" style="margin-bottom:4px">${isWeek ? weekRangeLabel(chartWeekDays)+' (จ.–อา.) แยกสีตามประเภทกิจกรรม' : '9 เดือนล่าสุด (ถึง '+ymLabel(activityViewMonthEnd)+') แยกสีตามประเภทกิจกรรม'}</div>
         ${renderActivityBarChart(buckets)}
       </div>
       <div>
-        <div class="muted" style="margin-bottom:10px">สัดส่วนประเภทกิจกรรม — ${isWeek ? 'สัปดาห์นี้' : 'เดือนนี้'}</div>
+        <div class="muted" style="margin-bottom:10px">สัดส่วนประเภทกิจกรรม — ${isWeek ? weekRangeLabel(chartWeekDays) : ymLabel(activityViewMonthEnd)}</div>
         ${renderActivityDonut(chartPeriodActivities)}
       </div>
     </div>
@@ -2022,6 +2291,262 @@ async function syncIntervals(){
   }catch(err){
     msgEl.innerHTML = `<div class="msg msg-err">Sync ไม่สำเร็จ (${escapeHtml(err.message)}). สาเหตุที่พบบ่อย: เบราว์เซอร์บล็อกด้วย CORS เพราะไฟล์นี้เปิดแบบ local file, หรือ API key/athlete id ไม่ถูกต้อง — ลองเปิดไฟล์นี้ผ่าน local web server (เช่น "npx serve") แทนการดับเบิลคลิกเปิดตรงๆ ถ้ายังไม่ได้ ให้ใช้ปุ่ม "บันทึกเอง" แทนไปก่อน</div>`;
   }
+}
+
+/* ---------- Subscriptions view (สมาชิก) ---------- */
+const SUB_LOGO_COLOR_CYCLE = ['var(--cyan)','var(--purple)','var(--coral)','var(--amber)','var(--teal)','var(--indigo)','var(--sienna)','var(--rose)'];
+function renderSubCard(it, idx){
+  const due = subNextRenewal(it);
+  const st = subStatusMeta(due);
+  const logos = subLogoUrls(it.url);
+  const initial = (it.name||'?').trim().charAt(0).toUpperCase() || '?';
+  const color = SUB_LOGO_COLOR_CYCLE[idx % SUB_LOGO_COLOR_CYCLE.length];
+  const cycleLabel = it.billingCycle==='yearly' ? 'ปี' : it.billingCycle==='weekly' ? 'สัปดาห์' : 'เดือน';
+  const priceLabel = it.currency==='THB' ? ('฿'+fmtMoney(it.price)) : (fmtMoney(it.price)+' '+escapeHtml(it.currency));
+  return `
+  <div class="sub-card">
+    <button class="sub-del" onclick="delSubscription('${it.id}')" title="ลบ">✕</button>
+    <div class="sub-card-top">
+      <div class="sub-logo-wrap">
+        <div class="sub-logo-fallback" style="background:${color}">${escapeHtml(initial)}</div>
+        ${logos ? `<img class="sub-logo" src="${logos.clearbit}" data-fallback="${logos.favicon}" data-stage="1" onload="this.style.display='block'" onerror="handleLogoError(this)" alt="">` : ''}
+      </div>
+      <div style="min-width:0; flex:1">
+        <div class="sub-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
+        ${it.category ? `<div class="sub-cycle">${escapeHtml(it.category)}</div>` : ''}
+      </div>
+    </div>
+    <div>
+      <div class="sub-price mono">${priceLabel}</div>
+      <div class="sub-cycle">ต่อ${cycleLabel}</div>
+    </div>
+    <span class="sub-due" style="background:${st.color}22; color:${st.color}">${fmtDate(due)} · ${st.label}</span>
+    <button class="btn btn-ghost btn-sm" onclick="renewSubscription('${it.id}')">✓ ต่ออายุแล้ว</button>
+  </div>`;
+}
+function renderSubscriptions(){
+  const ranked = subUpcoming();
+  const totals = subTotalsByCurrency();
+  const currencies = Object.keys(totals);
+  return `
+  <div class="section-title">สมาชิก / บริการรายรอบ</div>
+  <div class="section-sub">แอป/บริการที่สมัครสมาชิกไว้ทั้งหมด ในมุมมอง grid — พิมพ์หรือวางเว็บไซต์ของบริการนั้น ระบบจะดึงโลโก้มาให้อัตโนมัติ</div>
+
+  <div class="panel">
+    <h3>สรุปค่าใช้จ่าย</h3>
+    ${currencies.length ? `
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); margin-top:6px">
+      ${currencies.map(cur=>`
+        <div class="card" style="padding:12px">
+          <div class="card-sub">${escapeHtml(cur)} / เดือน</div>
+          <div class="big-stat mono">${fmtMoney(Math.round(totals[cur].monthly))}</div>
+          <div class="stat-note">≈ ${fmtMoney(Math.round(totals[cur].yearly))} / ปี</div>
+        </div>`).join('')}
+    </div>
+    <div class="muted" style="margin-top:10px; font-size:11px">ยอดรวมแยกตามสกุลเงิน (ไม่ได้แปลงรวมเป็นสกุลเดียว เพื่อไม่ให้อัตราแลกเปลี่ยนที่อาจไม่อัปเดตทำให้ยอดคลาดเคลื่อน) — รายเดือน/รายสัปดาห์ถูกคำนวณเทียบเท่าเป็น "ต่อเดือน" ให้แล้ว</div>
+    ` : '<div class="muted">ยังไม่มีรายการ</div>'}
+  </div>
+
+  <div class="panel">
+    <h3>รายการทั้งหมด (${ranked.length}) — เรียงตามวันครบกำหนดถัดไป</h3>
+    <div class="sub-grid">
+      ${ranked.map(({it},i)=>renderSubCard(it,i)).join('') || '<div class="muted">ยังไม่มีรายการ — เพิ่มด้านล่าง</div>'}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>+ เพิ่มรายการใหม่</h3>
+    <div class="form-row">
+      <input type="text" id="subName" placeholder="ชื่อบริการ เช่น Netflix">
+      <input type="text" id="subUrl" placeholder="เว็บไซต์ (พิมพ์/วาง เพื่อดึงโลโก้อัตโนมัติ)" oninput="previewSubLogo()" style="flex:2; min-width:220px">
+    </div>
+    <div class="form-row" style="align-items:center">
+      <div id="subLogoPreview" style="width:40px; height:40px; flex-shrink:0"></div>
+      <input type="number" id="subPrice" placeholder="ราคา" style="max-width:110px">
+      <select id="subCurrency">${state.subscriptions.currencies.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+      <select id="subCycle">
+        <option value="monthly">รายเดือน</option>
+        <option value="yearly">รายปี</option>
+        <option value="weekly">รายสัปดาห์</option>
+      </select>
+      <input type="text" id="subCategory" placeholder="หมวด (ไม่บังคับ)" style="max-width:150px">
+    </div>
+    <div class="form-row">
+      <div style="min-width:170px">
+        <div class="muted" style="font-size:11px">วันที่เริ่ม/รอบล่าสุดที่จ่าย</div>
+        <input type="date" id="subStartDate" value="${todayISO()}">
+      </div>
+      <button class="btn" onclick="addSubscription()">+ เพิ่ม</button>
+    </div>
+  </div>
+  `;
+}
+// Chained onerror fallback for a subscription logo <img> — see subLogoUrls()/handleLogoError()
+// above for the two-service (Clearbit → Google favicon) strategy; shared by both the "+ เพิ่ม"
+// form's live preview here and every card's logo (renderSubCard()).
+function previewSubLogo(){
+  const el = document.getElementById('subUrl');
+  const preview = document.getElementById('subLogoPreview');
+  if(!el || !preview) return;
+  const logos = subLogoUrls(el.value.trim());
+  if(!logos){ preview.innerHTML = ''; return; }
+  preview.innerHTML = `<div style="position:relative; width:40px; height:40px">
+    <div class="sub-logo-fallback" style="background:var(--cyan); width:40px; height:40px">?</div>
+    <img class="sub-logo" src="${logos.clearbit}" data-fallback="${logos.favicon}" data-stage="1" onload="this.style.display='block'" onerror="handleLogoError(this)" alt="">
+  </div>`;
+}
+function addSubscription(){
+  const name = document.getElementById('subName').value.trim();
+  if(!name) return;
+  const url = document.getElementById('subUrl').value.trim();
+  const price = parseFloat(document.getElementById('subPrice').value) || 0;
+  const currency = document.getElementById('subCurrency').value || 'THB';
+  const billingCycle = document.getElementById('subCycle').value || 'monthly';
+  const category = document.getElementById('subCategory').value.trim();
+  const startDate = document.getElementById('subStartDate').value || todayISO();
+  rememberSubCurrency(currency);
+  state.subscriptions.items.push({id:uid(), name, url, price, currency, billingCycle, category, note:'', startDate, lastRenewedDate:null});
+  saveState(); render();
+}
+function delSubscription(id){ state.subscriptions.items = state.subscriptions.items.filter(x=>x.id!==id); saveState(); render(); }
+// "ต่ออายุแล้ว" — anchors the next-renewal countdown to today (mirrors car's
+// logCarService() rolling lastServiceDate forward once serviced).
+function renewSubscription(id){
+  const it = state.subscriptions.items.find(x=>x.id===id);
+  if(!it) return;
+  it.lastRenewedDate = todayISO();
+  saveState(); render();
+}
+
+/* ---------- Health view (สุขภาพ) ---------- */
+function renderHealth(){
+  const members = state.health.members || [];
+  const nearest = allHealthReminders().map(x=>({...x, st:healthStatusMeta(x.due)})).slice(0,6);
+  return `
+  <div class="section-title">สุขภาพ</div>
+  <div class="section-sub">ติดตามนัดหมาย/เตือนสุขภาพของทุกคนในบ้าน รวมถึงสัตว์เลี้ยง — ตั้งรอบแจ้งเตือนซ้ำได้ตามที่ต้องการ ครบกำหนดแล้วจะไปโผล่ในกระดิ่งแจ้งเตือนและปฏิทินหน้า "วันนี้" ด้วย</div>
+
+  <div class="panel">
+    <h3>ใกล้ถึงกำหนดที่สุด</h3>
+    ${nearest.length ? nearest.map(({member,rem,due,st})=>`
+      <div class="bar-row" style="align-items:center">
+        <div class="tl-dot" style="background:${st.color}; margin-right:6px"></div>
+        <div class="bar-label" style="flex:1 1 auto; font-weight:500">${escapeHtml(member.avatar||'')} ${escapeHtml(member.name)} — ${escapeHtml(rem.title)}</div>
+        <div class="bar-val" style="font-size:12px; color:${st.color}; width:auto; min-width:84px; white-space:nowrap">${st.label}</div>
+      </div>`).join('') : '<div class="muted">ยังไม่มีรายการเตือน — เพิ่มคนหรือสัตว์เลี้ยงด้านล่างก่อน แล้วเพิ่มรายการเตือนในการ์ดของแต่ละคน</div>'}
+  </div>
+
+  ${members.map(m=>renderHealthMemberCard(m)).join('')}
+
+  <div class="panel">
+    <h3>+ เพิ่มคน/สัตว์เลี้ยง</h3>
+    <div class="form-row">
+      <input type="text" id="healthMemberName" placeholder="ชื่อ">
+      <input type="text" id="healthMemberAvatar" maxlength="2" placeholder="อีโมจิ (ไม่บังคับ)" style="max-width:110px">
+      <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft); cursor:pointer">
+        <input type="checkbox" id="healthMemberIsPet"> สัตว์เลี้ยง
+      </label>
+      <input type="text" id="healthMemberSpecies" placeholder="สายพันธุ์ (ถ้าเป็นสัตว์เลี้ยง, ไม่บังคับ)">
+      <button class="btn" onclick="addHealthMember()">+ เพิ่ม</button>
+    </div>
+  </div>
+  `;
+}
+function healthUnitLabelPerVal(v,u){ return 'ทุก '+v+' '+healthUnitLabel(u); }
+function renderHealthMemberCard(m){
+  const reminders = [...(m.reminders||[])].map(r=>({r, due:healthNextDue(r)})).sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+  return `
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:10px">
+      <h3>${escapeHtml(m.avatar || (m.isPet?'🐾':'🧑'))} ${escapeHtml(m.name)}${m.species?` <span class="muted" style="font-weight:400">(${escapeHtml(m.species)})</span>`:''}</h3>
+      <button class="task-del" onclick="delHealthMember('${m.id}')" title="ลบคนนี้ (และรายการเตือนทั้งหมดของเขา)">ลบ ✕</button>
+    </div>
+    ${reminders.length ? reminders.map(({r,due})=>{
+      const st = healthStatusMeta(due);
+      return `<div class="health-row">
+        <span style="width:9px; height:9px; border-radius:50%; background:${st.color}; flex-shrink:0"></span>
+        <div style="flex:1; min-width:170px">
+          <div style="font-weight:600; font-size:13px">${escapeHtml(r.title)}</div>
+          <div class="muted">${r.recurring ? healthUnitLabelPerVal(r.intervalValue, r.intervalUnit) : 'ครั้งเดียว'}${r.note?(' · '+escapeHtml(r.note)):''}</div>
+        </div>
+        <div style="text-align:right; min-width:130px; font-size:12px; color:${st.color}">${fmtDate(due)} · ${st.label}</div>
+        <button class="btn btn-ghost btn-sm" onclick="doneHealthReminder('${m.id}','${r.id}')">${r.recurring?'✓ ทำแล้ว':'✓ เสร็จแล้ว'}</button>
+        <button class="task-del" onclick="delHealthReminder('${m.id}','${r.id}')">✕</button>
+      </div>`;
+    }).join('') : '<div class="muted">ยังไม่มีรายการเตือน</div>'}
+    <div class="form-row" style="margin-top:12px; flex-wrap:wrap; align-items:center">
+      <input type="text" id="healthRemTitle_${m.id}" placeholder="เช่น ฉีดวัคซีน, ตรวจฟัน, กินยา">
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); cursor:pointer">
+        <input type="checkbox" id="healthRemRecurring_${m.id}" checked onchange="toggleHealthRecurringUi('${m.id}')"> เตือนซ้ำเป็นรอบ
+      </label>
+      <span id="healthRemRecurringFields_${m.id}" style="display:flex; gap:8px">
+        <input type="number" id="healthRemIntervalValue_${m.id}" value="1" min="1" style="max-width:64px">
+        <select id="healthRemIntervalUnit_${m.id}">
+          <option value="day">วัน</option>
+          <option value="week">สัปดาห์</option>
+          <option value="month" selected>เดือน</option>
+          <option value="year">ปี</option>
+        </select>
+      </span>
+      <span id="healthRemOnceFields_${m.id}" style="display:none">
+        <input type="date" id="healthRemDueDate_${m.id}" value="${todayISO()}">
+      </span>
+      <input type="text" id="healthRemNote_${m.id}" placeholder="โน้ต (ไม่บังคับ)" style="max-width:160px">
+      <button class="btn btn-sm" onclick="addHealthReminder('${m.id}')">+ เพิ่มรายการเตือน</button>
+    </div>
+  </div>`;
+}
+function toggleHealthRecurringUi(mid){
+  const isRec = document.getElementById('healthRemRecurring_'+mid).checked;
+  document.getElementById('healthRemRecurringFields_'+mid).style.display = isRec ? 'flex' : 'none';
+  document.getElementById('healthRemOnceFields_'+mid).style.display = isRec ? 'none' : '';
+}
+function addHealthMember(){
+  const name = document.getElementById('healthMemberName').value.trim();
+  if(!name) return;
+  const isPet = document.getElementById('healthMemberIsPet').checked;
+  const avatar = document.getElementById('healthMemberAvatar').value.trim() || (isPet?'🐾':'🧑');
+  const species = document.getElementById('healthMemberSpecies').value.trim();
+  state.health.members.push({id:uid(), name, isPet, avatar, species, reminders:[]});
+  saveState(); render();
+}
+function delHealthMember(id){ state.health.members = state.health.members.filter(m=>m.id!==id); saveState(); render(); }
+function addHealthReminder(mid){
+  const m = state.health.members.find(x=>x.id===mid);
+  if(!m) return;
+  const titleEl = document.getElementById('healthRemTitle_'+mid);
+  const title = titleEl.value.trim();
+  if(!title) return;
+  const recurring = document.getElementById('healthRemRecurring_'+mid).checked;
+  const note = document.getElementById('healthRemNote_'+mid).value.trim();
+  if(recurring){
+    const intervalValue = parseFloat(document.getElementById('healthRemIntervalValue_'+mid).value) || 1;
+    const intervalUnit = document.getElementById('healthRemIntervalUnit_'+mid).value || 'month';
+    m.reminders.push({id:uid(), title, note, recurring:true, intervalValue, intervalUnit, lastDoneDate:null, createdDate:todayISO()});
+  } else {
+    const dueDate = document.getElementById('healthRemDueDate_'+mid).value || todayISO();
+    m.reminders.push({id:uid(), title, note, recurring:false, dueDate, createdDate:todayISO()});
+  }
+  saveState(); render();
+}
+function delHealthReminder(mid, rid){
+  const m = state.health.members.find(x=>x.id===mid);
+  if(!m) return;
+  m.reminders = m.reminders.filter(r=>r.id!==rid);
+  saveState(); render();
+}
+// Recurring: rolls the anchor forward to today, so the next due date counts a fresh cycle from
+// now (mirrors car's logCarService()). One-off: nothing left to keep, so it's just removed
+// (mirrors delRun()/delCarServiceLog() — there's no "done but keep in the list" state elsewhere
+// in this app either).
+function doneHealthReminder(mid, rid){
+  const m = state.health.members.find(x=>x.id===mid);
+  if(!m) return;
+  const r = m.reminders.find(x=>x.id===rid);
+  if(!r) return;
+  if(r.recurring){ r.lastDoneDate = todayISO(); }
+  else { m.reminders = m.reminders.filter(x=>x.id!==rid); }
+  saveState(); render();
 }
 
 /* ---------- Work view ---------- */
@@ -4740,8 +5265,17 @@ function importAllJson(evt){
       (parsed.calendar.events||[]).forEach(ev=>{ if(!ev.category) ev.category = 'other'; });
       if(!parsed.finance.taxByYear) parsed.finance.taxByYear = {};
       if(parsed.running && !parsed.running.races) parsed.running.races = [];
-      if(!parsed.settings.reminderPopup) parsed.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true}, windowMode:'week', lastShownDate:null, autoShow:true};
-      delete parsed.health; // module removed — drop it if an old backup still has it
+      if(!parsed.settings.reminderPopup) parsed.settings.reminderPopup = {enabledCats:{egat:true,doctor:true,other:true,race:true,health:true,subscription:true}, windowMode:'week', lastShownDate:null, autoShow:true};
+      if(!parsed.settings.reminderPopup.enabledCats) parsed.settings.reminderPopup.enabledCats = {egat:true,doctor:true,other:true,race:true,health:true,subscription:true};
+      if(parsed.settings.reminderPopup.enabledCats.health == null) parsed.settings.reminderPopup.enabledCats.health = true;
+      if(parsed.settings.reminderPopup.enabledCats.subscription == null) parsed.settings.reminderPopup.enabledCats.subscription = true;
+      // Health (สุขภาพ) — same backfill convention as loadState(): only trust an existing
+      // parsed.health if it already looks like the new people+pets shape, otherwise seed fresh
+      // defaults (covers both "no health at all" and a leftover OLD/incompatible shape).
+      if(!parsed.health || !Array.isArray(parsed.health.members)) parsed.health = defaultState().health;
+      (parsed.health.members||[]).forEach(m=>{ if(!m.reminders) m.reminders = []; });
+      if(!parsed.subscriptions || !Array.isArray(parsed.subscriptions.items)) parsed.subscriptions = defaultState().subscriptions;
+      if(!parsed.subscriptions.currencies) parsed.subscriptions.currencies = DEFAULT_SUB_CURRENCIES.slice();
       const looksValid = required.every(k=>Object.prototype.hasOwnProperty.call(parsed, k));
       if(!looksValid) throw new Error('ไฟล์นี้ไม่ใช่ backup ของ Life OS (โครงสร้างไม่ตรง)');
       if(!confirm('Import จะแทนที่ข้อมูลทั้งหมดในเบราว์เซอร์นี้ด้วยข้อมูลจากไฟล์ที่เลือก ดำเนินการต่อ?')) {
