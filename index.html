@@ -471,6 +471,15 @@ function activityScore(a){
   return 1;
 }
 function activitiesOn(dateIso){ return state.running.activities.filter(a=>a.date===dateIso); }
+// "2 ชม. 15 นาที" / "45 นาที" / "3 ชม." — used for the activity-overview total-time stat.
+function fmtHM(min){
+  min = Math.round(Number(min)||0);
+  if(min<=0) return '0 นาที';
+  const h = Math.floor(min/60), m = min%60;
+  if(h<=0) return m+' นาที';
+  if(m<=0) return h+' ชม.';
+  return h+' ชม. '+m+' นาที';
+}
 // One bucket per day of the given Monday-start week, each broken down by activity type.
 function buildWeeklyActivityBuckets(weekDays){
   return weekDays.map((d,i)=>{
@@ -959,11 +968,11 @@ function defaultState(){
       // holds every activity type (run/ride/weights/other), each tagged with `type`.
       weeklyGoalKm: 40,
       activities: [
-        {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, done:true, type:'run_road', demo:true},
-        {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, done:false, type:'run_road', demo:true},
-        {id:uid(), date:addDays(t,-1), name:'ปั่นจักรยานเช้า', distance_km:15, moving_time_min:40, done:true, type:'ride', demo:true},
-        {id:uid(), date:addDays(t,-2), name:'เวทเทรนนิ่ง', distance_km:0, moving_time_min:45, done:true, type:'weights', demo:true},
-        {id:uid(), date:addDays(t,-4), name:'วิ่งเทรลเขาใหญ่', distance_km:12, moving_time_min:95, done:true, type:'run_trail', demo:true}
+        {id:uid(), date:t, name:'Easy run', distance_km:6, moving_time_min:34, elevation_gain_m:40, done:true, type:'run_road', demo:true},
+        {id:uid(), date:t, name:'Long run 16K', distance_km:16, moving_time_min:null, elevation_gain_m:0, done:false, type:'run_road', demo:true},
+        {id:uid(), date:addDays(t,-1), name:'ปั่นจักรยานเช้า', distance_km:15, moving_time_min:40, elevation_gain_m:180, done:true, type:'ride', demo:true},
+        {id:uid(), date:addDays(t,-2), name:'เวทเทรนนิ่ง', distance_km:0, moving_time_min:45, elevation_gain_m:0, done:true, type:'weights', demo:true},
+        {id:uid(), date:addDays(t,-4), name:'วิ่งเทรลเขาใหญ่', distance_km:12, moving_time_min:95, elevation_gain_m:350, done:true, type:'run_trail', demo:true}
       ],
       lastSync: null,
       // Race goals — each one a target race day to count down to. Purely manual (no API for
@@ -2225,6 +2234,9 @@ function renderRunning(){
   const chartWeekSet = new Set(chartWeekDays);
   const buckets = isWeek ? buildWeeklyActivityBuckets(chartWeekDays) : buildMonthlyActivityBuckets(9, activityViewMonthEnd);
   const chartPeriodActivities = isWeek ? r.activities.filter(a=>chartWeekSet.has(a.date)) : r.activities.filter(a=>monthKey(a.date)===activityViewMonthEnd);
+  const periodKm = chartPeriodActivities.reduce((s,a)=>s+(Number(a.distance_km)||0),0);
+  const periodMin = chartPeriodActivities.reduce((s,a)=>s+(Number(a.moving_time_min)||0),0);
+  const periodElev = chartPeriodActivities.reduce((s,a)=>s+(Number(a.elevation_gain_m)||0),0);
   const isBrowsingPast = isWeek ? (chartWeekDays[0] !== weekDays[0]) : (activityViewMonthEnd !== todayISO().slice(0,7));
   const sortedActivities = [...r.activities].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 
@@ -2253,6 +2265,20 @@ function renderRunning(){
       <div>
         <div class="muted" style="margin-bottom:10px">สัดส่วนประเภทกิจกรรม — ${isWeek ? weekRangeLabel(chartWeekDays) : ymLabel(activityViewMonthEnd)}</div>
         ${renderActivityDonut(chartPeriodActivities)}
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-top:16px">
+      <div class="card" style="padding:12px">
+        <div class="card-sub">ระยะทางรวม</div>
+        <div class="big-stat mono" style="color:var(--teal)">${periodKm.toFixed(1)} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">กม.</span></div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">เวลารวม</div>
+        <div class="big-stat mono" style="color:var(--indigo)">${fmtHM(periodMin)}</div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-sub">ความสูงสะสม</div>
+        <div class="big-stat mono" style="color:var(--amber)">${Math.round(periodElev).toLocaleString('th-TH')} <span style="font-size:13px; font-weight:400; color:var(--ink-soft)">ม.</span></div>
       </div>
     </div>
     <div class="tag-row" style="margin-top:16px">
@@ -2291,12 +2317,17 @@ function renderRunning(){
     <div class="panel">
       <h3>กิจกรรมล่าสุด</h3>
       <table class="table">
-        <tr><th>วันที่</th><th>ชื่อ</th><th>ประเภท</th><th style="text-align:right">ระยะ/เวลา</th><th></th></tr>
-        ${sortedActivities.map(a=>{ const meta = activityTypeMeta(a.type); return `<tr>
+        <tr><th>วันที่</th><th>ชื่อ</th><th>ประเภท</th><th style="text-align:right">ระยะ/เวลา/ความสูง</th><th></th></tr>
+        ${sortedActivities.map(a=>{ const meta = activityTypeMeta(a.type);
+          const parts = [];
+          if(a.distance_km) parts.push(a.distance_km+' กม.');
+          if(a.moving_time_min) parts.push(a.moving_time_min+' นาที');
+          if(a.elevation_gain_m) parts.push('↑'+Math.round(a.elevation_gain_m)+' ม.');
+          return `<tr>
           <td>${fmtDate(a.date)}</td>
           <td>${escapeHtml(a.name)}</td>
           <td><span class="tag" style="background:${meta.color}; color:#fff">${meta.label}</span></td>
-          <td style="text-align:right" class="mono">${a.distance_km ? a.distance_km+' กม.' : (a.moving_time_min ? a.moving_time_min+' นาที' : '—')}</td>
+          <td style="text-align:right" class="mono">${parts.length ? parts.join(' · ') : '—'}</td>
           <td><button class="task-del" onclick="delRun('${a.id}')">✕</button></td>
         </tr>`; }).join('') || `<tr><td colspan="5" class="muted">ยังไม่มีข้อมูล</td></tr>`}
       </table>
@@ -2305,6 +2336,7 @@ function renderRunning(){
         <select id="runType">${ACTIVITY_TYPES.map(t=>`<option value="${t.key}">${t.label}</option>`).join('')}</select>
         <input type="number" id="runKm" placeholder="ระยะ (กม.) ไม่บังคับ" style="max-width:150px">
         <input type="number" id="runMin" placeholder="เวลา (นาที) ไม่บังคับ" style="max-width:150px">
+        <input type="number" id="runElev" placeholder="ความสูงสะสม (ม.) ไม่บังคับ" style="max-width:170px">
         <button class="btn" onclick="addRun()">+ บันทึกเอง</button>
       </div>
       <div class="muted">กรอกอย่างน้อยระยะทางหรือเวลาอย่างใดอย่างหนึ่ง (เวทเทรนนิ่ง/อื่นๆ มักใช้แค่เวลา)</div>
@@ -2337,8 +2369,9 @@ function addRun(){
   const type = document.getElementById('runType').value;
   const km = parseFloat(document.getElementById('runKm').value) || 0;
   const min = parseFloat(document.getElementById('runMin').value) || 0;
+  const elev = parseFloat(document.getElementById('runElev').value) || 0;
   if(!km && !min) return;
-  state.running.activities.unshift({id:uid(), date:todayISO(), name, distance_km:km||0, moving_time_min:min||null, done:true, type});
+  state.running.activities.unshift({id:uid(), date:todayISO(), name, distance_km:km||0, moving_time_min:min||null, elevation_gain_m:elev||0, done:true, type});
   saveState(); render();
 }
 function delRun(id){ state.running.activities = state.running.activities.filter(a=>a.id!==id); saveState(); render(); }
@@ -2391,12 +2424,14 @@ async function syncIntervals(){
       if(!km && !minutes) return; // nothing usable to chart — skip
       const id = 'intervals-' + act.id;
       if(existingIds.has(id)){ skipped++; return; }
+      const elevM = Math.round(Number(act.total_elevation_gain ?? act.icu_elevation_gain ?? 0)) || 0;
       state.running.activities.unshift({
         id,
         date: (act.start_date_local||act.start_date||todayISO()).slice(0,10),
         name: act.name || act.type || 'Activity',
         distance_km: km ? Math.round(km*10)/10 : 0,
         moving_time_min: minutes || null,
+        elevation_gain_m: elevM,
         type: mapIntervalsType(act.type),
         done:true
       });
