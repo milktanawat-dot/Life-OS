@@ -239,27 +239,35 @@ a{color:inherit;}
 .sub-grid-toggle button{border:none; background:none; padding:6px 14px; font-size:11.5px; font-weight:600; border-radius:9px; cursor:pointer; color:var(--ink-soft); font-family:inherit;}
 .sub-grid-toggle button.active{background:var(--panel); color:var(--ink); box-shadow:0 2px 6px -2px rgba(0,0,0,.18);}
 .sub-grid-toggle button:hover:not(.active){color:var(--ink);}
-.sub-grid-wrap{display:flex; gap:10px; align-items:stretch; margin-top:2px;}
-.sub-grid-main{flex:1; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:100px; grid-auto-flow:dense; gap:10px;}
-.sub-grid-mini{display:flex; flex-direction:column; gap:10px; width:88px; flex-shrink:0;}
-.sub-tile{border-radius:16px; padding:12px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;}
+.sub-grid-wrap{display:flex; gap:7px; align-items:stretch; margin-top:2px;}
+.sub-grid-main{flex:1; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:76px; grid-auto-flow:dense; gap:7px;}
+.sub-grid-mini{display:flex; flex-direction:column; gap:7px; width:72px; flex-shrink:0;}
+.sub-tile{border-radius:14px; padding:10px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;}
 .tile-xl{grid-column:span 2; grid-row:span 2;}
 .tile-lg{grid-column:span 2; grid-row:span 1;}
 .tile-md{grid-column:span 1; grid-row:span 1;}
 .tile-lg .tile-yearly, .tile-md .tile-yearly{display:none;}
 .tile-md .tile-name{max-width:80px;}
-.tile-pct{position:absolute; top:10px; right:10px; background:rgba(255,255,255,.8); font-size:10px; font-weight:700; padding:3px 8px; border-radius:99px; color:var(--ink);}
-.tile-logo-wrap{width:30px; height:30px; position:relative; flex-shrink:0;}
-.tile-logo-fallback{width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; color:#fff;}
-.tile-logo{position:absolute; inset:0; width:30px; height:30px; border-radius:9px; object-fit:contain; background:rgba(255,255,255,.85); padding:5px; display:none;}
-.tile-name{font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:6px;}
-.tile-price{font-size:16px; font-weight:700; margin-top:1px;}
-.tile-yearly{font-size:10px; color:var(--ink-soft); margin-top:1px;}
-.tile-mini{border-radius:14px; padding:8px; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-height:78px;}
-.tile-mini .tile-logo-wrap{width:24px; height:24px;}
-.tile-mini .tile-logo-fallback{width:24px; height:24px; font-size:11px;}
-.tile-mini .tile-logo{width:24px; height:24px;}
-.tile-mini-amt{font-size:11px; font-weight:700;}
+.tile-pct{position:absolute; top:8px; right:8px; background:rgba(255,255,255,.8); font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:99px; color:var(--ink);}
+.tile-logo-wrap{width:28px; height:28px; position:relative; flex-shrink:0;}
+.tile-logo-fallback{width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; color:#fff;}
+.tile-logo{position:absolute; inset:0; width:28px; height:28px; border-radius:8px; object-fit:contain; background:rgba(255,255,255,.85); padding:4px; display:none;}
+.tile-name{font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;}
+.tile-price{font-size:15px; font-weight:700; margin-top:1px;}
+.tile-yearly{font-size:9.5px; color:var(--ink-soft); margin-top:1px;}
+/* xl tiles get the tallest box (2 rows) so bump their typography up a notch — keeps the tile
+   looking intentionally-sized rather than mostly empty space between the logo and the numbers. */
+.tile-xl .tile-logo-wrap{width:38px; height:38px;}
+.tile-xl .tile-logo-fallback{width:38px; height:38px; font-size:15px; border-radius:10px;}
+.tile-xl .tile-logo{width:38px; height:38px; border-radius:10px;}
+.tile-xl .tile-name{font-size:13.5px; margin-top:6px;}
+.tile-xl .tile-price{font-size:22px;}
+.tile-xl .tile-yearly{font-size:11px;}
+.tile-mini{border-radius:12px; padding:6px; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:56px;}
+.tile-mini .tile-logo-wrap{width:22px; height:22px;}
+.tile-mini .tile-logo-fallback{width:22px; height:22px; font-size:10px;}
+.tile-mini .tile-logo{width:22px; height:22px;}
+.tile-mini-amt{font-size:10.5px; font-weight:700;}
 
 /* Health (สุขภาพ) — person/pet reminder rows */
 .health-row{display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
@@ -324,6 +332,57 @@ const thaiDays = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 const DEFAULT_TRIP_CATEGORIES = ['เดินทาง','ที่พัก','อาหาร','อื่นๆ'];
 const DEFAULT_TRIP_CURRENCIES = ['THB','USD','EUR','JPY','GBP','SGD','KRW','CNY','AUD','HKD','TWD','VND','LAK','PHP','IDR','MYR','INR'];
 const DEFAULT_SUB_CURRENCIES = ['THB','USD','EUR','JPY','GBP','SGD','KRW','CNY','AUD'];
+// Starting-point THB rates (checked 21 Sep 2026, mid-market — NOT live) for the "รวมทั้งหมด
+// (≈บาท)" combined total in renderSubscriptions()/renderAnnualExpenses(). state.settings.fxRatesToTHB
+// holds any per-currency overrides the user enters (see fxRate()/setFxRate()); these defaults are
+// only the fallback for a currency the user hasn't edited yet, exactly the "editable, not silently
+// trusted" approach already used for everything else money-related in this app.
+const DEFAULT_FX_TO_THB = { THB:1, USD:33.28, EUR:38.17, GBP:44.44, JPY:0.211, SGD:26.04, KRW:0.0242, CNY:4.97, AUD:23.70 };
+function fxRate(cur){
+  const override = state.settings.fxRatesToTHB && state.settings.fxRatesToTHB[cur];
+  if(override != null && !isNaN(override) && Number(override) > 0) return Number(override);
+  return DEFAULT_FX_TO_THB[cur] || null;
+}
+function setFxRate(cur, val){
+  const n = parseFloat(val);
+  if(!state.settings.fxRatesToTHB) state.settings.fxRatesToTHB = {};
+  state.settings.fxRatesToTHB[cur] = (isNaN(n) || n <= 0) ? undefined : n;
+  saveState(); render();
+}
+// Sums a {currency: {monthly/yearly: n}} totals object into one THB figure using fxRate() —
+// shared by both the subscriptions and annual-expenses summary panels.
+function combinedTHB(totalsByCurrency, key){
+  return Object.entries(totalsByCurrency).reduce((sum,[cur,v])=> sum + (Number(v[key])||0) * (fxRate(cur)||0), 0);
+}
+// The "รวมทั้งหมด (≈บาท)" card — sits alongside the existing per-currency cards in the same
+// .grid, only shown once there's actually a non-THB currency to combine. bigValue/subNote are
+// pre-formatted by the caller so this stays agnostic to monthly vs. yearly framing.
+function fxCombinedCard(totals, bigValue, subNote){
+  if(!Object.keys(totals).some(c=>c!=='THB')) return '';
+  return `
+  <div class="card" style="padding:12px; background:var(--purple-pale)">
+    <div class="card-sub" style="color:var(--purple-deep)">รวมทั้งหมด (≈บาท)</div>
+    <div class="big-stat mono" style="color:var(--purple-deep)">${bigValue}</div>
+    ${subNote ? `<div class="stat-note" style="color:var(--purple-deep)">${subNote}</div>` : ''}
+  </div>`;
+}
+// Editable per-currency → THB rate inputs, shown under the currency grid whenever a non-THB
+// currency is present. Deliberately manual (not a live FX fetch — see DEFAULT_FX_TO_THB comment
+// above), so the combined total is only ever as accurate as the rate the user has actually set.
+function fxRateInputsRow(totals){
+  const nonTHB = Object.keys(totals).filter(c=>c!=='THB');
+  if(!nonTHB.length) return '';
+  return `
+  <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px">
+    ${nonTHB.map(cur=>`
+      <label style="font-size:11px; color:var(--ink-soft); display:flex; align-items:center; gap:5px">
+        1 ${escapeHtml(cur)} ≈
+        <input type="number" step="0.01" min="0" value="${fxRate(cur)||''}" oninput="setFxRate('${cur}', this.value)" style="width:64px; padding:4px 6px; font-size:11px">
+        บาท
+      </label>`).join('')}
+  </div>
+  <div class="muted" style="margin-top:4px; font-size:10.5px">อัตราแลกเปลี่ยนตั้งต้นให้ (เช็คล่าสุด 21 ก.ย. 2569 ไม่ใช่ราคาสด) แก้ไขเองได้ถ้าอยากได้ค่าที่แม่นกว่านี้</div>`;
+}
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function pad2(n){ return String(n).padStart(2,'0'); }
@@ -1064,7 +1123,11 @@ function defaultState(){
         windowMode: 'week', // 'week' | 'month'
         lastShownDate: null,
         autoShow: true
-      }
+      },
+      // Per-currency THB rate overrides for the subscriptions/annual-expenses "รวมทั้งหมด
+      // (≈บาท)" combined total — see fxRate()/DEFAULT_FX_TO_THB above. Empty by default;
+      // falls back to DEFAULT_FX_TO_THB until the user edits a rate.
+      fxRatesToTHB: {}
     }
   };
 }
@@ -1105,6 +1168,7 @@ function loadState(){
       (s.assets.items||[]).forEach(it=>{ if(!it.portfolioId) it.portfolioId = (s.assets.portfolios[0] && s.assets.portfolios[0].id) || 'default'; });
       if(!s.settings) s.settings = {};
       if(s.settings.finnhubApiKey == null) s.settings.finnhubApiKey = '';
+      if(!s.settings.fxRatesToTHB) s.settings.fxRatesToTHB = {};
       // Backfill currency on items saved before live market-price tracking existed — don't
       // guess symbol/units for pre-existing non-Dime items, they just aren't eligible for
       // live refresh until the user (or a later Dime import) sets those explicitly.
@@ -2468,8 +2532,10 @@ function renderSubscriptions(){
           <div class="big-stat mono">${fmtMoney(Math.round(totals[cur].monthly))}</div>
           <div class="stat-note">≈ ${fmtMoney(Math.round(totals[cur].yearly))} / ปี</div>
         </div>`).join('')}
+      ${fxCombinedCard(totals, fmtMoney(Math.round(combinedTHB(totals,'monthly'))), '≈ '+fmtMoney(Math.round(combinedTHB(totals,'yearly')))+' / ปี')}
     </div>
-    <div class="muted" style="margin-top:10px; font-size:11px">ยอดรวมแยกตามสกุลเงิน (ไม่ได้แปลงรวมเป็นสกุลเดียว เพื่อไม่ให้อัตราแลกเปลี่ยนที่อาจไม่อัปเดตทำให้ยอดคลาดเคลื่อน) — รายเดือน/รายสัปดาห์ถูกคำนวณเทียบเท่าเป็น "ต่อเดือน" ให้แล้ว</div>
+    ${fxRateInputsRow(totals)}
+    <div class="muted" style="margin-top:10px; font-size:11px">ยอดรวมแยกตามสกุลเงิน (ไม่ได้แปลงรวมเป็นสกุลเดียวโดยอัตโนมัติ) — รายเดือน/รายสัปดาห์ถูกคำนวณเทียบเท่าเป็น "ต่อเดือน" ให้แล้ว</div>
     ` : '<div class="muted">ยังไม่มีรายการ</div>'}
   </div>
 
@@ -2549,7 +2615,9 @@ function renderAnnualExpenses(){
           <div class="big-stat mono">${fmtMoney(Math.round(totals[cur].yearly))}</div>
           <div class="stat-note">≈ ${fmtMoney(Math.round(totals[cur].yearly/12))} / เดือน เฉลี่ย</div>
         </div>`).join('')}
+      ${fxCombinedCard(totals, fmtMoney(Math.round(combinedTHB(totals,'yearly'))), '≈ '+fmtMoney(Math.round(combinedTHB(totals,'yearly')/12))+' / เดือน เฉลี่ย')}
     </div>
+    ${fxRateInputsRow(totals)}
     ` : '<div class="muted">ยังไม่มีรายการ</div>'}
   </div>
 
@@ -5512,6 +5580,7 @@ function importAllJson(evt){
       if(parsed.settings.reminderPopup.enabledCats.health == null) parsed.settings.reminderPopup.enabledCats.health = true;
       if(parsed.settings.reminderPopup.enabledCats.subscription == null) parsed.settings.reminderPopup.enabledCats.subscription = true;
       if(parsed.settings.reminderPopup.enabledCats.annualExpense == null) parsed.settings.reminderPopup.enabledCats.annualExpense = true;
+      if(!parsed.settings.fxRatesToTHB) parsed.settings.fxRatesToTHB = {};
       // Health (สุขภาพ) — same backfill convention as loadState(): only trust an existing
       // parsed.health if it already looks like the new people+pets shape, otherwise seed fresh
       // defaults (covers both "no health at all" and a leftover OLD/incompatible shape).
