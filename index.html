@@ -2413,20 +2413,28 @@ async function syncIntervals(){
       ? state.running.activities.filter(a=>!a.demo)
       : [];
 
-    // Dedupe: intervals.icu returns the same activities every time the date
-    // range overlaps a previous sync, so only add ids we haven't seen yet —
-    // otherwise every "Sync ตอนนี้" click doubled up the list.
-    const existingIds = new Set(state.running.activities.map(a=>a.id));
-    let added = 0, skipped = 0;
+    // intervals.icu returns the same activities every time the date range overlaps a
+    // previous sync — dedupe by id, but (unlike before) REFRESH already-synced entries with
+    // the latest data from the API instead of skipping them outright. Two reasons this
+    // matters: (1) any field added to our app after an activity was first synced (like
+    // elevation_gain_m) would otherwise sit stuck at its old undefined/0 value forever,
+    // since the old sync ran before that field existed; (2) intervals.icu itself can
+    // recompute/correct an activity after the fact (re-processed GPS, trimmed/merged laps,
+    // manually edited distance or type on their side) — a "skip if id exists" dedupe would
+    // freeze our copy at the original, possibly-wrong snapshot instead of picking up the
+    // correction on the next sync.
+    let added = 0, updated = 0, skipped = 0;
     (data||[]).forEach(act=>{
       const km = (act.distance || 0) / 1000;
       const minutes = act.moving_time ? Math.round(act.moving_time/60) : 0;
       if(!km && !minutes) return; // nothing usable to chart — skip
       const id = 'intervals-' + act.id;
-      if(existingIds.has(id)){ skipped++; return; }
-      const elevM = Math.round(Number(act.total_elevation_gain ?? act.icu_elevation_gain ?? 0)) || 0;
-      state.running.activities.unshift({
-        id,
+      // intervals.icu's own API has used different casing for this field across versions/
+      // activity sources — elevationGain is what the current API actually returns for most
+      // activities, but keep the older guesses as fallbacks in case an activity comes back
+      // shaped differently (e.g. from an older import).
+      const elevM = Math.round(Number(act.elevationGain ?? act.total_elevation_gain ?? act.icu_elevation_gain ?? act.elevation_gain ?? 0)) || 0;
+      const fresh = {
         date: (act.start_date_local||act.start_date||todayISO()).slice(0,10),
         name: act.name || act.type || 'Activity',
         distance_km: km ? Math.round(km*10)/10 : 0,
@@ -2434,14 +2442,30 @@ async function syncIntervals(){
         elevation_gain_m: elevM,
         type: mapIntervalsType(act.type),
         done:true
-      });
-      existingIds.add(id);
+      };
+      const existingIdx = state.running.activities.findIndex(a=>a.id===id);
+      if(existingIdx > -1){
+        const prev = state.running.activities[existingIdx];
+        const changed = prev.distance_km!==fresh.distance_km || prev.moving_time_min!==fresh.moving_time_min || prev.elevation_gain_m!==fresh.elevation_gain_m || prev.name!==fresh.name || prev.type!==fresh.type || prev.date!==fresh.date;
+        state.running.activities[existingIdx] = { ...prev, ...fresh };
+        if(changed) updated++; else skipped++;
+        return;
+      }
+      state.running.activities.unshift({ id, ...fresh });
       added++;
     });
     state.running.lastSync = new Date().toISOString();
     saveState();
-    msgEl.innerHTML = `<div class="msg msg-ok">Sync สำเร็จ — เพิ่มใหม่ ${added} กิจกรรม${skipped ? ` (ข้าม ${skipped} รายการที่มีอยู่แล้ว)` : ''}</div>`;
+    const parts = [`เพิ่มใหม่ ${added} กิจกรรม`];
+    if(updated) parts.push(`อัปเดตข้อมูล ${updated} รายการ`);
+    if(skipped) parts.push(`เหมือนเดิม ${skipped} รายการ`);
+    // render() rebuilds the whole "กิจกรรม" view from scratch (including a fresh, empty
+    // #runSyncMsg div) — setting the message on the OLD msgEl reference before render() would
+    // get immediately wiped out the moment render() replaces it. Render first, then grab the
+    // newly-created element and set the message on that.
     render();
+    const freshMsgEl = document.getElementById('runSyncMsg');
+    if(freshMsgEl) freshMsgEl.innerHTML = `<div class="msg msg-ok">Sync สำเร็จ — ${parts.join(' · ')}</div>`;
   }catch(err){
     msgEl.innerHTML = `<div class="msg msg-err">Sync ไม่สำเร็จ (${escapeHtml(err.message)}). สาเหตุที่พบบ่อย: เบราว์เซอร์บล็อกด้วย CORS เพราะไฟล์นี้เปิดแบบ local file, หรือ API key/athlete id ไม่ถูกต้อง — ลองเปิดไฟล์นี้ผ่าน local web server (เช่น "npx serve") แทนการดับเบิลคลิกเปิดตรงๆ ถ้ายังไม่ได้ ให้ใช้ปุ่ม "บันทึกเอง" แทนไปก่อน</div>`;
   }
