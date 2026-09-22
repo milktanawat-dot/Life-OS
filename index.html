@@ -2729,12 +2729,23 @@ function saveEditSub(){
 }
 
 /* ---------- Health view (สุขภาพ) ---------- */
+// Which reminder (if any) is open for editing — same "reuse the add form" pattern as
+// editingSubId/editingAexpId above. Reminder ids are unique across all members, so this alone
+// is enough to find it (see findHealthReminder()); no need to also track which member.
+let editingHealthRemId = null;
+function findHealthReminder(rid){
+  for(const m of (state.health.members||[])){
+    const r = (m.reminders||[]).find(x=>x.id===rid);
+    if(r) return {member:m, rem:r};
+  }
+  return null;
+}
 function renderHealth(){
   const members = state.health.members || [];
   const nearest = allHealthReminders().map(x=>({...x, st:healthStatusMeta(x.due)})).slice(0,6);
   return `
   <div class="section-title">สุขภาพ</div>
-  <div class="section-sub">ติดตามนัดหมาย/เตือนสุขภาพของทุกคนในบ้าน รวมถึงสัตว์เลี้ยง — ตั้งรอบแจ้งเตือนซ้ำได้ตามที่ต้องการ ครบกำหนดแล้วจะไปโผล่ในกระดิ่งแจ้งเตือนและปฏิทินหน้า "วันนี้" ด้วย</div>
+  <div class="section-sub">ติดตามนัดหมาย/เตือนสุขภาพของทุกคนในบ้าน รวมถึงสัตว์เลี้ยง — ตั้งรอบแจ้งเตือนซ้ำได้ตามที่ต้องการ ระบุวันที่ทำล่าสุดได้ (ไม่บังคับ) เพื่อให้นับรอบถัดไปถูกต้องตั้งแต่แรก ครบกำหนดแล้วจะไปโผล่ในกระดิ่งแจ้งเตือนและปฏิทินหน้า "วันนี้" ด้วย</div>
 
   <div class="panel">
     <h3>ใกล้ถึงกำหนดที่สุด</h3>
@@ -2765,6 +2776,10 @@ function renderHealth(){
 function healthUnitLabelPerVal(v,u){ return 'ทุก '+v+' '+healthUnitLabel(u); }
 function renderHealthMemberCard(m){
   const reminders = [...(m.reminders||[])].map(r=>({r, due:healthNextDue(r)})).sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+  // If a reminder belonging to THIS member is being edited, reuse the "+ เพิ่มรายการเตือน" form
+  // below as the edit form too — same pattern as editingSub/editingAexp (see saveEditHealthReminder()).
+  const editingRem = editingHealthRemId ? (m.reminders||[]).find(r=>r.id===editingHealthRemId) : null;
+  const recurringDefault = editingRem ? editingRem.recurring : true;
   return `
   <div class="panel">
     <div class="ribbon-head" style="margin-bottom:10px">
@@ -2777,32 +2792,41 @@ function renderHealthMemberCard(m){
         <span style="width:9px; height:9px; border-radius:50%; background:${st.color}; flex-shrink:0"></span>
         <div style="flex:1; min-width:170px">
           <div style="font-weight:600; font-size:13px">${escapeHtml(r.title)}</div>
-          <div class="muted">${r.recurring ? healthUnitLabelPerVal(r.intervalValue, r.intervalUnit) : 'ครั้งเดียว'}${r.note?(' · '+escapeHtml(r.note)):''}</div>
+          <div class="muted">${r.recurring ? healthUnitLabelPerVal(r.intervalValue, r.intervalUnit) : 'ครั้งเดียว'}${r.recurring && r.lastDoneDate ? (' · ทำล่าสุด '+fmtDateShort(r.lastDoneDate)) : ''}${r.note?(' · '+escapeHtml(r.note)):''}</div>
         </div>
         <div style="text-align:right; min-width:130px; font-size:12px; color:${st.color}">${fmtDate(due)} · ${st.label}</div>
+        <button class="btn btn-ghost btn-sm" onclick="editHealthReminder('${m.id}','${r.id}')">✎ แก้ไข</button>
         <button class="btn btn-ghost btn-sm" onclick="doneHealthReminder('${m.id}','${r.id}')">${r.recurring?'✓ ทำแล้ว':'✓ เสร็จแล้ว'}</button>
         <button class="task-del" onclick="delHealthReminder('${m.id}','${r.id}')">✕</button>
       </div>`;
     }).join('') : '<div class="muted">ยังไม่มีรายการเตือน</div>'}
     <div class="form-row" style="margin-top:12px; flex-wrap:wrap; align-items:center">
-      <input type="text" id="healthRemTitle_${m.id}" placeholder="เช่น ฉีดวัคซีน, ตรวจฟัน, กินยา">
+      ${editingRem ? `<div style="flex:1 1 100%; font-weight:600; font-size:12.5px; color:var(--purple-deep)">✎ แก้ไขรายการเตือน: ${escapeHtml(editingRem.title)}</div>` : ''}
+      <input type="text" id="healthRemTitle_${m.id}" placeholder="เช่น ฉีดวัคซีน, ตรวจฟัน, กินยา" value="${editingRem ? escapeHtml(editingRem.title) : ''}">
       <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); cursor:pointer">
-        <input type="checkbox" id="healthRemRecurring_${m.id}" checked onchange="toggleHealthRecurringUi('${m.id}')"> เตือนซ้ำเป็นรอบ
+        <input type="checkbox" id="healthRemRecurring_${m.id}" ${recurringDefault?'checked':''} onchange="toggleHealthRecurringUi('${m.id}')"> เตือนซ้ำเป็นรอบ
       </label>
-      <span id="healthRemRecurringFields_${m.id}" style="display:flex; gap:8px">
-        <input type="number" id="healthRemIntervalValue_${m.id}" value="1" min="1" style="max-width:64px">
+      <span id="healthRemRecurringFields_${m.id}" style="display:${recurringDefault?'flex':'none'}; gap:8px; flex-wrap:wrap; align-items:center">
+        <input type="number" id="healthRemIntervalValue_${m.id}" value="${editingRem && editingRem.recurring ? editingRem.intervalValue : 1}" min="1" style="max-width:64px">
         <select id="healthRemIntervalUnit_${m.id}">
-          <option value="day">วัน</option>
-          <option value="week">สัปดาห์</option>
-          <option value="month" selected>เดือน</option>
-          <option value="year">ปี</option>
+          <option value="day" ${editingRem && editingRem.intervalUnit==='day'?'selected':''}>วัน</option>
+          <option value="week" ${editingRem && editingRem.intervalUnit==='week'?'selected':''}>สัปดาห์</option>
+          <option value="month" ${!editingRem || editingRem.intervalUnit==='month' ? 'selected':''}>เดือน</option>
+          <option value="year" ${editingRem && editingRem.intervalUnit==='year'?'selected':''}>ปี</option>
         </select>
+        <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-soft); cursor:pointer">
+          ทำล่าสุดเมื่อ (ไม่บังคับ)
+          <input type="date" id="healthRemLastDone_${m.id}" value="${editingRem && editingRem.recurring ? (editingRem.lastDoneDate||'') : ''}" style="max-width:150px">
+        </label>
       </span>
-      <span id="healthRemOnceFields_${m.id}" style="display:none">
-        <input type="date" id="healthRemDueDate_${m.id}" value="${todayISO()}">
+      <span id="healthRemOnceFields_${m.id}" style="display:${(editingRem && !editingRem.recurring) ? '' : 'none'}">
+        <input type="date" id="healthRemDueDate_${m.id}" value="${editingRem && !editingRem.recurring ? editingRem.dueDate : todayISO()}">
       </span>
-      <input type="text" id="healthRemNote_${m.id}" placeholder="โน้ต (ไม่บังคับ)" style="max-width:160px">
-      <button class="btn btn-sm" onclick="addHealthReminder('${m.id}')">+ เพิ่มรายการเตือน</button>
+      <input type="text" id="healthRemNote_${m.id}" placeholder="โน้ต (ไม่บังคับ)" style="max-width:160px" value="${editingRem ? escapeHtml(editingRem.note||'') : ''}">
+      ${editingRem ? `
+        <button class="btn btn-sm" onclick="saveEditHealthReminder('${m.id}')">✓ บันทึกการแก้ไข</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelEditHealthReminder()">ยกเลิก</button>
+      ` : `<button class="btn btn-sm" onclick="addHealthReminder('${m.id}')">+ เพิ่มรายการเตือน</button>`}
     </div>
   </div>`;
 }
@@ -2832,7 +2856,12 @@ function addHealthReminder(mid){
   if(recurring){
     const intervalValue = parseFloat(document.getElementById('healthRemIntervalValue_'+mid).value) || 1;
     const intervalUnit = document.getElementById('healthRemIntervalUnit_'+mid).value || 'month';
-    m.reminders.push({id:uid(), title, note, recurring:true, intervalValue, intervalUnit, lastDoneDate:null, createdDate:todayISO()});
+    // Optional: when the activity was actually last done (e.g. adding a schedule for something
+    // done 2 months ago), so healthNextDue() anchors on the real date instead of "created today"
+    // — leaving it blank keeps the old behavior (anchors on createdDate, i.e. a fresh cycle
+    // starting now).
+    const lastDoneDate = document.getElementById('healthRemLastDone_'+mid).value || null;
+    m.reminders.push({id:uid(), title, note, recurring:true, intervalValue, intervalUnit, lastDoneDate, createdDate:todayISO()});
   } else {
     const dueDate = document.getElementById('healthRemDueDate_'+mid).value || todayISO();
     m.reminders.push({id:uid(), title, note, recurring:false, dueDate, createdDate:todayISO()});
@@ -2843,6 +2872,7 @@ function delHealthReminder(mid, rid){
   const m = state.health.members.find(x=>x.id===mid);
   if(!m) return;
   m.reminders = m.reminders.filter(r=>r.id!==rid);
+  if(editingHealthRemId===rid) editingHealthRemId = null;
   saveState(); render();
 }
 // Recurring: rolls the anchor forward to today, so the next due date counts a fresh cycle from
@@ -2856,6 +2886,38 @@ function doneHealthReminder(mid, rid){
   if(!r) return;
   if(r.recurring){ r.lastDoneDate = todayISO(); }
   else { m.reminders = m.reminders.filter(x=>x.id!==rid); }
+  saveState(); render();
+}
+function editHealthReminder(mid, rid){ editingHealthRemId = rid; render(); }
+function cancelEditHealthReminder(){ editingHealthRemId = null; render(); }
+// Edit-in-place, same pattern as saveEditSub()/saveEditAexp() — reuses the add form's field ids.
+// Lets the user correct a reminder's title/interval/note, and — the point of this round — set or
+// fix its "ทำล่าสุดเมื่อ" (last done) date after the fact, e.g. for a reminder that was created
+// without one and so is currently anchored on its createdDate instead of the real last-done date.
+function saveEditHealthReminder(mid){
+  const m = state.health.members.find(x=>x.id===mid);
+  if(!m) return;
+  const r = m.reminders.find(x=>x.id===editingHealthRemId);
+  if(!r) return;
+  const title = document.getElementById('healthRemTitle_'+mid).value.trim();
+  if(!title) return;
+  const recurring = document.getElementById('healthRemRecurring_'+mid).checked;
+  const note = document.getElementById('healthRemNote_'+mid).value.trim();
+  r.title = title;
+  r.note = note;
+  r.recurring = recurring;
+  if(recurring){
+    r.intervalValue = parseFloat(document.getElementById('healthRemIntervalValue_'+mid).value) || 1;
+    r.intervalUnit = document.getElementById('healthRemIntervalUnit_'+mid).value || 'month';
+    r.lastDoneDate = document.getElementById('healthRemLastDone_'+mid).value || null;
+    delete r.dueDate;
+  } else {
+    r.dueDate = document.getElementById('healthRemDueDate_'+mid).value || todayISO();
+    delete r.lastDoneDate;
+    delete r.intervalValue;
+    delete r.intervalUnit;
+  }
+  editingHealthRemId = null;
   saveState(); render();
 }
 
