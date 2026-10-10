@@ -12,9 +12,22 @@
  */
 (function () {
   'use strict';
-  var CFG = window.MILK_MONEY || {};
-  if (!CFG.url || !CFG.key || /XXXX|SYNC_KEY/.test(CFG.url + CFG.key)) { console.warn('[Milk Money] ยังไม่ได้ตั้งค่า window.MILK_MONEY = {url, key}'); return; }
   var LS = { get: function (k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } } };
+  // ตั้งค่าได้ 2 แบบ: window.MILK_MONEY = {url, key} ในหน้าเว็บ หรือกรอกครั้งเดียวผ่านปุ่มที่มุมล่างซ้าย (เก็บใน localStorage ของเบราว์เซอร์นี้ — Milk Hub กับ Life OS ใช้ร่วมกัน)
+  var CFG = window.MILK_MONEY && window.MILK_MONEY.url && !/XXXX|SYNC_KEY/.test(window.MILK_MONEY.url + window.MILK_MONEY.key) ? window.MILK_MONEY : (LS.get('mm:config', null) || {});
+  function setupForm() {
+    var w = document.createElement('div');
+    w.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(10,14,30,.5);display:flex;align-items:center;justify-content:center;font:14px "IBM Plex Sans Thai",system-ui,sans-serif';
+    w.innerHTML = '<form style="background:#fff;color:#121A33;border-radius:18px;padding:20px;width:min(440px,92vw);display:grid;gap:10px"><b style="font-size:17px">เชื่อม Milk Money</b><span style="color:#5D6680;font-size:13px">คัดลอกจากแดชบอร์ด Milk Money → ตั้งค่า → เชื่อมต่อ (กรอกครั้งเดียว ใช้ได้ทั้ง Milk Hub และ Life OS ในเบราว์เซอร์นี้)</span><label>Web app URL<input name="u" required placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;padding:9px;border:1px solid #E3E7F2;border-radius:10px;box-sizing:border-box"></label><label>SYNC_KEY<input name="k" required style="width:100%;padding:9px;border:1px solid #E3E7F2;border-radius:10px;box-sizing:border-box"></label><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" data-x style="padding:8px 14px;border-radius:10px;border:1px solid #E3E7F2;background:#fff">ปิด</button><button style="padding:8px 14px;border-radius:10px;border:0;background:#1F3FBF;color:#fff;font-weight:600">บันทึกและเชื่อม</button></div></form>';
+    document.body.appendChild(w);
+    w.querySelector('[data-x]').onclick = function () { w.remove(); };
+    w.querySelector('form').onsubmit = function (e) { e.preventDefault(); var u = this.u.value.trim(), k = this.k.value.trim(); LS.set('mm:config', { url: u, key: k }); w.remove(); location.reload(); };
+  }
+  window.milkMoneySetup = setupForm;
+  if (!CFG.url || !CFG.key) {
+    var boot = function () { badge('mm-bridge', '🥛 เชื่อม Milk Money', setupForm); };
+    if (document.readyState === 'complete') setTimeout(boot, 300); else window.addEventListener('load', function () { setTimeout(boot, 300); });
+  }
   var hash = function (s) { var h = 0; s = String(s); for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; } return String(h); };
   var hhmm = function (d) { d = d ? new Date(d) : new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
 
@@ -31,9 +44,19 @@
 
   /* ============================ Milk Hub ============================ */
   function isMilkHub() { return typeof window.loadProfileData === 'function' && typeof window.renderAll === 'function' && /Milk Hub/i.test(document.title); }
+  // ก่อนเขียนทับครั้งแรก: สำรองข้อมูลเดิมในเครื่อง + ส่งรายการที่จดใน Milk Hub แต่ยังไม่มีใน Milk Money ขึ้นไปก่อน (กันข้อมูลหาย)
+  function milkHubPushLocal() {
+    var local = LS.get('milkhub:money:entries', []) || [];
+    if (!LS.get('milkhub:mm:backupBeforeSync')) LS.set('milkhub:mm:backupBeforeSync', { at: new Date().toISOString(), money: local, tax: LS.get('milkhub:tax:data', {}), assets: LS.get('milkhub:assets:data', {}) });
+    var mine = local.filter(function (e) { return e && e.id && String(e.id).indexOf('mm-') !== 0 && !e.mm; });
+    if (!mine.length) return Promise.resolve({ imported: 0 });
+    return fetch(CFG.url, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ sync_key: CFG.key, action: 'milkhub_push', data: { money: mine } }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (!j.ok) throw new Error(j.error || 'push failed'); if (j.imported) console.info('[Milk Money] ส่งรายการจาก Milk Hub เพิ่ม ' + j.imported + ' รายการ'); return j; });
+  }
   function milkHubSync(manual) {
-    badge('mm-bridge', '🥛 กำลังดึงข้อมูลจาก Milk Money…');
-    return fetch(CFG.url + '?api=milkhub&key=' + encodeURIComponent(CFG.key), { redirect: 'follow' })
+    badge('mm-bridge', '🥛 กำลังซิงก์กับ Milk Money…');
+    return milkHubPushLocal().then(function () { return fetch(CFG.url + '?api=milkhub&key=' + encodeURIComponent(CFG.key), { redirect: 'follow' }); })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j || !j.ok) throw new Error((j && j.error) || 'ดึงข้อมูลไม่สำเร็จ');
@@ -92,6 +115,7 @@
   }
 
   function start() {
+    if (!CFG.url || !CFG.key) return;
     if (isMilkHub()) { lockMilkHub(); milkHubSync(false); setInterval(function () { if (!document.hidden) milkHubSync(false); }, 10 * 60 * 1000); }
     else if (isLifeOS()) hookLifeOS();
     else console.info('[Milk Money] ไม่รู้จักหน้านี้ — รองรับ Milk Hub และ Life OS');
