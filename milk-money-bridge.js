@@ -6,7 +6,7 @@
  *   <script src="milk-money-bridge.js"></script>
  *
  * Milk Hub  → ดึงรายรับรายจ่าย / ภาษี / พอร์ต / หนี้ จาก Milk Money มาแสดง และล็อกการแก้ไขส่วนนั้น (อ่านอย่างเดียว)
- * Life OS   → โมดูลทรัพย์สิน ดึงจาก Milk Money (GET api=lifeos) มาแสดงแบบอ่านอย่างเดียว — พอร์ต/หุ้น/เงินสด/หนี้/พอร์ตครอบครัว
+ * Life OS   → โมดูลเงิน (GET api=milkhub: รายรับรายจ่าย+สลิปภาษี) และโมดูลทรัพย์สิน ดึงจาก Milk Money (GET api=lifeos) มาแสดงแบบอ่านอย่างเดียว — พอร์ต/หุ้น/เงินสด/หนี้/พอร์ตครอบครัว
  *             ทุกครั้งที่เปิดหน้า + ทุก 10 นาที + ปุ่มรีเฟรช (ไม่ส่งทรัพย์สินขึ้นไปอีกแล้ว กันข้อมูลวนซ้ำ)
  *             ยังส่งค่าสมาชิก/ค่าใช้จ่ายรายปี/ทริป ไป Milk Money เหมือนเดิม (เฉพาะเมื่อข้อมูลเปลี่ยน)
  *             + แสดงชิป "ใช้ได้วันละ" จาก Milk Money มุมล่างซ้าย
@@ -152,7 +152,39 @@
         return null;
       });
   }
+  /* ---- เงิน (รายรับรายจ่าย + สลิปภาษี): ดึงจาก Milk Money ตรง ไม่ต้องผ่าน Milk Hub ---- */
+  function lifeOSPullFinance() {
+    return fetch(CFG.url + '?api=milkhub&key=' + encodeURIComponent(CFG.key), { redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) throw new Error((j && j.error) || 'ดึงข้อมูลไม่สำเร็จ');
+        var st = lifeOSState(); if (!st || !st.finance) throw new Error('ไม่พบ state ของ Life OS');
+        // เก็บรายการที่จดเองใน Life OS ไว้ ตัดของที่มาจาก Milk Hub (mh-) / Milk Money รอบก่อน (mm-) และข้อมูลตัวอย่างออก แล้วใส่ชุดล่าสุดจาก Milk Money
+        var keep = (st.finance.transactions || []).filter(function (t) { var id = String(t.id || ''); return !t.demo && id.indexOf('mh-') !== 0 && id.indexOf('mm-') !== 0; });
+        var mm = (j.money || []).filter(function (e) { return e && Number(e.amount); }).map(function (e) {
+          return { id: 'mm-' + (e.id || Math.random().toString(36).slice(2)), date: String(e.date || '').slice(0, 10), type: e.type === 'income' ? 'income' : 'expense', category: e.category || 'อื่นๆ', item: e.item || '', amount: Number(e.amount) || 0 };
+        });
+        st.finance.transactions = mm.concat(keep).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+        var tax = {};
+        Object.keys(j.tax || {}).forEach(function (y) { tax[y] = { slips: (j.tax[y].slips || []).slice(), ded: Object.assign({}, j.tax[y].ded || {}) }; });
+        if (Object.keys(tax).length) st.finance.taxByYear = tax;
+        st.finance.lastImport = new Date().toISOString(); st.finance.lastImportMode = 'milk-money';
+        try { localStorage.setItem('milkLifeOS_v1', JSON.stringify(st)); } catch (e) { }
+        LS.set('mm:lifeos:lastFinancePull', { at: new Date().toISOString(), count: mm.length });
+        return j;
+      })
+      .catch(function (e) { console.warn('[Milk Money] ดึงรายรับรายจ่ายไม่สำเร็จ', e); return null; });
+  }
+  function lifeOSPullAll(manual) {
+    return Promise.all([lifeOSPullFinance(), lifeOSPullAssets(false)]).then(function (r) {
+      lifeOSRender();
+      if (manual) mmToast(r[1] ? 'อัปเดตเงินและทรัพย์สินจาก Milk Money แล้ว' : 'ดึงจาก Milk Money ไม่สำเร็จ — แสดงข้อมูลล่าสุดที่เคยดึงไว้');
+      return r;
+    });
+  }
   function lockLifeOSAssets() {
+    // เงินดึงจาก Milk Money ตรงแล้ว — ปิดการอ่านซ้ำจาก Milk Hub ในเบราว์เซอร์ (กันรายการซ้ำ/ข้อมูลเก่าทับ)
+    if (typeof window.milkHubSameOriginAvailable === 'function') window.milkHubSameOriginAvailable = function () { return false; };
     ['addAssetItem', 'addAssetPortfolio', 'addBtcAsset', 'addDebt', 'addOtherPortfolio', 'confirmDimeHoldingsImport', 'confirmDimeImport', 'confirmOtherPortfolioImport',
       'delAssetItem', 'delAssetPortfolio', 'delAssetReport', 'delDebt', 'delOtherPortfolio', 'editItemCostBasis', 'handleConfirmationNotePdf', 'handleDimePdf', 'handleOtherPortfolioPdf',
       'moveOtherPortfolio', 'renameAssetPortfolio', 'renameOtherPortfolio', 'setItemPortfolio', 'updateAssetItemValue', 'updateOtherPortfolioManual'].forEach(function (fn) {
@@ -160,7 +192,7 @@
       window[fn] = function () { mmToast(MM_ASSET_LOCK_MSG); if (fn === 'setItemPortfolio') lifeOSRender(); };
     });
     // ปุ่ม "รีเฟรชราคาตลาด" = ดึงข้อมูล/ราคาล่าสุดจาก Milk Money แทน
-    if (typeof window.refreshLivePrices === 'function') window.refreshLivePrices = function () { mmToast('กำลังดึงข้อมูลล่าสุดจาก Milk Money…'); return lifeOSPullAssets(true); };
+    if (typeof window.refreshLivePrices === 'function') window.refreshLivePrices = function () { mmToast('กำลังดึงข้อมูลล่าสุดจาก Milk Money…'); return lifeOSPullAll(true); };
     // แถบบอกที่มาของข้อมูลบนหน้า "ทรัพย์สิน"
     if (typeof window.renderAssets === 'function' && !window.renderAssets._mm) {
       var origRA = window.renderAssets;
@@ -198,8 +230,8 @@
       window.saveState = function () { var r = orig.apply(this, arguments); clearTimeout(pushTimer); pushTimer = setTimeout(function () { lifeOSPush(false); }, 4000); return r; };
     }
     lockLifeOSAssets();
-    lifeOSPullAssets(false).then(function () { return lifeOSPush(false); }).then(lifeOSSummary);
-    setInterval(function () { if (!document.hidden) lifeOSPullAssets(false); }, 10 * 60 * 1000);
+    lifeOSPullAll(false).then(function () { return lifeOSPush(false); }).then(lifeOSSummary);
+    setInterval(function () { if (!document.hidden) lifeOSPullAll(false); }, 10 * 60 * 1000);
   }
 
   function start() {
