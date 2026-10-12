@@ -3291,9 +3291,9 @@ function renderTripCard(tr){
           <select id="splitPayer-${tr.id}">${participants.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select>
           <button class="btn btn-sm" onclick="addTripSplitExpense('${tr.id}')">+ เพิ่มรายการ</button>
         </div>
-        <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line)">${renderTripSettlement(tr)}</div>
       ` : '<div class="muted">เพิ่มชื่อเพื่อนอย่างน้อย 2 คนเพื่อเริ่มคำนวณหารค่าใช้จ่าย</div>'}
     </div>
+    ${renderTripMoneySummary(tr)}
   </div>
   `;
 }
@@ -3367,6 +3367,173 @@ function renderTripSettlement(tr){
     <div class="muted" style="margin-top:8px">สรุปการโอน (จำนวนรายการโอนน้อยที่สุด):</div>
     <ul class="small-list">${transactions.length ? transactions.map(t=>`<li>${escapeHtml(t.from)} ต้องโอนให้ ${escapeHtml(t.to)}: ฿${fmtMoney(t.amount)}</li>`).join('') : '<li>ทุกคนจ่ายเท่ากันแล้ว ไม่ต้องโอนเพิ่ม</li>'}</ul>
   `;
+}
+/* ---------- สรุปค่าใช้จ่ายทริป (กลุ่ม + ของเรา) ----------
+   "เรา" ของแต่ละทริป = tr.me (เลือกได้ในหัวสรุป) — ค่าเริ่มต้นเดาจากชื่อ Milk/มิลค์/เรา/ฉัน ไม่เจอใช้คนแรก
+   ส่วนของเรา: กิจกรรมที่หาร = ส่วนแบ่งของเรา · กิจกรรมที่ไม่ได้ระบุคนจ่าย = นับเป็นของเราเต็มจำนวน (จ่ายเอง ไม่หาร) */
+function tripMe(tr){
+  const ps = tr.participants || [];
+  if(tr.me && ps.includes(tr.me)) return tr.me;
+  return ps.find(p=>/milk|มิลค์|มิ้ลค์|มิลด์|^เรา$|^ฉัน$|^me$/i.test(p)) || ps[0] || null;
+}
+function setTripMe(tripId, name){
+  const tr = state.trips.list.find(t=>t.id===tripId); if(!tr) return;
+  tr.me = name; saveState(); render();
+}
+// ทุกค่าใช้จ่ายของทริป (รายวัน + หารเพิ่มเติม + legacy) ในรูปแบบเดียว พร้อมส่วนของเรา
+function tripMyItems(tr){
+  const ps = tr.participants || [], me = tripMe(tr), out = [];
+  (tr.days||[]).forEach((d,di)=>(d.activities||[]).forEach(a=>{
+    const amt = activityCostTHB(a); if(!(amt>0)) return;
+    const shared = !!a.payer && ps.length>=2;
+    const between = shared ? ((a.splitBetween && a.splitBetween.length) ? a.splitBetween : ps) : [];
+    const mine = shared ? (me && between.includes(me) ? amt/between.length : 0) : amt;
+    out.push({day:'Day '+(di+1), date:d.date, item:a.place||'ค่าใช้จ่าย', category:a.category||'อื่นๆ', amount:amt, mine, shared, payer:a.payer||'', n:between.length||1});
+  }));
+  (tr.splitExpenses||[]).forEach(e=>{
+    const amt = Number(e.amount)||0; if(!(amt>0)) return;
+    const between = (e.splitBetween && e.splitBetween.length) ? e.splitBetween : ps;
+    out.push({day:'ทั้งทริป', date:e.date||'', item:e.item||'ค่าใช้จ่าย', category:e.category||'หารร่วม (ทั้งทริป)', amount:amt, mine: me && between.includes(me) ? amt/between.length : 0, shared:true, payer:e.payer||'', n:between.length||1});
+  });
+  (tr.expenses||[]).forEach(e=>{
+    const amt = Number(e.amount)||0; if(!(amt>0)) return;
+    out.push({day:'ทั้งทริป', date:e.date||'', item:e.item||e.name||'ค่าใช้จ่าย', category:e.category||'อื่นๆ', amount:amt, mine:amt, shared:false, payer:'', n:1});
+  });
+  return out;
+}
+function tripSettlementText(tr){
+  const {transactions} = tripSettlement(tr);
+  const items = tripAllSplitItems(tr), total = items.reduce((s,e)=>s+e.amount,0);
+  const lines = ['สรุปหารค่าใช้จ่าย — ' + tr.name, 'ยอดที่หารกันทั้งหมด ฿' + fmtMoney(Math.round(total)) + ' (' + items.length + ' รายการ)', ''];
+  if(transactions.length){ lines.push('ใครต้องโอนให้ใคร:'); transactions.forEach(t=>lines.push('• ' + t.from + ' → ' + t.to + '  ฿' + fmtMoney(t.amount))); }
+  else lines.push('ทุกคนจ่ายพอดีแล้ว ไม่ต้องโอนเพิ่ม');
+  return lines.join('\n');
+}
+function copyTripSettlement(tripId){
+  const tr = state.trips.list.find(t=>t.id===tripId); if(!tr) return;
+  const txt = tripSettlementText(tr);
+  const done = ()=>{ const el = document.getElementById('tripCopyMsg-'+tripId); if(el){ el.textContent = '✓ คัดลอกแล้ว — วางในแชท LINE ได้เลย'; setTimeout(()=>{ el.textContent=''; }, 3500); } };
+  try{ navigator.clipboard.writeText(txt).then(done, ()=>{ window.prompt('คัดลอกข้อความนี้', txt); }); }catch(e){ window.prompt('คัดลอกข้อความนี้', txt); }
+}
+function renderTripMoneySummary(tr){
+  const ps = tr.participants || [];
+  const group = ps.length >= 2;
+  const me = tripMe(tr);
+  const C = 'var(--teal)', R = 'var(--coral)';
+  const avatar = (p, size)=>`<span style="width:${size||26}px;height:${size||26}px;border-radius:50%;background:${p===me?'var(--teal)':'#C9CFDD'};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round((size||26)*0.45)}px;font-weight:700;flex-shrink:0">${escapeHtml(String(p||'?').slice(0,1).toUpperCase())}</span>`;
+  const meTag = p => p===me ? ' <span class="tag" style="background:var(--teal-pale);color:var(--teal);font-size:10px;padding:1px 6px">เรา</span>' : '';
+
+  /* ---------- ฝั่งกลุ่ม ---------- */
+  let groupHtml = '';
+  if(group){
+    const {paid, owed, net, transactions} = tripSettlement(tr);
+    const items = tripAllSplitItems(tr);
+    const total = items.reduce((s,e)=>s+e.amount,0);
+    const maxAbs = Math.max(1, ...ps.map(p=>Math.abs(net[p]||0)));
+    const byPayer = {}; items.forEach(e=>{ (byPayer[e.payer] = byPayer[e.payer] || []).push(e); });
+    const myTx = me ? transactions.filter(t=>t.from===me || t.to===me) : [];
+    const myLine = !me ? '' : (()=>{
+      const pay = myTx.filter(t=>t.from===me).reduce((s,t)=>s+t.amount,0), get = myTx.filter(t=>t.to===me).reduce((s,t)=>s+t.amount,0);
+      if(pay>0) return `<div style="background:var(--coral-pale);color:#8C3532;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:600">เราต้องโอนออกรวม ฿${fmtMoney(pay)}</div>`;
+      if(get>0) return `<div style="background:var(--teal-pale);color:#2E6459;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:600">เราจะได้รับคืนรวม ฿${fmtMoney(get)}</div>`;
+      return `<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px">ส่วนของเราลงตัวพอดี ไม่ต้องโอนหรือรับเงิน</div>`;
+    })();
+    groupHtml = `
+    <div>
+      <h3 style="margin-bottom:4px">👥 หารกับเพื่อน — ใครต้องโอนให้ใคร</h3>
+      <div class="muted" style="margin-bottom:12px">ยอดที่หารกัน ฿${fmtMoney(Math.round(total))} · ${items.length} รายการ · ${ps.length} คน</div>
+      ${myLine}
+      ${transactions.length ? transactions.map(t=>{
+        const mine = t.from===me || t.to===me;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${mine?'var(--teal)':'var(--line)'};border-radius:12px;margin-bottom:8px;background:${mine?'var(--teal-pale)':'var(--panel)'}">
+          ${avatar(t.from)}<div style="min-width:0"><div style="font-weight:600;font-size:13px">${escapeHtml(t.from)}${meTag(t.from)}</div><div class="muted" style="font-size:10.5px">ผู้โอน</div></div>
+          <div style="flex:1;text-align:center;min-width:60px"><div class="mono" style="font-weight:700;font-size:15px">฿${fmtMoney(t.amount)}</div><div style="color:var(--ink-soft);font-size:14px;line-height:1">──────▶</div></div>
+          <div style="min-width:0;text-align:right"><div style="font-weight:600;font-size:13px">${escapeHtml(t.to)}${meTag(t.to)}</div><div class="muted" style="font-size:10.5px">ผู้รับ</div></div>${avatar(t.to)}
+        </div>`;
+      }).join('') : `<div style="background:var(--teal-pale);color:#2E6459;border-radius:12px;padding:12px">✓ ทุกคนจ่ายพอดีกับส่วนของตัวเองแล้ว ไม่ต้องโอนเพิ่ม</div>`}
+      <div style="display:flex;align-items:center;gap:8px;margin:6px 0 16px">
+        <button class="btn btn-ghost btn-sm" onclick="copyTripSettlement('${tr.id}')">📋 คัดลอกสรุปการโอน (ส่ง LINE)</button>
+        <span class="muted" id="tripCopyMsg-${tr.id}" style="font-size:11.5px"></span>
+      </div>
+
+      <h3 style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">แต่ละคน: จ่ายไปเท่าไหร่ vs ส่วนที่ต้องรับผิดชอบ</h3>
+      ${ps.map(p=>{
+        const n = Math.round(net[p]||0), w = Math.round(50*Math.abs(n)/maxAbs);
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">${avatar(p,22)}<b style="font-size:13px">${escapeHtml(p)}</b>${meTag(p)}
+            <span style="margin-left:auto;font-weight:700;color:${n>0?C:n<0?R:'var(--ink-soft)'}" class="mono">${n>0?'ได้คืน ฿'+fmtMoney(n):n<0?'ต้องจ่ายเพิ่ม ฿'+fmtMoney(-n):'พอดี'}</span></div>
+          <div style="display:flex;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-bottom:4px">
+            <div style="width:50%;display:flex;justify-content:flex-end">${n<0?`<div style="width:${w*2}%;background:${R};border-radius:4px 0 0 4px"></div>`:''}</div>
+            <div style="width:50%;border-left:2px solid #C9CFDD">${n>0?`<div style="width:${w*2}%;height:100%;background:${C};border-radius:0 4px 4px 0"></div>`:''}</div>
+          </div>
+          <div class="muted" style="font-size:11px">จ่ายไปจริง ฿${fmtMoney(Math.round(paid[p]||0))} · ส่วนที่ต้องรับผิดชอบ ฿${fmtMoney(Math.round(owed[p]||0))}</div>
+        </div>`;
+      }).join('')}
+
+      <h3 style="font-size:12.5px;color:var(--ink-soft);margin:16px 0 8px">รายการทั้งหมดที่จ่ายไป (แยกตามคนจ่าย)</h3>
+      ${Object.keys(byPayer).length ? ps.filter(p=>byPayer[p]).map(p=>{
+        const list = byPayer[p], sum = list.reduce((s,e)=>s+e.amount,0);
+        return `<details style="border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:8px">
+          <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none">${avatar(p,22)}<b style="font-size:13px">${escapeHtml(p)} จ่าย</b>${meTag(p)}<span class="muted" style="font-size:11px">${list.length} รายการ</span><span class="mono" style="margin-left:auto;font-weight:700">฿${fmtMoney(Math.round(sum))}</span></summary>
+          <table class="table" style="font-size:12px;margin-top:8px">
+            <tr><th>รายการ</th><th style="text-align:right">ยอด</th><th style="text-align:right">หาร</th><th style="text-align:right">ตกคนละ</th></tr>
+            ${list.map(e=>`<tr><td><span class="tag" style="font-size:10px;padding:1px 6px">${escapeHtml(e.dayLabel||'ทั้งทริป')}</span> ${escapeHtml(e.item)}</td><td style="text-align:right" class="mono">฿${fmtMoney(Math.round(e.amount))}</td><td style="text-align:right">${e.splitBetween.length} คน</td><td style="text-align:right" class="mono">฿${fmtMoney(Math.round(e.amount/(e.splitBetween.length||1)))}</td></tr>`).join('')}
+          </table>
+        </details>`;
+      }).join('') : '<div class="muted">ยังไม่มีรายการที่ระบุคนจ่าย</div>'}
+    </div>`;
+  }
+
+  /* ---------- ฝั่งของเราเอง ---------- */
+  const mi = tripMyItems(tr).filter(x=>x.mine>0.005);
+  const myTotal = mi.reduce((s,x)=>s+x.mine,0);
+  const cats = {}; mi.forEach(x=>{ cats[x.category] = (cats[x.category]||0) + x.mine; });
+  const catList = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const palette = ['var(--teal)','var(--blue)','var(--amber)','var(--purple)','var(--coral)','var(--green)','var(--indigo)','var(--sienna)'];
+  const days = (tr.days||[]).length || 1;
+  const sharedMine = mi.filter(x=>x.shared).reduce((s,x)=>s+x.mine,0), soloMine = myTotal - sharedMine;
+  let cash = '';
+  if(group && me){
+    const {paid, net} = tripSettlement(tr);
+    const outPocket = (paid[me]||0) + soloMine, n = net[me]||0;
+    cash = `<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:12px;font-size:12px;line-height:1.7">
+      <div style="display:flex"><span>เงินที่ควักจ่ายจริง</span><span class="mono" style="margin-left:auto">฿${fmtMoney(Math.round(outPocket))}</span></div>
+      <div style="display:flex;color:${n>=0?C:R}"><span>${n>=0?'หัก ที่จะได้คืนจากเพื่อน':'บวก ที่ต้องโอนให้เพื่อน'}</span><span class="mono" style="margin-left:auto">${n>=0?'−':'+'}฿${fmtMoney(Math.round(Math.abs(n)))}</span></div>
+      <div style="display:flex;font-weight:700;border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><span>ค่าใช้จ่ายจริงของเรา</span><span class="mono" style="margin-left:auto">฿${fmtMoney(Math.round(outPocket - n))}</span></div>
+    </div>`;
+  }
+  const meHtml = `
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <h3 style="margin:0">🙋 ค่าใช้จ่ายของเรา</h3>
+        ${group ? `<select onchange="setTripMe('${tr.id}', this.value)" title="เลือกว่าเราคือใครในทริปนี้" style="font-size:12px;padding:4px 8px;max-width:150px">${ps.map(p=>`<option value="${escapeHtml(p)}" ${p===me?'selected':''}>เราคือ: ${escapeHtml(p)}</option>`).join('')}</select>` : ''}
+      </div>
+      <div class="muted" style="margin-bottom:10px">${group ? 'นับเฉพาะส่วนแบ่งของเรา — รายการที่หารนับตามส่วนที่เราต้องรับผิดชอบ · รายการที่ไม่ได้ระบุคนจ่ายนับเป็นของเราเต็มจำนวน' : 'ทริปนี้ไม่ได้หารกับใคร — นับทุกรายการเป็นของเรา'}</div>
+      <div class="big-stat mono">฿${fmtMoney(Math.round(myTotal))}</div>
+      <div class="stat-note" style="margin-bottom:12px">${mi.length} รายการ · เฉลี่ยวันละ ฿${fmtMoney(Math.round(myTotal/days))}${group ? ` · ส่วนที่หารกัน ฿${fmtMoney(Math.round(sharedMine))} · จ่ายเองคนเดียว ฿${fmtMoney(Math.round(soloMine))}` : ''}${tr.budget ? ` · งบ ฿${fmtMoney(tr.budget)}` : ''}</div>
+      ${catList.length ? `
+        <div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:10px">${catList.map(([c,v],i)=>`<div title="${escapeHtml(c)} ฿${fmtMoney(Math.round(v))}" style="width:${100*v/myTotal}%;background:${palette[i%palette.length]}"></div>`).join('')}</div>
+        ${catList.map(([c,v],i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px">
+          <span style="width:10px;height:10px;border-radius:3px;background:${palette[i%palette.length]};flex-shrink:0"></span>
+          <span style="flex:1">${escapeHtml(c)}</span><span class="muted" style="font-size:11px">${Math.round(100*v/myTotal)}%</span>
+          <span class="mono" style="min-width:80px;text-align:right;font-weight:600">฿${fmtMoney(Math.round(v))}</span></div>`).join('')}
+        <div style="display:flex;padding:8px 0;font-weight:700"><span>รวมทั้งหมด (ของเรา)</span><span class="mono" style="margin-left:auto">฿${fmtMoney(Math.round(myTotal))}</span></div>
+        ${cash}
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-size:12.5px;color:var(--ink-soft)">ดูทุกรายการของเรา (${mi.length})</summary>
+          <table class="table" style="font-size:12px;margin-top:8px">
+            <tr><th>รายการ</th><th>หมวด</th><th style="text-align:right">ส่วนของเรา</th></tr>
+            ${mi.map(x=>`<tr><td><span class="tag" style="font-size:10px;padding:1px 6px">${escapeHtml(x.day)}</span> ${escapeHtml(x.item)}${x.shared?`<div class="muted" style="font-size:10.5px">${escapeHtml(x.payer)} จ่าย ฿${fmtMoney(Math.round(x.amount))} · หาร ${x.n} คน</div>`:''}</td><td class="muted">${escapeHtml(x.category)}</td><td style="text-align:right" class="mono">฿${fmtMoney(Math.round(x.mine))}</td></tr>`).join('')}
+          </table>
+        </details>
+      ` : '<div class="muted">ยังไม่มีค่าใช้จ่ายของเรา — เพิ่มกิจกรรมพร้อมจำนวนเงินในแผนรายวัน</div>'}
+    </div>`;
+
+  return `
+  <div style="margin-top:18px;padding-top:18px;border-top:2px solid var(--line)">
+    <div style="font-weight:700;font-size:15px;margin-bottom:12px">💰 สรุปค่าใช้จ่ายทริป</div>
+    ${group ? `<div class="two-col">${groupHtml}${meHtml}</div>` : meHtml}
+  </div>`;
 }
 // Combined "รายการที่หารกัน" list — every item from tripAllSplitItems(), rendered two ways:
 // activity-sourced rows (source:'activity') are read-only summaries tagged with which day they
@@ -3483,6 +3650,7 @@ function normalizeImportedTrip(tr){
     })).sort((a,b)=> String(a.date).localeCompare(String(b.date))),
     expenses: Array.isArray(tr.expenses) ? tr.expenses : [],
     participants: Array.isArray(tr.participants) ? tr.participants : [],
+    me: typeof tr.me === 'string' ? tr.me : '',
     splitExpenses: Array.isArray(tr.splitExpenses) ? tr.splitExpenses.map(e=>({
       id: e.id || uid(),
       item: e.item || e.description || '',
@@ -3615,6 +3783,7 @@ function delTripParticipant(tripId, idx){
   if(!tr) return;
   const name = (tr.participants||[])[idx];
   tr.participants = (tr.participants||[]).filter((_,i)=>i!==idx);
+  if(tr.me === name) tr.me = '';
   (tr.splitExpenses||[]).forEach(e=>{ e.splitBetween = (e.splitBetween||[]).filter(p=>p!==name); });
   // Also clean up any day activity that had this person as payer/in its split, so a removed
   // participant never lingers silently attributing cost in the settlement math.
