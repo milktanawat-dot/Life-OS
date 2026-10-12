@@ -1711,7 +1711,8 @@ function maybeAutoShowReminderPopup(){
 }
 
 function render(){
-  if(milkHubSameOriginAvailable()){ syncFromMilkHubDirect(); }
+  // เมื่อเชื่อม Milk Money แล้ว (milk-money-bridge.js ดึงรายรับรายจ่ายตรง) ไม่ต้องอ่านซ้ำจาก Milk Hub — กันข้อมูลเก่าทับ/ล้างรายการ
+  if(state.finance.lastImportMode !== 'milk-money' && milkHubSameOriginAvailable()){ syncFromMilkHubDirect(); }
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active', el.dataset.view === currentView);
   });
