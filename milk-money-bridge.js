@@ -6,7 +6,9 @@
  *   <script src="milk-money-bridge.js"></script>
  *
  * Milk Hub  → ดึงรายรับรายจ่าย / ภาษี / พอร์ต / หนี้ จาก Milk Money มาแสดง และล็อกการแก้ไขส่วนนั้น (อ่านอย่างเดียว)
- * Life OS   → ส่งพอร์ต Dime, กลุ่มพอร์ต, ค่าสมาชิก, ค่าใช้จ่ายรายปี ไป Milk Money อัตโนมัติ (เฉพาะเมื่อข้อมูลเปลี่ยน)
+ * Life OS   → โมดูลทรัพย์สิน ดึงจาก Milk Money (GET api=lifeos) มาแสดงแบบอ่านอย่างเดียว — พอร์ต/หุ้น/เงินสด/หนี้/พอร์ตครอบครัว
+ *             ทุกครั้งที่เปิดหน้า + ทุก 10 นาที + ปุ่มรีเฟรช (ไม่ส่งทรัพย์สินขึ้นไปอีกแล้ว กันข้อมูลวนซ้ำ)
+ *             ยังส่งค่าสมาชิก/ค่าใช้จ่ายรายปี/ทริป ไป Milk Money เหมือนเดิม (เฉพาะเมื่อข้อมูลเปลี่ยน)
  *             + แสดงชิป "ใช้ได้วันละ" จาก Milk Money มุมล่างซ้าย
  * Life OS อ่านรายการเงินจาก Milk Hub (same-origin) อยู่แล้ว จึงได้ข้อมูล Milk Money ต่อทอดโดยอัตโนมัติ
  */
@@ -108,9 +110,71 @@
   /* ============================ Life OS ============================ */
   function isLifeOS() { try { return typeof LS_KEY !== 'undefined' && LS_KEY === 'milkLifeOS_v1'; } catch (e) { return false; } }
   var pushTimer = null;
+  // ทรัพย์สินไม่ส่งขึ้นแล้ว — Milk Money เป็นต้นทาง (ดึงลงมาด้วย lifeOSPullAssets) ส่งแค่ค่าสมาชิก/ค่าใช้จ่ายรายปี/ทริป
   function lifeOSPayload() {
     var st = LS.get('milkLifeOS_v1', {}) || {};
-    return { assets: st.assets || {}, subscriptions: st.subscriptions || {}, annualExpenses: st.annualExpenses || {}, trips: st.trips || {} };
+    return { assets: {}, subscriptions: st.subscriptions || {}, annualExpenses: st.annualExpenses || {}, trips: st.trips || {} };
+  }
+
+  /* ---- ทรัพย์สิน: ดึงจาก Milk Money (อ่านอย่างเดียว) ---- */
+  var MM_ASSET_LOCK_MSG = 'โมดูลทรัพย์สินดึงจาก Milk Money แล้ว (อ่านอย่างเดียว) — เพิ่ม/แก้พอร์ต หุ้น หนี้ ใน LINE Milk Money หรือแดชบอร์ด Milk Money';
+  function lifeOSState() { try { return typeof state !== 'undefined' ? state : null; } catch (e) { return null; } }
+  function lifeOSRender() { try { if (typeof render === 'function') render(); } catch (e) { console.warn('[Milk Money] render', e); } }
+  function mmToast(msg) {
+    var el = document.getElementById('mm-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'mm-toast'; el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(64px + env(safe-area-inset-bottom));z-index:10001;background:#121A33;color:#fff;font:500 13px/1.4 "IBM Plex Sans Thai",system-ui,sans-serif;padding:10px 14px;border-radius:12px;max-width:min(520px,92vw);box-shadow:0 10px 24px -12px rgba(0,0,0,.6)'; document.body.appendChild(el); }
+    el.textContent = msg; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(function () { el.style.display = 'none'; }, 4500);
+  }
+  function lifeOSPullAssets(manual) {
+    return fetch(CFG.url + '?api=lifeos&key=' + encodeURIComponent(CFG.key), { redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) throw new Error((j && j.error) || 'ดึงข้อมูลไม่สำเร็จ');
+        var st = lifeOSState(); if (!st) throw new Error('ไม่พบ state ของ Life OS');
+        // สำรองทรัพย์สินเดิมในเครื่องไว้ครั้งเดียว ก่อนถูกแทนที่ด้วยข้อมูล Milk Money
+        if (!LS.get('mm:lifeos:assetsBackupBeforeMM')) LS.set('mm:lifeos:assetsBackupBeforeMM', { at: new Date().toISOString(), assets: st.assets || {} });
+        var A = j.assets || {};
+        st.assets = Object.assign({}, st.assets || {}, {
+          portfolios: A.portfolios && A.portfolios.length ? A.portfolios : [{ id: 'P-NONE', name: 'ไม่ระบุพอร์ต', color: '#5D6680' }],
+          items: A.items || [], debts: A.debts || [], reports: A.reports || [], otherPortfolios: A.otherPortfolios || [],
+          source: 'milkmoney', mmSync: { at: new Date().toISOString(), generated: j.generated, networth: j.networth || null }
+        });
+        try { localStorage.setItem('milkLifeOS_v1', JSON.stringify(st)); } catch (e) { }
+        LS.set('mm:lifeos:lastPull', new Date().toISOString());
+        lifeOSRender();
+        if (manual) mmToast('อัปเดตทรัพย์สินจาก Milk Money แล้ว · ' + (A.items || []).length + ' รายการ');
+        return j;
+      })
+      .catch(function (e) {
+        console.warn('[Milk Money] ดึงทรัพย์สินไม่สำเร็จ', e);
+        if (/invalid key/.test(e.message)) badge('mm-bridge', '⚠️ SYNC_KEY ไม่ถูกต้อง — <u>แตะเพื่อตั้งค่าใหม่</u>', function () { setupForm('SYNC_KEY ไม่ตรงกับ Milk Money — วางรหัสใหม่'); });
+        else if (manual) mmToast('ดึงทรัพย์สินจาก Milk Money ไม่สำเร็จ (' + e.message + ') — แสดงข้อมูลล่าสุดที่เคยดึงไว้');
+        return null;
+      });
+  }
+  function lockLifeOSAssets() {
+    ['addAssetItem', 'addAssetPortfolio', 'addBtcAsset', 'addDebt', 'addOtherPortfolio', 'confirmDimeHoldingsImport', 'confirmDimeImport', 'confirmOtherPortfolioImport',
+      'delAssetItem', 'delAssetPortfolio', 'delAssetReport', 'delDebt', 'delOtherPortfolio', 'editItemCostBasis', 'handleConfirmationNotePdf', 'handleDimePdf', 'handleOtherPortfolioPdf',
+      'moveOtherPortfolio', 'renameAssetPortfolio', 'renameOtherPortfolio', 'setItemPortfolio', 'updateAssetItemValue', 'updateOtherPortfolioManual'].forEach(function (fn) {
+      if (typeof window[fn] !== 'function') return;
+      window[fn] = function () { mmToast(MM_ASSET_LOCK_MSG); if (fn === 'setItemPortfolio') lifeOSRender(); };
+    });
+    // ปุ่ม "รีเฟรชราคาตลาด" = ดึงข้อมูล/ราคาล่าสุดจาก Milk Money แทน
+    if (typeof window.refreshLivePrices === 'function') window.refreshLivePrices = function () { mmToast('กำลังดึงข้อมูลล่าสุดจาก Milk Money…'); return lifeOSPullAssets(true); };
+    // แถบบอกที่มาของข้อมูลบนหน้า "ทรัพย์สิน"
+    if (typeof window.renderAssets === 'function' && !window.renderAssets._mm) {
+      var origRA = window.renderAssets;
+      window.renderAssets = function () {
+        var st = lifeOSState(), s = st && st.assets && st.assets.mmSync, nw = s && s.networth;
+        var bar = '<div class="panel" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid #1F3FBF33;background:#EEF1FA;color:#121A33;margin-bottom:14px">' +
+          '<div style="font-size:22px">🥛</div><div style="flex:1;min-width:220px"><b>ข้อมูลทรัพย์สินจาก Milk Money</b> · อ่านอย่างเดียว' +
+          '<div class="muted" style="color:#5D6680">' + (s ? 'ดึงล่าสุด ' + hhmm(s.at) + (nw && nw.networth != null ? ' · มูลค่าสุทธิใน Milk Money ฿' + Math.round(nw.networth).toLocaleString('en-US') : '') : 'ยังไม่เคยดึง — กำลังเชื่อมต่อ…') +
+          ' — เพิ่ม/แก้รายการใน LINE Milk Money หรือแดชบอร์ด Milk Money แล้วกดรีเฟรช</div></div>' +
+          '<button class="btn btn-sm" onclick="refreshLivePrices()">↻ รีเฟรชจาก Milk Money</button></div>';
+        return bar + origRA.apply(this, arguments);
+      };
+      window.renderAssets._mm = true;
+    }
   }
   function lifeOSPush(force) {
     var data = lifeOSPayload();
@@ -133,7 +197,9 @@
       var orig = window.saveState;
       window.saveState = function () { var r = orig.apply(this, arguments); clearTimeout(pushTimer); pushTimer = setTimeout(function () { lifeOSPush(false); }, 4000); return r; };
     }
-    lifeOSPush(false).then(lifeOSSummary);
+    lockLifeOSAssets();
+    lifeOSPullAssets(false).then(function () { return lifeOSPush(false); }).then(lifeOSSummary);
+    setInterval(function () { if (!document.hidden) lifeOSPullAssets(false); }, 10 * 60 * 1000);
   }
 
   function start() {
