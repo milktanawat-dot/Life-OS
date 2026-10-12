@@ -3402,12 +3402,53 @@ function tripMyItems(tr){
   });
   return out;
 }
+// รายละเอียดต่อคนไว้ recheck: (1) รายการที่คนนี้จ่ายไปก่อน (2) ส่วนแบ่งของแต่ละรายการที่คนนี้ต้องรับผิดชอบ → สุทธิ
+function tripPersonLines(items, p){
+  const paidList = items.filter(e=>e.payer===p).map(e=>({label:(e.dayLabel||'ทั้งทริป')+' · '+e.item, amount:e.amount}));
+  const shareList = items.filter(e=>(e.splitBetween||[]).includes(p)).map(e=>({label:(e.dayLabel||'ทั้งทริป')+' · '+e.item, total:e.amount, n:e.splitBetween.length, payer:e.payer, share:e.amount/(e.splitBetween.length||1)}));
+  return {paidList, shareList};
+}
+function tripPersonBreakdownHtml(items, p, paid, owed, net){
+  const C = 'var(--teal)', R = 'var(--coral)';
+  const {paidList, shareList} = tripPersonLines(items, p);
+  const n = Math.round(net[p]||0);
+  const row = (l, r, sub)=>`<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line)"><span style="flex:1;min-width:0">${l}${sub?`<div class="muted" style="font-size:10.5px">${sub}</div>`:''}</span><span class="mono" style="flex-shrink:0">${r}</span></div>`;
+  return `<details style="margin-top:2px">
+    <summary style="cursor:pointer;font-size:11.5px;color:var(--ink-soft)">จ่ายไปจริง ฿${fmtMoney(Math.round(paid[p]||0))} · ส่วนที่ต้องรับผิดชอบ ฿${fmtMoney(Math.round(owed[p]||0))} — ดูรายการ</summary>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;font-size:11.5px">
+      <div>
+        <div style="font-weight:700;color:${C};margin-bottom:4px">① จ่ายไปก่อน (${paidList.length})</div>
+        ${paidList.length ? paidList.map(x=>row(escapeHtml(x.label), '฿'+fmtMoney(Math.round(x.amount)))).join('') : '<div class="muted">ไม่ได้จ่ายรายการไหน</div>'}
+        <div style="display:flex;font-weight:700;padding-top:4px"><span>รวมจ่ายไป</span><span class="mono" style="margin-left:auto">฿${fmtMoney(Math.round(paid[p]||0))}</span></div>
+      </div>
+      <div>
+        <div style="font-weight:700;color:${R};margin-bottom:4px">② ส่วนที่ต้องรับผิดชอบ (${shareList.length})</div>
+        ${shareList.length ? shareList.map(x=>row(escapeHtml(x.label), '฿'+fmtMoney(Math.round(x.share)), `${escapeHtml(x.payer)} จ่าย ฿${fmtMoney(Math.round(x.total))} ÷ ${x.n} คน`)).join('') : '<div class="muted">ไม่มีส่วนที่ต้องรับผิดชอบ</div>'}
+        <div style="display:flex;font-weight:700;padding-top:4px"><span>รวมส่วนของคนนี้</span><span class="mono" style="margin-left:auto">฿${fmtMoney(Math.round(owed[p]||0))}</span></div>
+      </div>
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:12px">
+      ① ฿${fmtMoney(Math.round(paid[p]||0))} − ② ฿${fmtMoney(Math.round(owed[p]||0))} = <b style="color:${n>0?C:n<0?R:'inherit'}">${n>0?'ได้คืน ฿'+fmtMoney(n):n<0?'ต้องจ่ายเพิ่ม ฿'+fmtMoney(-n):'พอดี ไม่ต้องโอน'}</b>
+    </div>
+  </details>`;
+}
 function tripSettlementText(tr){
   const {transactions} = tripSettlement(tr);
   const items = tripAllSplitItems(tr), total = items.reduce((s,e)=>s+e.amount,0);
   const lines = ['สรุปหารค่าใช้จ่าย — ' + tr.name, 'ยอดที่หารกันทั้งหมด ฿' + fmtMoney(Math.round(total)) + ' (' + items.length + ' รายการ)', ''];
   if(transactions.length){ lines.push('ใครต้องโอนให้ใคร:'); transactions.forEach(t=>lines.push('• ' + t.from + ' → ' + t.to + '  ฿' + fmtMoney(t.amount))); }
   else lines.push('ทุกคนจ่ายพอดีแล้ว ไม่ต้องโอนเพิ่ม');
+  const {paid, owed, net} = tripSettlement(tr);
+  lines.push('', '— รายละเอียดแต่ละคน (ไว้เช็ค) —');
+  (tr.participants||[]).forEach(p=>{
+    const {paidList, shareList} = tripPersonLines(items, p), n = Math.round(net[p]||0);
+    lines.push('', '【' + p + '】');
+    lines.push('จ่ายไปก่อน ฿' + fmtMoney(Math.round(paid[p]||0)) + (paidList.length ? ':' : ' (ไม่มี)'));
+    paidList.forEach(x=>lines.push('  - ' + x.label + ' ฿' + fmtMoney(Math.round(x.amount))));
+    lines.push('ส่วนที่ต้องรับผิดชอบ ฿' + fmtMoney(Math.round(owed[p]||0)) + (shareList.length ? ':' : ' (ไม่มี)'));
+    shareList.forEach(x=>lines.push('  - ' + x.label + ' ฿' + fmtMoney(Math.round(x.share)) + ' (' + fmtMoney(Math.round(x.total)) + '÷' + x.n + ')'));
+    lines.push('สุทธิ: ' + (n>0 ? 'ได้คืน ฿' + fmtMoney(n) : n<0 ? 'ต้องจ่ายเพิ่ม ฿' + fmtMoney(-n) : 'พอดี'));
+  });
   return lines.join('\n');
 }
 function copyTripSettlement(tripId){
@@ -3453,11 +3494,11 @@ function renderTripMoneySummary(tr){
         </div>`;
       }).join('') : `<div style="background:var(--teal-pale);color:#2E6459;border-radius:12px;padding:12px">✓ ทุกคนจ่ายพอดีกับส่วนของตัวเองแล้ว ไม่ต้องโอนเพิ่ม</div>`}
       <div style="display:flex;align-items:center;gap:8px;margin:6px 0 16px">
-        <button class="btn btn-ghost btn-sm" onclick="copyTripSettlement('${tr.id}')">📋 คัดลอกสรุปการโอน (ส่ง LINE)</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyTripSettlement('${tr.id}')">📋 คัดลอกสรุป + รายละเอียด (ส่ง LINE)</button>
         <span class="muted" id="tripCopyMsg-${tr.id}" style="font-size:11.5px"></span>
       </div>
 
-      <h3 style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">แต่ละคน: จ่ายไปเท่าไหร่ vs ส่วนที่ต้องรับผิดชอบ</h3>
+      <h3 style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">แต่ละคน: จ่ายไปเท่าไหร่ vs ส่วนที่ต้องรับผิดชอบ <span style="font-weight:400">(กดที่ชื่อเพื่อดูรายการไว้เช็ค)</span></h3>
       ${ps.map(p=>{
         const n = Math.round(net[p]||0), w = Math.round(50*Math.abs(n)/maxAbs);
         return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
@@ -3467,7 +3508,7 @@ function renderTripMoneySummary(tr){
             <div style="width:50%;display:flex;justify-content:flex-end">${n<0?`<div style="width:${w*2}%;background:${R};border-radius:4px 0 0 4px"></div>`:''}</div>
             <div style="width:50%;border-left:2px solid #C9CFDD">${n>0?`<div style="width:${w*2}%;height:100%;background:${C};border-radius:0 4px 4px 0"></div>`:''}</div>
           </div>
-          <div class="muted" style="font-size:11px">จ่ายไปจริง ฿${fmtMoney(Math.round(paid[p]||0))} · ส่วนที่ต้องรับผิดชอบ ฿${fmtMoney(Math.round(owed[p]||0))}</div>
+          ${tripPersonBreakdownHtml(items, p, paid, owed, net)}
         </div>`;
       }).join('')}
 
