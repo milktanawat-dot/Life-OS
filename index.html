@@ -357,6 +357,23 @@ a{color:inherit;}
 .tr-edit{background:var(--bg); border-radius:12px; padding:8px; margin-top:6px;}
 .tr-edit input, .tr-edit select{background:#fff !important;}
 .race-result{font-size:11px; margin-top:3px;}
+.tr-mixbar{display:flex; gap:2px; border-radius:7px; overflow:hidden; background:var(--line);}
+.tr-mixbar div{color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; overflow:hidden; white-space:nowrap;}
+.tr-block-q{background:var(--bg); border-radius:14px; padding:12px 14px; font-size:12.5px;}
+.tr-block-q.ask{background:#FFF7E6; border:1px solid #F5D9A3;}
+.tr-block-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+.tr-bchip{border:1.5px solid var(--c,#C9CEDB); background:#fff; color:var(--ink); border-radius:99px; padding:5px 12px; font-size:12px; font-family:inherit; cursor:pointer; font-weight:600;}
+.tr-bchip small{font-weight:400; color:var(--ink-soft);}
+.tr-bchip.on{background:var(--c); color:#fff;} .tr-bchip.on small{color:#fff;}
+.tr-block-grid{display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:14px;}
+.tr-block-grid .k{font-size:11px; color:var(--ink-soft); font-weight:600; margin-bottom:5px;}
+@media (max-width:900px){.tr-block-grid{grid-template-columns:1fr;}}
+.tr-zrow{display:grid; grid-template-columns:110px 1fr 92px; gap:8px; align-items:center; font-size:12px; margin-bottom:5px;}
+.tr-zrow .nm{display:flex; align-items:center; gap:6px;} .tr-zrow .nm i, .tr-ztable .dot{width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:6px;}
+.tr-zrow .v{text-align:right; color:var(--ink-soft); font-size:11px;}
+.tr-ztrack{height:10px; background:var(--line); border-radius:5px; overflow:hidden;} .tr-ztrack div{height:100%; border-radius:5px;}
+.tr-ztable input{width:70px; border:1px solid var(--line); border-radius:8px; padding:5px 7px; font-family:inherit; background:#fff;}
+.tr-stag{display:inline-block; color:#fff; font-size:9.5px; font-weight:600; padding:1px 7px; border-radius:99px; margin-right:4px;}
 </style>
 </head>
 <body>
@@ -2775,13 +2792,19 @@ function trainingInsights(info){
     const proj = wk.km * 7/elapsed; const ch = (proj - b4.avgWeekKm)/b4.avgWeekKm;
     if(elapsed>=4 && ch > 0.3 && !['taper','recovery'].includes(pk)) push('warn', `สัปดาห์นี้กำลังจะสูงกว่าเฉลี่ย ${Math.round(ch*100)}%`, 'เพิ่มเกิน 30% จากค่าเฉลี่ย 4 สัปดาห์ — ระวังอาการเจ็บสะสม');
   }
-  // 6. intensity distribution
+  // 6. intensity distribution (โซนของเรา: Recovery+Endurance = เบา)
   const b28 = blockStats(addDays(today,1), 4);
-  if(b28.zones){
-    const low = b28.zones[0];
-    push(low >= 0.75 ? 'good' : low >= 0.6 ? 'warn' : 'bad', `เวลาใน Z1–Z2 = ${Math.round(low*100)}% (28 วัน)`,
-      low >= 0.75 ? `กระจายความหนักดี (Z3 ${Math.round(b28.zones[1]*100)}% · Z4+ ${Math.round(b28.zones[2]*100)}%)` : `วิ่งกลางๆ (Z3) เยอะ ${Math.round(b28.zones[1]*100)}% — ultra ควร ~80% เบาจริง, หนักให้หนักเป็นครั้ง`);
-  } else push('info', 'ยังไม่มีข้อมูล HR zone', 'กด Sync ใหม่ เพื่อดึงเวลาในแต่ละโซนหัวใจจาก intervals.icu มาวิเคราะห์ 80/20');
+  const zt = zoneTimeMix(addDays(today,-27), addDays(today,1));
+  const sm = sessionMix(addDays(today,-27), addDays(today,1));
+  if(zt || (sm.total && sm.total/(sm.total+sm.unknown) >= 0.3)){
+    const low = zt ? zt.share[0]+zt.share[1] : sm.share.recovery+sm.share.endurance;
+    const mid = zt ? zt.share[2] : sm.share.steady, hi = zt ? zt.share[3]+zt.share[4] : sm.share.tempo+sm.share.interval;
+    const src = zt ? 'เวลาในโซน' : 'ประเภทเซสชัน';
+    push(low >= 0.7 ? 'good' : low >= 0.55 ? 'warn' : 'bad', `เบา (Recovery+Endurance) ${Math.round(low*100)}% · 28 วัน`,
+      low >= 0.7 ? `กระจายความหนักดี — Steady ${Math.round(mid*100)}% · Tempo/Interval ${Math.round(hi*100)}% (${src})` : `Steady State กินเวลาเยอะ ${Math.round(mid*100)}% — ultra ควรเบาจริง ~70–80% แล้วหนักให้หนักเป็นครั้ง (${src})`);
+  } else push('info', 'ยังไม่มีข้อมูล HR', 'กด Sync ใหม่ เพื่อดึง HR และเวลาในแต่ละโซนจาก intervals.icu มาวิเคราะห์ตามโซนของคุณ');
+  const bf = blockFit(info);
+  if(bf && bf.cb.key){ push(bf.level, `บล็อก ${TRAIN_BLOCKS[bf.cb.key].label}${bf.cb.confirmed?' (ยืนยันแล้ว)':' (ระบบตรวจ)'}`, bf.text + (bf.macroOk===false ? ` · ไม่ค่อยเข้ากับเฟส ${TR_PHASES[pk].label}` : '')); }
   // 7. consistency
   push(b28.consistentWeeks>=3 ? 'good' : b28.consistentWeeks>=2 ? 'warn' : (['recovery','taper'].includes(pk)?'info':'bad'), `สม่ำเสมอ ${b28.consistentWeeks}/4 สัปดาห์ที่วิ่ง ≥3 วัน`, b28.consistentWeeks>=3 ? 'ความสม่ำเสมอดี' : 'ความสม่ำเสมอสำคัญกว่าวันยาวๆ วันเดียว');
   // 8. specificity for the target race
@@ -2927,7 +2950,16 @@ function debriefAnalysis(r){
   else if(finishMin && targetMin){ const d = (finishMin-targetMin)/targetMin;
     F.push({area:'ผลการแข่ง', level: d<=0?'good':d<=0.1?'warn':'bad', text:`เข้าเส้น ${fmtDur(finishMin)} vs เป้า ${fmtDur(targetMin)} (${d<=0?'เร็วกว่า':'ช้ากว่า'} ${Math.abs(Math.round(d*100))}%)`}); }
   else if(finishMin) F.push({area:'ผลการแข่ง', level:'info', text:`เวลา ${fmtDur(finishMin)} ชม.${res.rank?` · อันดับ ${res.rank}`:''} — ใส่เวลาเป้าที่การ์ดสนามเพื่อเทียบ`});
-  if(act && act.avg_hr) F.push({area:'หัวใจ', level:'info', text:`HR เฉลี่ย ${Math.round(act.avg_hr)}${act.max_hr?` · สูงสุด ${Math.round(act.max_hr)}`:''} bpm`});
+  if(act && act.avg_hr){
+    const zi = zoneIndexOfHr(act.avg_hr, zoneBoundsFor(act)), zm = HR_ZONE_META[Math.max(0,zi)], hrs = (Number(act.moving_time_min)||0)/60;
+    const lv = (zi>=2 && hrs>=5) ? 'warn' : 'info';
+    F.push({area:'หัวใจ', level:lv, text:`HR เฉลี่ย ${Math.round(act.avg_hr)} (${Math.round(100*act.avg_hr/hrZones().lthr)}% LTHR) = โซน ${zm.label}${act.max_hr?` · สูงสุด ${Math.round(act.max_hr)}`:''}${lv==='warn'?' — สำหรับแข่ง >5 ชม. ค่าเฉลี่ยควรอยู่โซน Endurance (≤'+zoneBoundsFor(act)[1].max+')':''}`});
+    if(lv==='warn') fix.push(`คุม HR ช่วงแรกไม่เกิน ${zoneBoundsFor(act)[1].max} (บนสุดของ Endurance) — แข่งยาวที่ค่าเฉลี่ย Steady State มักหมดแรงช่วงท้าย`);
+  }
+  const bm = sessionMix(addDays(r.date,-56), r.date);
+  const bmCov = bm.total ? bm.total/(bm.total+bm.unknown) : 0;
+  if(bm.total && bmCov >= 0.3){ const p = k=>Math.round(bm.share[k]*100);
+    F.push({area:'ประเภทการซ้อม 8 สัปดาห์', level:'info', text:`Recovery ${p('recovery')}% · Endurance ${p('endurance')}% · Steady ${p('steady')}% · Tempo ${p('tempo')}% · Interval ${p('interval')}%${bmCov<0.9?` (มีข้อมูล HR ${Math.round(bmCov*100)}% ของเวลา)`:''}`}); }
   const hours = (finishMin||actualMin||0)/60;
   if(res.carbsPerHr!=null && res.carbsPerHr!=='' && hours>=3){ const c = Number(res.carbsPerHr);
     F.push({area:'โภชนาการ', level: c>=60?'good':c>=40?'warn':'bad', text:`คาร์บ ${c} ก./ชม. (แนะนำ 60–90 สำหรับ ${hours.toFixed(1)} ชม.)`});
@@ -2970,6 +3002,8 @@ function debriefPromptText(r){
   if(a.pre) L.push(`ฟอร์มก่อนแข่ง: CTL ${Math.round(a.pre.ctl)} · ATL ${Math.round(a.pre.atl)} · TSB ${fmtSigned(a.pre.tsb)} · CTL peak 6 สัปดาห์ ${Math.round(a.peakCtl)}`);
   L.push(`8 สัปดาห์ก่อนแข่ง: เฉลี่ย ${a.b.avgWeekKm.toFixed(1)} กม./สัปดาห์ · รวม vert ${Math.round(a.b.elev)} ม. (${Math.round(a.b.vertPerKm)} ม./กม.) · long run ยาวสุด ${Number(a.b.longest&&a.b.longest.distance_km||0).toFixed(1)} กม. · back-to-back ${a.b.b2b} ครั้ง · สัปดาห์ที่วิ่ง ≥3 วัน ${a.b.consistentWeeks}/8`);
   L.push(`ระยะรายสัปดาห์: ${a.b.weekly.map(w=>w.km.toFixed(0)).join(', ')} กม.`);
+  const bmx = sessionMix(addDays(r.date,-56), r.date); if(bmx.total && bmx.total/(bmx.total+bmx.unknown) >= 0.3) L.push(`ประเภทการซ้อม 8 สัปดาห์ (เวลา): ${HR_ZONE_META.map(z=>z.label+' '+Math.round(bmx.share[z.key]*100)+'%').join(' · ')}`);
+  const hz = hrZones(); L.push(`โซน HR (LTHR ${hz.lthr}): ${HR_ZONE_META.map((z,i)=>z.label+' '+hz.run[i].min+'-'+hz.run[i].max).join(', ')}`);
   if(res.rpe||res.satisfaction) L.push(`RPE ${res.rpe||'-'}/10 · ความพอใจ ${res.satisfaction||'-'}/5`);
   if(res.carbsPerHr!=null||res.fluidPerHr!=null) L.push(`คาร์บ ${res.carbsPerHr??'-'} ก./ชม. · น้ำ ${res.fluidPerHr??'-'} มล./ชม. · นอนคืนก่อน ${res.sleepHrs??'-'} ชม. · อากาศ ${res.weather||'-'}`);
   if((res.issues||[]).length) L.push(`ปัญหาที่เจอ: ${res.issues.map(k=>(RACE_ISSUES.find(i=>i.k===k)||{}).l||k).join(', ')}`);
@@ -3110,7 +3144,7 @@ function saveActNote(id){
   const a = state.running.activities.find(x=>x.id===id); if(!a) return;
   const v = k => (document.getElementById('an_'+k)||{}).value || '';
   a.userRpe = parseFloat(v('rpe')) || null; a.feelUser = parseInt(v('feel'),10) || null;
-  a.painArea = v('pain').trim(); a.note = v('note').trim();
+  a.painArea = v('pain').trim(); a.note = v('note').trim(); a.sessionType = v('stype') || null;
   editingActNoteId = null; saveState(); render();
 }
 const FEEL_EMOJI = {1:'😫',2:'😕',3:'😐',4:'🙂',5:'😄'};
@@ -3118,20 +3152,278 @@ function actNoteLine(a){
   const p = [];
   if(a.userRpe) p.push('RPE '+a.userRpe);
   if(a.feelUser) p.push(FEEL_EMOJI[a.feelUser]||'');
+  const st = sessionType(a), stm = st && zoneMeta(st);
+  if(stm) p.unshift(`<span class="tr-stag" style="background:${stm.color}">${stm.label}${a.sessionType?' ✓':''}</span>`);
   if(a.avg_hr) p.push('HR '+Math.round(a.avg_hr));
   p.push('Load '+Math.round(activityLoad(a))+(activityHasRealLoad(a)?'':'*'));
   if(a.painArea) p.push('⚠ '+escapeHtml(a.painArea));
   if(a.note) p.push(escapeHtml(a.note));
-  return `<div class="tr-actnote">${p.join(' · ')}</div>`;
+  return `<div class="tr-actnote">${p.join(' · ').replace('</span> · ','</span> ')}</div>`;
 }
 function renderActNoteRow(a){
   return `<tr><td colspan="5"><div class="form-row tr-edit" style="margin:0">
     <select id="an_rpe"><option value="">RPE (ความเหนื่อย)</option>${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${Number(a.userRpe)===n?'selected':''} value="${n}">RPE ${n}${n<=3?' เบา':n<=6?' ปานกลาง':n<=8?' หนัก':' สุดๆ'}</option>`).join('')}</select>
     <select id="an_feel"><option value="">ความรู้สึก</option>${[1,2,3,4,5].map(n=>`<option ${Number(a.feelUser)===n?'selected':''} value="${n}">${FEEL_EMOJI[n]} ${n}</option>`).join('')}</select>
+    <select id="an_stype"><option value="">ประเภทซ้อม (อัตโนมัติ${sessionType({...a, sessionType:null})?': '+zoneMeta(sessionType({...a, sessionType:null})).label:''})</option>${HR_ZONE_META.map(z=>`<option value="${z.key}" ${a.sessionType===z.key?'selected':''}>${z.label}</option>`).join('')}</select>
     <input type="text" id="an_pain" value="${escapeHtml(a.painArea||'')}" placeholder="จุดที่เจ็บ เช่น เข่าซ้าย" style="max-width:170px">
     <input type="text" id="an_note" value="${escapeHtml(a.note||'')}" placeholder="บันทึก (สิ่งที่เจอ/อาหาร/อุปกรณ์)">
     <button class="btn btn-sm" onclick="saveActNote('${a.id}')">บันทึก</button>
   </div></td></tr>`;
+}
+
+/* ---------- HR zones (ตั้งเองได้ — ค่าเริ่มต้นจาก grind.run) + ประเภทการซ้อม + บล็อกความเข้มข้น ---------- */
+// 5 โซนแบบ grind.run อิง LTHR — สัดส่วนนี้ได้จากโซนจริงของ Milk (LTHR 172: 91-138 / 139-155 / 156-169 / 170-181 / 182-197)
+const HR_ZONE_META = [
+  {key:'recovery', label:'Recovery',     th:'ฟื้นตัว',            color:'#9AA6B8', pct:[0.529,0.802]},
+  {key:'endurance',label:'Endurance',    th:'แอโรบิกพื้นฐาน',     color:'#3E8DFF', pct:[0.808,0.901]},
+  {key:'steady',   label:'Steady State', th:'ต่อเนื่อง/มาราธอน',  color:'#22B39A', pct:[0.907,0.983]},
+  {key:'tempo',    label:'Tempo',        th:'เทมโป/threshold',    color:'#F5A623', pct:[0.988,1.052]},
+  {key:'interval', label:'Interval',     th:'VO2max',             color:'#FF6B8A', pct:[1.058,1.145]}
+];
+function zonesFromLthr(lthr){ lthr = Number(lthr)||0; return HR_ZONE_META.map(z=>({min:Math.round(z.pct[0]*lthr), max:Math.round(z.pct[1]*lthr)})); }
+function defaultHrZones(){
+  return {lthr:172, bikeLthr:164, run:[{min:91,max:138},{min:139,max:155},{min:156,max:169},{min:170,max:181},{min:182,max:197}],
+    source:'grind.run', updated:'2026-10-19'};
+}
+function hrZones(){
+  const z = state.running.hrZones;
+  return (z && Array.isArray(z.run) && z.run.length===5) ? z : defaultHrZones();
+}
+function zoneBoundsFor(a){ const z = hrZones(); return a && a.type==='ride' ? zonesFromLthr(z.bikeLthr||z.lthr) : z.run; }
+function zoneIndexOfHr(hr, bounds){
+  hr = Number(hr)||0; if(!hr) return -1;
+  for(let i=bounds.length-1;i>=0;i--) if(hr >= bounds[i].min) return i;
+  return 0;
+}
+// เวลาในแต่ละโซน (นาที) ตามโซนของเรา — แปลงจาก icu_hr_zone_times ของ intervals.icu โดยดูค่ากลางของแต่ละ bucket
+// (โซนใน intervals.icu อาจตั้งต่างจากของเรา) ถ้าไม่มีข้อมูล zone times จะคืน null
+function activityZoneMinutes(a){
+  const t = a.hr_zone_times, b = a.hr_zone_bounds;
+  if(!Array.isArray(t) || !t.length) return null;
+  const ours = zoneBoundsFor(a), out = [0,0,0,0,0];
+  t.forEach((sec,i)=>{
+    sec = Number(sec)||0; if(!sec) return;
+    let mid;
+    if(Array.isArray(b) && b.length){ const lo = i===0 ? (b[0]*0.85) : b[i-1], hi = b[i] != null ? b[i] : (b[b.length-1]*1.06); mid = (lo+hi)/2; }
+    else { // ไม่รู้ขอบเขตของ intervals.icu — สมมติ 5–7 โซนเรียงเหมือนกัน
+      const j = Math.min(4, Math.round(i * 4 / Math.max(1, t.length-1))); out[j] += sec/60; return; }
+    const j = Math.max(0, zoneIndexOfHr(mid, ours)); out[j] += sec/60;
+  });
+  return out;
+}
+const SESSION_NAME_RX = [[/interval|vo2|repeat|อินเทอร์วัล/i,'interval'],[/tempo|threshold|เทมโป/i,'tempo'],[/steady/i,'steady'],[/recovery|ฟื้น|easy/i,'recovery'],[/endurance|long run|ยาว/i,'endurance']];
+// ประเภทเซสชัน (เหมือน grind.run): ผู้ใช้เลือกเอง > ชื่อกิจกรรม > เวลาในโซน > HR เฉลี่ย
+function sessionType(a){
+  if(a.sessionType) return a.sessionType;
+  if(!isRunAct(a) && a.type!=='ride') return null;
+  for(const [rx,k] of SESSION_NAME_RX) if(rx.test(a.name||'')) return k;
+  const zm = activityZoneMinutes(a);
+  if(zm){
+    const tot = zm.reduce((s,v)=>s+v,0) || 1;
+    if(zm[4] >= 6) return 'interval';
+    if(zm[3] >= 12 || zm[3]/tot >= 0.15) return 'tempo';
+    if(zm[2] >= 20 || zm[2]/tot >= 0.2) return 'steady';
+    if((zm[1]+zm[2]+zm[3]+zm[4])/tot >= 0.45) return 'endurance';
+    return 'recovery';
+  }
+  if(a.avg_hr){ const i = zoneIndexOfHr(a.avg_hr, zoneBoundsFor(a)); return HR_ZONE_META[Math.max(0,i)].key; }
+  return null;
+}
+function zoneMeta(key){ return HR_ZONE_META.find(z=>z.key===key) || null; }
+// สัดส่วนเวลาตามประเภทเซสชัน (นาที) ในช่วง [startIso, endIso)
+function sessionMix(startIso, endIso, onlyRuns){
+  const mins = {recovery:0,endurance:0,steady:0,tempo:0,interval:0}, counts = {recovery:0,endurance:0,steady:0,tempo:0,interval:0};
+  let unknown = 0, total = 0;
+  state.running.activities.filter(a=>a.date>=startIso && a.date<endIso && (onlyRuns===false ? (isRunAct(a)||a.type==='ride') : isRunAct(a))).forEach(a=>{
+    const m = Number(a.moving_time_min)||0; const k = sessionType(a);
+    if(!k){ unknown += m; return; }
+    mins[k] += m; counts[k]++; total += m;
+  });
+  const share = {}; Object.keys(mins).forEach(k=>share[k] = total ? mins[k]/total : 0);
+  return {mins, counts, share, total, unknown};
+}
+// เวลาในโซนจริง (ถ้ามี zone times) — ใช้วิเคราะห์ 80/20
+function zoneTimeMix(startIso, endIso){
+  const out = [0,0,0,0,0]; let n = 0;
+  state.running.activities.filter(a=>a.date>=startIso && a.date<endIso && (isRunAct(a)||a.type==='ride')).forEach(a=>{
+    const zm = activityZoneMinutes(a); if(!zm) return; n++; zm.forEach((v,i)=>out[i]+=v); });
+  const tot = out.reduce((s,v)=>s+v,0);
+  return n && tot ? {mins:out, share:out.map(v=>v/tot), total:tot, n} : null;
+}
+
+/* ---------- Training blocks (บล็อกความเข้มข้น) ---------- */
+const TRAIN_BLOCKS = {
+  recovery: {label:'Recovery',            th:'ฟื้นตัว',                  color:'#9AA6B8', key:'recovery',
+    mix:{recovery:80, endurance:20, steady:0, tempo:0, interval:0},
+    sessions:'วิ่งเบา Recovery 30–45 นาที, เดินเร็ว, ยืดเหยียด/โมบิลิตี้ — ไม่มีเซสชันหนัก'},
+  endurance:{label:'Endurance / Base',    th:'สร้างฐานแอโรบิก',           color:'#3E8DFF', key:'endurance',
+    mix:{recovery:35, endurance:55, steady:10, tempo:0, interval:0},
+    sessions:'Long run โซน Endurance, strides 6×20 วิ หลังวิ่งเบา 1–2 ครั้ง, strength 2 ครั้ง/สัปดาห์'},
+  steady:   {label:'Steady State',        th:'สร้างความทนที่ความเร็วต่อเนื่อง', color:'#22B39A', key:'steady',
+    mix:{recovery:35, endurance:35, steady:25, tempo:5, interval:0},
+    sessions:'Endurance + Steady State 2×20–40 นาที (156–169) 2 ครั้ง/สัปดาห์, long run สอด steady ช่วงท้าย'},
+  tempo:    {label:'Tempo / Threshold',   th:'ยกเพดาน threshold',          color:'#F5A623', key:'tempo',
+    mix:{recovery:35, endurance:35, steady:15, tempo:12, interval:3},
+    sessions:'Tempo 3×10–15 นาที หรือ 20–30 นาทีต่อเนื่อง (170–181) 1–2 ครั้ง/สัปดาห์ + long run Endurance'},
+  interval: {label:'Interval / VO2max',   th:'ยกเพดานแอโรบิกสูงสุด',      color:'#FF6B8A', key:'interval',
+    mix:{recovery:40, endurance:35, steady:10, tempo:5, interval:10},
+    sessions:'Interval 5–6×3–4 นาที (182+) หรือ hill repeats 8–10×2 นาที 1 ครั้ง/สัปดาห์ + Tempo สั้น 1 ครั้ง'},
+  specific: {label:'Race-specific',       th:'เฉพาะสนาม (ultra/เทรล)',     color:'#7B5CE0', key:'steady',
+    mix:{recovery:35, endurance:40, steady:20, tempo:5, interval:0},
+    sessions:'Long run/back-to-back บนเส้นทางคล้ายสนาม, power hike + downhill, ซ้อมกิน/อุปกรณ์, steady บนเขา'},
+  taper:    {label:'Taper',               th:'ลดโหลดก่อนแข่ง',             color:'#22B3C9', key:'tempo',
+    mix:{recovery:50, endurance:30, steady:10, tempo:7, interval:3},
+    sessions:'ลดระยะ 30–50% คงความเข้มสั้นๆ: 3–4×3 นาทีที่ race effort, strides — ไม่มีเซสชันยาว'}
+};
+const MACRO_BLOCK_FIT = { // บล็อกที่เหมาะกับเฟสใหญ่ (build/peak/taper)
+  recovery:['recovery'], base:['endurance','steady'], build:['steady','tempo','interval'],
+  peak:['specific','steady','tempo'], taper:['taper'], race:['taper']
+};
+function detectTrainingBlock(info){
+  const today = todayISO();
+  if(info && info.phase && info.phase.key==='recovery') return {key:'recovery', why:'เพิ่งแข่งเสร็จ'};
+  if(info && info.phase && (info.phase.key==='taper' || info.phase.key==='race')) return {key:'taper', why:'อยู่ในช่วง taper ของสนามเป้าหมาย'};
+  const m = sessionMix(addDays(today,-20), addDays(today,1));
+  if(!m.total) return {key:null, why:'ยังไม่มีข้อมูล HR/ประเภทการซ้อม — กด Sync เพื่อดึง HR'};
+  const pct = k => Math.round(m.share[k]*100);
+  if(m.share.interval >= 0.08 || m.counts.interval >= 2) return {key:'interval', why:`Interval ${pct('interval')}% (${m.counts.interval} ครั้ง) ใน 21 วัน`};
+  if(m.share.tempo >= 0.10 || m.counts.tempo >= 2) return {key:'tempo', why:`Tempo ${pct('tempo')}% (${m.counts.tempo} ครั้ง) ใน 21 วัน`};
+  if(m.share.steady >= 0.15 || m.counts.steady >= 2) return {key:'steady', why:`Steady State ${pct('steady')}% (${m.counts.steady} ครั้ง) ใน 21 วัน`};
+  return {key:'endurance', why:`ส่วนใหญ่เป็น Recovery/Endurance (${pct('recovery')+pct('endurance')}%)`};
+}
+function currentBlock(info){
+  const det = detectTrainingBlock(info);
+  const tb = state.running.trainingBlock;
+  const confirmed = tb && tb.key && TRAIN_BLOCKS[tb.key] ? tb : null;
+  const stale = confirmed && dayDiff(confirmed.setOn, todayISO()) > 28;
+  return {det, confirmed, stale, key: confirmed ? confirmed.key : det.key};
+}
+function setTrainingBlock(key){
+  if(!key) state.running.trainingBlock = null;
+  else state.running.trainingBlock = {key, setOn: todayISO()};
+  saveState(); render();
+}
+function mixBar(mixPct, h){
+  return `<div class="tr-mixbar" style="height:${h||14}px">${HR_ZONE_META.map(z=>{ const v = mixPct[z.key]||0; if(v<=0) return '';
+    return `<div style="width:${v}%; background:${z.color}" data-tip="${tipAttr(`<b>${z.label}</b> ${Math.round(v)}%`)}">${v>=9?Math.round(v)+'%':''}</div>`; }).join('')}</div>`;
+}
+function blockFit(info){
+  const cb = currentBlock(info); if(!cb.key) return null;
+  const B = TRAIN_BLOCKS[cb.key];
+  const m = sessionMix(addDays(todayISO(),-13), addDays(todayISO(),1));
+  if(!m.total) return {cb, B, m, level:'info', text:'ยังไม่มีข้อมูลพอเทียบ'};
+  const act = {}; Object.keys(m.share).forEach(k=>act[k]=m.share[k]*100);
+  const low = act.recovery + act.endurance, tgtLow = B.mix.recovery + B.mix.endurance;
+  const keyK = B.key, keyAct = act[keyK]||0, keyTgt = B.mix[keyK]||0;
+  let level = 'good', text = 'การซ้อม 14 วันล่าสุดตรงกับบล็อก';
+  if(low < tgtLow - 20) { level = 'bad'; text = `ซ้อมหนักเกินบล็อก — เบา (Recovery+Endurance) แค่ ${Math.round(low)}% เป้า ~${tgtLow}%`; }
+  else if(keyTgt >= 5 && keyAct < keyTgt*0.4 && !['recovery','endurance'].includes(cb.key)) { level = 'warn'; text = `เซสชันหลักของบล็อก (${zoneMeta(keyK).label}) มีแค่ ${Math.round(keyAct)}% เป้า ~${keyTgt}%`; }
+  else if(low < tgtLow - 10) { level = 'warn'; text = `เบาน้อยกว่าเป้าเล็กน้อย (${Math.round(low)}% vs ~${tgtLow}%)`; }
+  const macroOk = (MACRO_BLOCK_FIT[info.phase.key]||[]).includes(cb.key);
+  return {cb, B, m, act, level, text, macroOk};
+}
+function renderBlockPanel(info){
+  const cb = currentBlock(info), fit = blockFit(info);
+  const det = cb.det, B = cb.key ? TRAIN_BLOCKS[cb.key] : null;
+  const mm = sessionMix(addDays(todayISO(),-13), addDays(todayISO(),1));
+  const actPct = {}; Object.keys(mm.share).forEach(k=>actPct[k]=mm.share[k]*100);
+  const ask = !cb.confirmed || cb.stale;
+  const fitMacro = (MACRO_BLOCK_FIT[info.phase.key]||[]).map(k=>TRAIN_BLOCKS[k].label).join(' / ');
+  return `
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:10px; flex-wrap:wrap; row-gap:6px">
+      <h3>🎯 บล็อกการซ้อม (ความเข้มข้น)</h3>
+      ${B ? `<span class="tr-phase-tag" style="background:${B.color}">${B.label}${cb.confirmed?' ✓':''}</span>` : ''}
+    </div>
+    <div class="tr-block-q ${ask?'ask':''}">
+      <div>${det.key ? `ระบบตรวจจากการซ้อมจริง: <b>${TRAIN_BLOCKS[det.key].label}</b> <span class="muted">— ${escapeHtml(det.why)}</span>` : `<span class="muted">${escapeHtml(det.why)}</span>`}</div>
+      <div style="margin-top:6px">${ask ? `<b>${cb.stale?'ยังอยู่บล็อกเดิมไหม? ':''}ตอนนี้คุณซ้อมช่วงไหน?</b> เลือกเพื่อยืนยัน — ระบบจะใช้เทียบกับการวิเคราะห์` : `คุณยืนยันว่าอยู่บล็อก <b>${TRAIN_BLOCKS[cb.confirmed.key].label}</b> ตั้งแต่ ${fmtDateShort(cb.confirmed.setOn)}${det.key && det.key!==cb.confirmed.key ? ` <span style="color:#B87800">· การซ้อมจริงใกล้เคียง ${TRAIN_BLOCKS[det.key].label} มากกว่า</span>`:''}`}</div>
+      <div class="tr-block-chips">
+        ${Object.keys(TRAIN_BLOCKS).map(k=>`<button class="tr-bchip ${cb.confirmed&&cb.confirmed.key===k?'on':''}" style="--c:${TRAIN_BLOCKS[k].color}" onclick="setTrainingBlock('${k}')">${TRAIN_BLOCKS[k].label}${det.key===k?' <small>(ตรวจพบ)</small>':''}</button>`).join('')}
+        ${cb.confirmed ? `<button class="tr-bchip" onclick="setTrainingBlock(null)">↺ ใช้ค่าที่ระบบตรวจ</button>` : ''}
+      </div>
+    </div>
+    ${B ? `
+    <div class="tr-block-grid">
+      <div>
+        <div class="k">สัดส่วนเวลาซ้อม 14 วันล่าสุด (ตามประเภทเซสชัน)</div>
+        ${mm.total ? mixBar(actPct) : '<div class="muted">ยังไม่มีข้อมูล HR — กด Sync</div>'}
+        <div class="k" style="margin-top:10px">เป้าของบล็อก ${B.label}</div>
+        ${mixBar(B.mix)}
+        <div class="tr-legend" style="margin-top:8px">${HR_ZONE_META.map(z=>`<span><i style="background:${z.color}; height:8px; width:8px; border-radius:2px"></i>${z.label}</span>`).join('')}</div>
+      </div>
+      <div>
+        <div class="k">เซสชันหลักของบล็อกนี้</div>
+        <div style="font-size:12.5px">${B.sessions}</div>
+        ${fit ? `<div style="margin-top:10px">${trChip(fit.level, fit.level==='good'?'ตรงบล็อก':fit.level==='info'?'ข้อมูลน้อย':'ไม่ตรงบล็อก')} <span class="muted">${escapeHtml(fit.text)}</span></div>` : ''}
+        <div style="margin-top:8px">${fit && !fit.macroOk ? trChip('warn','ไม่เข้ากับเฟส') : trChip('good','เข้ากับเฟส')} <span class="muted">เฟส ${TR_PHASES[info.phase.key].label} เหมาะกับ: ${fitMacro}</span></div>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+/* ---------- HR zones panel (ตั้งค่า + การกระจายเวลา) ---------- */
+function saveHrZones(){
+  const g = id => parseFloat((document.getElementById(id)||{}).value);
+  const run = HR_ZONE_META.map((z,i)=>({min:g('hz_min_'+i)||0, max:g('hz_max_'+i)||0}));
+  if(run.some(r=>!r.min || !r.max || r.max<r.min)){ const m = document.getElementById('hzMsg'); if(m) m.innerHTML = '<div class="msg msg-err">กรอกค่าให้ครบ และค่าสูงสุดต้องมากกว่าค่าต่ำสุด</div>'; return; }
+  state.running.hrZones = {lthr:g('hz_lthr')||hrZones().lthr, bikeLthr:g('hz_bike')||hrZones().bikeLthr, run, source:'ตั้งเอง', updated:todayISO()};
+  saveState(); render();
+}
+function hrZonesFromLthrInput(){
+  const l = parseFloat((document.getElementById('hz_lthr')||{}).value); if(!l) return;
+  zonesFromLthr(l).forEach((z,i)=>{ document.getElementById('hz_min_'+i).value = z.min; document.getElementById('hz_max_'+i).value = z.max; });
+}
+function resetHrZones(){ state.running.hrZones = defaultHrZones(); saveState(); render(); }
+function renderZonesPanel(){
+  const z = hrZones(), today = todayISO();
+  const runs10 = state.running.activities.filter(a=>isRunAct(a) && a.date<=today).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,10);
+  const mixOf = list => { const mins = {recovery:0,endurance:0,steady:0,tempo:0,interval:0}; let t = 0, unk = 0;
+    list.forEach(a=>{ const k = sessionType(a), m = Number(a.moving_time_min)||0; if(!k){unk+=m; return;} mins[k]+=m; t+=m; }); return {mins, t, unk, n:list.length}; };
+  const m10 = mixOf(runs10);
+  const m12 = mixOf(state.running.activities.filter(a=>isRunAct(a) && a.date>addDays(today,-84) && a.date<=today));
+  const zt = zoneTimeMix(addDays(today,-27), addDays(today,1));
+  const rows = (mx) => HR_ZONE_META.map(zm=>{ const v = mx.t ? 100*mx.mins[zm.key]/mx.t : 0;
+    return `<div class="tr-zrow"><span class="nm"><i style="background:${zm.color}"></i>${zm.label}</span><div class="tr-ztrack"><div style="width:${v}%; background:${zm.color}"></div></div><span class="mono v">${Math.round(mx.mins[zm.key])}m · ${Math.round(v)}%</span></div>`; }).join('');
+  return `
+  <div class="panel">
+    <div class="ribbon-head" style="margin-bottom:10px; flex-wrap:wrap; row-gap:6px">
+      <h3>❤️ โซนหัวใจ & เวลาซ้อมแต่ละประเภท</h3>
+      <span class="muted">LTHR วิ่ง ${z.lthr} · ปั่น ${z.bikeLthr||'—'} · ที่มา ${escapeHtml(z.source||'')} (${fmtDateShort(z.updated)})</span>
+    </div>
+    <div class="tr-block-grid">
+      <div>
+        <div class="k">10 ครั้งล่าสุด · ${fmtHM(m10.t)}${m10.unk?` <span class="muted">(ไม่รู้ประเภท ${fmtHM(m10.unk)})</span>`:''}</div>
+        ${rows(m10)}
+        <div class="k" style="margin-top:12px">12 สัปดาห์ · ${fmtHM(m12.t)}${m12.unk?` <span class="muted">(ไม่รู้ประเภท ${fmtHM(m12.unk)} — กด Sync เพื่อดึง HR)</span>`:''}</div>
+        ${rows(m12)}
+        ${zt ? `<div class="k" style="margin-top:12px">เวลาในโซนจริง 28 วัน (จาก HR ทุกวินาที)</div>${mixBar(Object.fromEntries(HR_ZONE_META.map((zm,i)=>[zm.key, zt.share[i]*100])))}` : ''}
+        <div class="muted" style="margin-top:6px">ประเภทเซสชัน: เลือกเองที่ 📝 > ชื่อกิจกรรม > เวลาในโซน > HR เฉลี่ย</div>
+      </div>
+      <div>
+        <details class="tr-details" style="margin-top:0">
+          <summary>⚙ ปรับโซนหัวใจ</summary>
+          <div class="form-row" style="margin-top:10px">
+            <label class="muted">LTHR วิ่ง</label><input type="number" id="hz_lthr" value="${z.lthr}" style="max-width:90px">
+            <button class="btn btn-ghost btn-sm" onclick="hrZonesFromLthrInput()">คำนวณโซนจาก LTHR</button>
+            <label class="muted">LTHR ปั่น</label><input type="number" id="hz_bike" value="${z.bikeLthr||''}" style="max-width:90px">
+          </div>
+          <table class="table tr-ztable">
+            <tr><th>โซน</th><th>ต่ำสุด</th><th>สูงสุด</th><th>% LTHR</th></tr>
+            ${HR_ZONE_META.map((zm,i)=>`<tr><td><i class="dot" style="background:${zm.color}"></i>${zm.label} <span class="muted">${zm.th}</span></td>
+              <td><input type="number" id="hz_min_${i}" value="${z.run[i].min}"></td><td><input type="number" id="hz_max_${i}" value="${z.run[i].max}"></td>
+              <td class="muted mono">${Math.round(100*z.run[i].min/z.lthr)}–${Math.round(100*z.run[i].max/z.lthr)}%</td></tr>`).join('')}
+          </table>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">
+            <button class="btn btn-sm" onclick="saveHrZones()">บันทึกโซน</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetHrZones()">คืนค่า grind.run</button>
+          </div>
+          <div id="hzMsg" style="margin-top:8px"></div>
+          <div class="muted">โซนปั่นคำนวณจาก LTHR ปั่นด้วยสัดส่วนเดียวกัน · ถ้า LTHR เปลี่ยน (เช่น หลังทดสอบใหม่) แก้ตรงนี้ได้เลย</div>
+        </details>
+      </div>
+    </div>
+  </div>`;
 }
 
 /* ---------- Today page one-liner ---------- */
@@ -3165,9 +3457,11 @@ function renderRunning(){
   <div class="section-sub">รวมทุกประเภท — วิ่ง ปั่นจักรยาน เวทเทรนนิ่ง และอื่นๆ · sync อัตโนมัติจาก intervals.icu หรือบันทึกเอง</div>
 
   ${renderRaceHub(trInfo)}
+  ${renderBlockPanel(trInfo)}
   ${renderFormTiles(trInfo)}
   ${renderWeekPanel()}
   ${renderInsightsPanel(trInfo)}
+  ${renderZonesPanel()}
   ${renderDebriefPanel()}
 
   <div class="panel">
@@ -3377,6 +3671,7 @@ async function syncIntervals(){
         max_hr: act.max_heartrate || null,
         elapsed_min: act.elapsed_time ? Math.round(act.elapsed_time/60) : null,
         hr_zone_times: Array.isArray(act.icu_hr_zone_times) ? act.icu_hr_zone_times : null,
+        hr_zone_bounds: Array.isArray(act.icu_hr_zones) ? act.icu_hr_zones : null,
         icu_rpe: act.icu_rpe || act.perceived_exertion || null
       };
       const existingIdx = state.running.activities.findIndex(a=>a.id===id);
