@@ -1432,7 +1432,7 @@ function loadState(){
   localStorage.setItem(LS_KEY, JSON.stringify(s));
   return s;
 }
-function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); try{ if(typeof wpAutoPushSoon==='function') wpAutoPushSoon(); }catch(e){} }
 
 /* ---------- Quick capture parser ---------- */
 function parseCapture(text){
@@ -7269,12 +7269,13 @@ function wpHandleLaunchParams(){
 }
 
 /* ----- ข้อมูลที่ใช้วาด ----- */
-function wpUpcoming(t){
+function wpCollectItems(t, opt){
+  opt = Object.assign({iphone:true, tasks:true, races:true}, opt||{});
   const items = [];
   const push = (o)=>{ if(o.date) items.push(o); };
-  wpIphone().events.forEach(ev=>{ if(ev.date >= t) push({date:ev.date, time:ev.time, title:ev.title, cat:ev.category, src:'iphone'}); });
+  if(opt.iphone) wpIphone().events.forEach(ev=>{ if(ev.date >= t) push({date:ev.date, time:ev.time, title:ev.title, cat:ev.category, src:'iphone'}); });
   state.calendar.events.forEach(ev=>{ if(ev.date >= t && !ev.demo) push({date:ev.date, time:ev.time||'', title:ev.title, cat: ev.category==='egat'?'egat':ev.category==='doctor'?'doctor':wpClassify(ev.title,''), src:'lifeos'}); });
-  state.work.tasks.filter(tk=>!tk.done && tk.due).forEach(tk=>{ push({date:String(tk.due).slice(0,10), time:String(tk.due).slice(11,16), title:tk.text, cat:'egat', src:'task'}); });
+  if(opt.tasks) state.work.tasks.filter(tk=>!tk.done && tk.due).forEach(tk=>{ push({date:String(tk.due).slice(0,10), time:String(tk.due).slice(11,16), title:tk.text, cat:'egat', src:'task'}); });
   allHealthReminders().forEach(({member, rem, due})=>{
     if(rem.demo || member.demo) return;
     let cat = 'doctor';
@@ -7296,8 +7297,14 @@ function wpUpcoming(t){
     }
   });
   (state.trips.list||[]).forEach(tr=>{ const d = tr.days && tr.days[0] ? tr.days[0].date : tr.startDate; if(d && d >= t && !tr.demo) push({date:d, time:'', title:'ทริป · '+tr.name, cat:'trip', src:'trip'}); });
-  const tgt = targetRaceFrom(t);
-  upcomingRaces().forEach(r=>{ if(tgt && r.id===tgt.id) return; if(r.demo) return; push({date:r.date, time:'', title:'แข่ง · '+r.name, cat:'raceB', src:'race'}); });
+  if(opt.races){
+    const tgt = targetRaceFrom(t);
+    upcomingRaces().forEach(r=>{ if(tgt && r.id===tgt.id) return; if(r.demo) return; push({date:r.date, time:'', title:'แข่ง · '+r.name, cat:'raceB', src:'race'}); });
+  }
+  return items;
+}
+function wpUpcoming(t){
+  const items = wpCollectItems(t);
   const seen = new Set();
   return items.filter(it=>{
     const d = daysUntil(it.date);
@@ -7423,26 +7430,7 @@ async function wpRender(){
 
   // พื้นหลัง: รูปที่เลือกเอง (cover) หรือพื้นเขียวเทรลค่าเริ่มต้น + เวอร์ชันเบลอสำหรับการ์ดแบบกระจกฝ้า
   const ws = wpSettings();
-  const bgImg = await wpLoadBgImage();
-  const bgCv = document.createElement('canvas'); bgCv.width = px.w; bgCv.height = px.h;
-  const bctx = bgCv.getContext('2d');
-  if(bgImg){
-    const r = Math.max(px.w/bgImg.width, px.h/bgImg.height), iw = bgImg.width*r, ih = bgImg.height*r;
-    bctx.drawImage(bgImg, (px.w-iw)/2, (px.h-ih)/2, iw, ih);
-    const dimA = Number.isFinite(Number(ws.bgDim)) ? Number(ws.bgDim) : 0.25;
-    const g = bctx.createLinearGradient(0, 0, 0, px.h);
-    g.addColorStop(0, 'rgba(0,0,0,'+(dimA*0.4)+')'); g.addColorStop(0.35, 'rgba(0,0,0,'+dimA+')'); g.addColorStop(1, 'rgba(0,0,0,'+Math.min(0.85, dimA+0.25)+')');
-    bctx.fillStyle = g; bctx.fillRect(0, 0, px.w, px.h);
-  } else {
-    bctx.save(); bctx.scale(S, S);
-    const g = bctx.createLinearGradient(0, 0, 0, LH); g.addColorStop(0, '#16261D'); g.addColorStop(0.45, '#0E1914'); g.addColorStop(1, '#0A120E');
-    bctx.fillStyle = g; bctx.fillRect(0, 0, LW, LH);
-    const glow = (cx, cy, rad, col)=>{ const rg = bctx.createRadialGradient(cx, cy, 0, cx, cy, rad); rg.addColorStop(0, col); rg.addColorStop(1, 'rgba(0,0,0,0)'); bctx.fillStyle = rg; bctx.fillRect(0, 0, LW, LH); };
-    glow(320, 90, 260, 'rgba(198,243,107,0.16)'); glow(40, LH*0.62, 300, 'rgba(76,123,217,0.16)'); glow(330, LH*0.9, 260, 'rgba(232,166,74,0.10)');
-    bctx.strokeStyle = 'rgba(198,243,107,0.10)'; bctx.lineWidth = 1.2;
-    for(let i=0;i<9;i++){ const o = i*30; bctx.beginPath(); bctx.moveTo(-20, 270-o); bctx.bezierCurveTo(60, 220-o, 110, 260-o, 180, 210-o); bctx.bezierCurveTo(250, 160-o, 330, 180-o, 410, 150-o); bctx.stroke(); }
-    bctx.restore();
-  }
+  const bgCv = await wpRenderBg(px);
   const blurCv = (()=>{ // เบลอแบบย่อ-ขยาย (ใช้ได้ทุกเบราว์เซอร์ รวม Safari)
     let src = bgCv;
     [10, 22].forEach(f=>{ const c = document.createElement('canvas'); c.width = Math.max(8, Math.round(px.w/f)); c.height = Math.max(8, Math.round(px.h/f)); const cx2 = c.getContext('2d'); cx2.imageSmoothingQuality = 'high'; cx2.drawImage(src, 0, 0, c.width, c.height); src = c; });
@@ -7594,6 +7582,31 @@ async function wpRender(){
   return cv;
 }
 
+async function wpRenderBg(px){
+  const ws = wpSettings();
+  const S = px.w/390, LW = 390, LH = px.h/S;
+  const bgImg = await wpLoadBgImage();
+  const bgCv = document.createElement('canvas'); bgCv.width = px.w; bgCv.height = px.h;
+  const bctx = bgCv.getContext('2d');
+  if(bgImg){
+    const r = Math.max(px.w/bgImg.width, px.h/bgImg.height), iw = bgImg.width*r, ih = bgImg.height*r;
+    bctx.drawImage(bgImg, (px.w-iw)/2, (px.h-ih)/2, iw, ih);
+    const dimA = Number.isFinite(Number(ws.bgDim)) ? Number(ws.bgDim) : 0.25;
+    const g = bctx.createLinearGradient(0, 0, 0, px.h);
+    g.addColorStop(0, 'rgba(0,0,0,'+(dimA*0.4)+')'); g.addColorStop(0.35, 'rgba(0,0,0,'+dimA+')'); g.addColorStop(1, 'rgba(0,0,0,'+Math.min(0.85, dimA+0.25)+')');
+    bctx.fillStyle = g; bctx.fillRect(0, 0, px.w, px.h);
+  } else {
+    bctx.save(); bctx.scale(S, S);
+    const g = bctx.createLinearGradient(0, 0, 0, LH); g.addColorStop(0, '#16261D'); g.addColorStop(0.45, '#0E1914'); g.addColorStop(1, '#0A120E');
+    bctx.fillStyle = g; bctx.fillRect(0, 0, LW, LH);
+    const glow = (cx, cy, rad, col)=>{ const rg = bctx.createRadialGradient(cx, cy, 0, cx, cy, rad); rg.addColorStop(0, col); rg.addColorStop(1, 'rgba(0,0,0,0)'); bctx.fillStyle = rg; bctx.fillRect(0, 0, LW, LH); };
+    glow(320, 90, 260, 'rgba(198,243,107,0.16)'); glow(40, LH*0.62, 300, 'rgba(76,123,217,0.16)'); glow(330, LH*0.9, 260, 'rgba(232,166,74,0.10)');
+    bctx.strokeStyle = 'rgba(198,243,107,0.10)'; bctx.lineWidth = 1.2;
+    for(let i=0;i<9;i++){ const o = i*30; bctx.beginPath(); bctx.moveTo(-20, 270-o); bctx.bezierCurveTo(60, 220-o, 110, 260-o, 180, 210-o); bctx.bezierCurveTo(250, 160-o, 330, 180-o, 410, 150-o); bctx.stroke(); }
+    bctx.restore();
+  }
+  return bgCv;
+}
 /* ----- รูปพื้นหลัง (เก็บแยก key ใน localStorage ไม่ปนกับ state หลัก) ----- */
 const WP_BG_KEY = 'milkLifeOS_wpBg';
 function wpLoadBgImage(){
@@ -7611,15 +7624,105 @@ function wpPickBg(input){
       const c = document.createElement('canvas'); c.width = Math.round(im.width*r); c.height = Math.round(im.height*r);
       c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
       try{ localStorage.setItem(WP_BG_KEY, c.toDataURL('image/jpeg', 0.85)); }catch(e){ alert('รูปใหญ่เกินที่จะเก็บในเครื่อง ลองใช้รูปอื่น'); return; }
-      wpRefreshModal(); wpRegenerate();
+      wpRefreshModal(); wpRegenerate(); wpAutoPushSoon();
     };
     im.src = rd.result;
   };
   rd.readAsDataURL(f);
 }
-function wpClearBg(){ try{ localStorage.removeItem(WP_BG_KEY); }catch(e){} wpRefreshModal(); wpRegenerate(); }
+function wpClearBg(){ try{ localStorage.removeItem(WP_BG_KEY); }catch(e){} wpRefreshModal(); wpRegenerate(); wpAutoPushSoon(); }
 function wpHasBg(){ try{ return !!localStorage.getItem(WP_BG_KEY); }catch(e){ return false; } }
-function wpSetNum(k, v){ wpSettings()[k] = Number(v); saveState(); clearTimeout(wpSetNum._t); wpSetNum._t = setTimeout(wpRegenerate, 150); }
+function wpSetNum(k, v){ wpSettings()[k] = Number(v); saveState(); clearTimeout(wpSetNum._t); wpSetNum._t = setTimeout(wpRegenerate, 150); wpAutoPushSoon(); }
+
+/* ----- อัตโนมัติทุกเช้า: ส่ง snapshot ขึ้น Milk Money (Wallpaper.gs วาดรูปให้คำสั่งลัดตั้งเป็นวอลเปเปอร์เอง) ----- */
+function wpMmConfig(){ try{ const c = JSON.parse(localStorage.getItem('mm:config')||'null'); return (c && c.url && c.key) ? c : null; }catch(e){ return null; } }
+function wpStrHash(s){ let h = 0; s = String(s); for(let i=0;i<s.length;i++){ h = ((h<<5)-h + s.charCodeAt(i))|0; } return String(h); }
+function wpSnapshot(){
+  const t = todayISO(), D = wpData(), ws = wpSettings();
+  const dow = (new Date(t+'T00:00:00').getDay()+6)%7;
+  return {
+    v: 1, from: 'lifeos', pushedLocal: new Date().toISOString(),
+    items: wpCollectItems(t, {iphone:false, tasks:false, races:false}),
+    races: sortedRaces().filter(r=>!r.demo).map(r=>({name:r.name, date:r.date, distanceKm:r.distanceKm||null, elevationM:r.elevationM||null, priority:r.priority||'A', skipped: raceIsSkipped(r)})),
+    tasks: state.work.tasks.filter(tk=>!tk.done).map(tk=>({text:tk.text, due:tk.due||'', priority:tk.priority||'normal'})),
+    hrZones: hrZones(),
+    block: D.block,
+    leadDays: Object.assign({}, WP_LEAD_DEFAULTS, ws.leadDays||{}),
+    glass: Number.isFinite(Number(ws.glass)) ? Number(ws.glass) : 0.42,
+    fallback: {ctl: D.hasFit?D.ctl:null, atl: D.hasFit?D.atl:null, tsb: D.hasFit?D.tsb:null, intensity: D.intensity, week: D.week, weekStart: addDays(t, -dow)},
+    icu: state.settings.intervalsApiKey ? {key: state.settings.intervalsApiKey, athlete: state.settings.intervalsAthleteId || '0'} : null
+  };
+}
+let wpPushBusy = false;
+async function wpPushToMilkMoney(force){
+  const ws = wpSettings(), cfg = wpMmConfig();
+  if(!cfg) throw new Error('ยังไม่ได้เชื่อม Milk Money (แตะป้าย 🥛 มุมจอเพื่อใส่รหัสเชื่อมต่อ)');
+  if(wpPushBusy) return null;
+  wpPushBusy = true;
+  try{
+    const data = wpSnapshot();
+    const dataHash = wpStrHash(JSON.stringify(Object.assign({}, data, {pushedLocal:null})));
+    // รูปพื้นหลัง (ไม่มีการ์ด) ส่งเฉพาะตอนที่เปลี่ยน
+    let bgSrc = ''; try{ bgSrc = localStorage.getItem(WP_BG_KEY) || ''; }catch(e){}
+    const bgHash = wpStrHash('v1|' + bgSrc.length + '|' + bgSrc.slice(-2000) + '|' + (ws.bgDim ?? 0.25));
+    let bg = null;
+    if(force || bgHash !== ws.bgPushedHash){
+      const cv = await wpRenderBg({w:1179, h:2556});
+      bg = {data: cv.toDataURL('image/jpeg', 0.82).split(',')[1], mime:'image/jpeg', hash: bgHash};
+    }
+    if(!force && !bg && dataHash === ws.lastPushHash && ws.lastPushAt && (Date.now() - new Date(ws.lastPushAt).getTime()) < 6*3600*1000) return {skipped:true};
+    const res = await fetch(cfg.url, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({wp:'push', key:cfg.key, data, bg})});
+    const j = await res.json();
+    if(!j.ok) throw new Error(j.error === 'unknown wp action' || j.error === 'bad json' ? 'Milk Money ยังไม่ได้ติดตั้ง Wallpaper.gs' : (j.error || 'ส่งไม่สำเร็จ'));
+    ws.lastPushAt = new Date().toISOString(); ws.lastPushHash = dataHash; ws.lastPushErr = '';
+    if(bg) ws.bgPushedHash = bgHash;
+    saveState();
+    return j;
+  }catch(e){
+    ws.lastPushErr = String(e.message || e); saveState(); throw e;
+  }finally{ wpPushBusy = false; }
+}
+function wpAutoPushSoon(){
+  if(!wpSettings().auto || !wpMmConfig()) return;
+  clearTimeout(wpAutoPushSoon._t);
+  wpAutoPushSoon._t = setTimeout(()=>{ wpPushToMilkMoney(false).catch(e=>console.warn('[wallpaper] push', e)); }, 4000);
+}
+function wpToggleAuto(on){ wpSettings().auto = !!on; saveState(); wpRefreshModal(); if(on) wpPushNow(); }
+async function wpPushNow(){
+  const el = document.getElementById('wpAutoMsg'); if(el) el.textContent = 'กำลังส่งข้อมูลขึ้น Milk Money…';
+  try{ await wpPushToMilkMoney(true); wpRefreshModal(); }
+  catch(e){ wpRefreshModal(); }
+}
+function wpAutoHtml(){
+  const ws = wpSettings(), cfg = wpMmConfig();
+  const status = !cfg ? '<span style="color:var(--coral)">ยังไม่ได้เชื่อม Milk Money — แตะป้าย 🥛 ที่มุมจอเพื่อใส่รหัสเชื่อมต่อก่อน</span>'
+    : ws.lastPushErr ? '<span style="color:var(--coral)">ส่งไม่สำเร็จ: '+escapeHtml(ws.lastPushErr)+'</span>'
+    : ws.lastPushAt ? 'ส่งข้อมูลล่าสุด '+fmtDate(ws.lastPushAt.slice(0,10))+' '+new Date(ws.lastPushAt).toTimeString().slice(0,5)
+    : 'ยังไม่เคยส่ง';
+  return `<div style="margin-top:14px; padding:10px 12px; border-radius:12px; background:rgba(0,0,0,0.03)">
+    <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:13px; cursor:pointer">
+      <input type="checkbox" ${ws.auto?'checked':''} onchange="wpToggleAuto(this.checked)"> ตั้งวอลเปเปอร์อัตโนมัติทุกเช้า (ผ่าน Milk Money)
+    </label>
+    <div class="muted" id="wpAutoMsg" style="font-size:11.5px; margin-top:4px">${status}</div>
+    ${ws.auto ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px"><button class="btn btn-sm btn-ghost" onclick="wpPushNow()">ส่งข้อมูลตอนนี้</button><button class="btn btn-sm btn-ghost" onclick="wpToggleAutoGuide()">${wpShowAutoGuide?'▾':'▸'} วิธีตั้งคำสั่งลัดแบบอัตโนมัติ</button></div>${wpShowAutoGuide ? wpAutoGuideHtml(cfg) : ''}` : '<div class="muted" style="font-size:11px; margin-top:4px">เปิดแล้ว Life OS จะส่งงาน/เตือนสุขภาพ/รถ/สนามแข่ง/ช่วงแจ้งล่วงหน้า/รูปพื้นหลัง ขึ้น Milk Money ทุกครั้งที่เปิดแอป ส่วนข้อมูลซ้อม Milk Money ดึงจาก intervals.icu เองทุกเช้า</div>'}
+  </div>`;
+}
+let wpShowAutoGuide = false;
+function wpToggleAutoGuide(){ wpShowAutoGuide = !wpShowAutoGuide; wpRefreshModal(); }
+function wpAutoGuideHtml(cfg){
+  const url = cfg ? cfg.url : '(ลิงก์ Milk Money .../exec)', key = cfg ? cfg.key : '(SYNC_KEY)';
+  return `<ol style="font-size:12px; line-height:1.65; padding-left:18px; margin:8px 0 0">
+    <li>แอป <b>คำสั่งลัด</b> → <b>+</b> ตั้งชื่อ "Life OS Wallpaper Auto"</li>
+    <li><b>ค้นหาเหตุการณ์ในปฏิทิน</b> → วันที่เริ่มต้นอยู่ใน <b>30 วันถัดไป</b></li>
+    <li><b>ทำซ้ำกับแต่ละรายการ</b> → <b>ข้อความ</b> <code>[วันที่เริ่มต้น]|[ชื่อเรื่อง]|[ปฏิทิน]|[ทั้งวัน]</code> (วันที่แบบกำหนดเอง <code>yyyy-MM-dd HH:mm</code>, คริสต์ศักราช)</li>
+    <li><b>รวมข้อความ</b> คั่นด้วยบรรทัดใหม่</li>
+    <li><b>รับเนื้อหาของ URL (Get Contents of URL)</b> → URL <code style="word-break:break-all">${escapeHtml(url)}</code> → วิธีการ <b>POST</b> → เนื้อหาคำขอ <b>JSON</b>: <code>wp</code> = <code>render</code>, <code>key</code> = <code style="word-break:break-all">${escapeHtml(key)}</code>, <code>cal</code> = ตัวแปร <b>ข้อความที่รวมแล้ว</b></li>
+    <li><b>รับค่าพจนานุกรม (Get Dictionary Value)</b> ของคีย์ <code>png</code> → <b>ถอดรหัส Base64 (Base64 Decode)</b></li>
+    <li><b>ตั้งค่าภาพพื้นหลัง (Set Wallpaper Photo)</b> → เลือกภาพพื้นหลังที่ใช้อยู่ → ปิด "แสดงตัวอย่าง" และ "ครอบตัดเป็นวัตถุ" (ถ้ามี)</li>
+    <li>แท็บ <b>อัตโนมัติ</b> → <b>เวลาของวัน</b> 05:00 ทุกวัน → เลือก <b>เรียกใช้ทันที</b> → คำสั่งลัดนี้</li>
+  </ol>
+  <div class="muted" style="font-size:11px; margin-top:4px">รหัส key นี้ใช้เข้าถึง Milk Money ได้ เก็บไว้ในคำสั่งลัดของตัวเองเท่านั้น อย่าแชร์คำสั่งลัดนี้ให้คนอื่น · ครั้งแรกควรกดรันเองดูก่อน ถ้าภาพไม่ถูกต้องให้ส่งภาพมาปรับ</div>`;
+}
 
 /* ----- หน้าต่างวอลเปเปอร์ ----- */
 let wpLastBlobUrl = null, wpLastBlob = null, wpShowGuide = false;
@@ -7673,6 +7776,7 @@ function wpModalHtml(){
       </label>
     </div>
   </div>
+  ${wpAutoHtml()}
   <div style="margin-top:14px">
     <div style="font-weight:600; font-size:13px; margin-bottom:6px">ช่วงแสดงนัดล่วงหน้า (วัน)</div>
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px 10px">
@@ -7758,11 +7862,12 @@ async function wpShare(){
   const a = document.createElement('a'); a.href = wpLastBlobUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove();
 }
 function wpSetSize(v){ wpSettings().size = v; saveState(); wpRegenerate(); }
-function wpSetLead(k, v){ const n = parseInt(v,10); wpSettings().leadDays[k] = Number.isFinite(n) && n>=0 ? n : ''; saveState(); wpRegenerate(); }
+function wpSetLead(k, v){ const n = parseInt(v,10); wpSettings().leadDays[k] = Number.isFinite(n) && n>=0 ? n : ''; saveState(); wpRegenerate(); wpAutoPushSoon(); }
 function wpToggleGuide(){ wpShowGuide = !wpShowGuide; wpRefreshModal(); }
 
 render();
 wpHandleLaunchParams();
+wpAutoPushSoon();
 window.addEventListener('hashchange', ()=>{ if((location.hash||'').indexOf('#cal=')===0){ wpHandleLaunchParams(); render(); } });
 </script>
 <script src="milk-money-bridge.js"></script>
