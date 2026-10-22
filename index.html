@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Milk Life OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F1F3FA; --panel:#FFFFFF; --ink:#1D2233; --ink-soft:#8891A5; --line:#EBEEF5;
@@ -401,6 +401,7 @@ a{color:inherit;}
       <p>ภาพรวมทุกด้านของวันนี้ในที่เดียว</p>
     </div>
     <div style="display:flex; align-items:center; gap:10px">
+      <button class="bell-btn" id="wpBtn" onclick="openWallpaper()" title="สร้างวอลเปเปอร์หน้าล็อก iPhone">📱</button>
       <button class="bell-btn" id="bellBtn" onclick="openReminderPopup()" title="นัดหมาย/งานที่ใกล้ถึง">
         🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span>
       </button>
@@ -1672,6 +1673,12 @@ function gatherReminders(mode){
       out.push({date:ev.date, time:ev.time||'', title:ev.title, category:meta.key, catLabel:meta.label, color:meta.color});
     }
   });
+  ((state.calendar.iphone||{}).events||[]).forEach(ev=>{
+    if(ev.date >= t && ev.date <= end){
+      const meta = ev.category==='pet'||ev.category==='petRoutine' ? HEALTH_CATEGORY : calCategoryMeta(wpIphoneCatToReminder(ev.category));
+      out.push({date:ev.date, time:ev.time||'', title:ev.title, category:wpIphoneCatToReminder(ev.category), catLabel:meta.label+' · iPhone', color:meta.color});
+    }
+  });
   state.work.tasks.filter(tk=>!tk.done).forEach(tk=>{
     const d = (tk.due||'').slice(0,10);
     if(d && d >= t && d <= end){
@@ -1852,6 +1859,7 @@ function renderToday(){
   const dayEvents = (d)=>{
     const out = [];
     state.calendar.events.forEach(ev=>{ const meta = calCategoryMeta(ev.category); if(ev.date===d) out.push({label:(ev.time?ev.time+' ':'')+ev.title, color:meta.color, gcalTitle:ev.title, custom:true, id:ev.id}); });
+    ((state.calendar.iphone||{}).events||[]).forEach(ev=>{ if(ev.date===d){ const k = wpIphoneCatToReminder(ev.category); const color = k==='health' ? HEALTH_CATEGORY.color : calCategoryMeta(k).color; out.push({label:'📱 '+(ev.time?ev.time+' ':'')+ev.title, color, gcalTitle:ev.title}); } });
     work.tasks.forEach(tk=>{ if((tk.due||'').slice(0,10)===d) out.push({label:(tk.done?'✓ ':'')+tk.text, color:'var(--amber)', gcalTitle:tk.text}); });
     trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
     state.running.races.forEach(r=>{ if(r.date===d) out.push({label:'🏁 '+r.name+(r.distanceKm?(' ('+r.distanceKm+'K)'):''), color:RACE_CATEGORY.color, gcalTitle:'แข่ง: '+r.name}); });
@@ -3310,12 +3318,12 @@ function mixBar(mixPct, h){
 function blockFit(info){
   const cb = currentBlock(info); if(!cb.key) return null;
   const B = TRAIN_BLOCKS[cb.key];
-  const m = sessionMix(addDays(todayISO(),-13), addDays(todayISO(),1));
+  const m = sessionMix(addDays(todayISO(),-20), addDays(todayISO(),1));
   if(!m.total) return {cb, B, m, level:'info', text:'ยังไม่มีข้อมูลพอเทียบ'};
   const act = {}; Object.keys(m.share).forEach(k=>act[k]=m.share[k]*100);
   const low = act.recovery + act.endurance, tgtLow = B.mix.recovery + B.mix.endurance;
   const keyK = B.key, keyAct = act[keyK]||0, keyTgt = B.mix[keyK]||0;
-  let level = 'good', text = 'การซ้อม 14 วันล่าสุดตรงกับบล็อก';
+  let level = 'good', text = 'การซ้อม 21 วันล่าสุดตรงกับบล็อก';
   if(low < tgtLow - 20) { level = 'bad'; text = `ซ้อมหนักเกินบล็อก — เบา (Recovery+Endurance) แค่ ${Math.round(low)}% เป้า ~${tgtLow}%`; }
   else if(keyTgt >= 5 && keyAct < keyTgt*0.4 && !['recovery','endurance'].includes(cb.key)) { level = 'warn'; text = `เซสชันหลักของบล็อก (${zoneMeta(keyK).label}) มีแค่ ${Math.round(keyAct)}% เป้า ~${keyTgt}%`; }
   else if(low < tgtLow - 10) { level = 'warn'; text = `เบาน้อยกว่าเป้าเล็กน้อย (${Math.round(low)}% vs ~${tgtLow}%)`; }
@@ -3325,7 +3333,7 @@ function blockFit(info){
 function renderBlockPanel(info){
   const cb = currentBlock(info), fit = blockFit(info);
   const det = cb.det, B = cb.key ? TRAIN_BLOCKS[cb.key] : null;
-  const mm = sessionMix(addDays(todayISO(),-13), addDays(todayISO(),1));
+  const mm = sessionMix(addDays(todayISO(),-20), addDays(todayISO(),1));
   const actPct = {}; Object.keys(mm.share).forEach(k=>actPct[k]=mm.share[k]*100);
   const ask = !cb.confirmed || cb.stale;
   const fitMacro = (MACRO_BLOCK_FIT[info.phase.key]||[]).map(k=>TRAIN_BLOCKS[k].label).join(' / ');
@@ -3346,7 +3354,7 @@ function renderBlockPanel(info){
     ${B ? `
     <div class="tr-block-grid">
       <div>
-        <div class="k">สัดส่วนเวลาซ้อม 14 วันล่าสุด (ตามประเภทเซสชัน)</div>
+        <div class="k">สัดส่วนเวลาซ้อม 21 วันล่าสุด (ตามประเภทเซสชัน)</div>
         ${mm.total ? mixBar(actPct) : '<div class="muted">ยังไม่มีข้อมูล HR — กด Sync</div>'}
         <div class="k" style="margin-top:10px">เป้าของบล็อก ${B.label}</div>
         ${mixBar(B.mix)}
@@ -7170,7 +7178,479 @@ function resetAll(){
 }
 
 /* ---------- Init ---------- */
+const thaiMonthsFull = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+/* ---------- วอลเปเปอร์หน้าล็อก iPhone (แบบ F · Trail Board) ----------
+   วาดด้วย <canvas> จากข้อมูลใน Life OS + นัดจาก iPhone Calendar (ส่งมาทาง Shortcut ผ่าน #cal=…)
+   นัดที่ขึ้นจอถูกกรองด้วย "ช่วงแจ้งล่วงหน้า" แยกตามหมวด (ปรับได้ในหน้าต่างวอลเปเปอร์) */
+const WP_LEAD_DEFAULTS = {doctor:14, pet:14, petRoutine:3, car:14, egat:10, trip:30, raceB:30, other:3};
+const WP_CATS = {
+  doctor:    {label:'นัดหมอ / ทันตแพทย์', color:'#F26D6D'},
+  pet:       {label:'สัตว์เลี้ยง — วัคซีน/หาหมอ', color:'#F07AB8'},
+  petRoutine:{label:'สัตว์เลี้ยง — งานประจำ', color:'#F07AB8'},
+  car:       {label:'รถเข้าศูนย์ / ดูแลรถ', color:'#A78BFA'},
+  egat:      {label:'งาน EGAT / เดดไลน์', color:'#F59E4B'},
+  trip:      {label:'ทริป', color:'#5AB0FF'},
+  raceB:     {label:'สนามแข่งอื่น (B/C)', color:'#C6F36B'},
+  other:     {label:'นัดอื่นๆ', color:'#7FB2FF'}
+};
+const WP_SIZES = [
+  {key:'auto', label:'อัตโนมัติ (ขนาดจอเครื่องนี้)'},
+  {key:'1179x2556', label:'iPhone 14 Pro / 15 / 15 Pro / 16'},
+  {key:'1206x2622', label:'iPhone 16 Pro / 17 / 17 Pro'},
+  {key:'1290x2796', label:'iPhone 14 Pro Max / 15 Plus / 15 Pro Max / 16 Plus'},
+  {key:'1320x2868', label:'iPhone 16 Pro Max / 17 Pro Max'},
+  {key:'1170x2532', label:'iPhone 12 / 13 / 14'}
+];
+function wpSettings(){
+  if(!state.settings.wallpaper) state.settings.wallpaper = {leadDays:{}, size:'auto'};
+  if(!state.settings.wallpaper.leadDays) state.settings.wallpaper.leadDays = {};
+  return state.settings.wallpaper;
+}
+function wpLead(cat){
+  const v = wpSettings().leadDays[cat];
+  return (v === '' || v == null || !Number.isFinite(Number(v))) ? WP_LEAD_DEFAULTS[cat] : Number(v);
+}
+function wpIphone(){
+  if(!state.calendar.iphone) state.calendar.iphone = {importedAt:null, events:[]};
+  return state.calendar.iphone;
+}
+// เดาหมวดของนัดจาก iPhone Calendar จากชื่อนัด + ชื่อปฏิทิน
+function wpClassify(title, calName){
+  const s = String(title||''), c = String(calName||'');
+  if(/ลูฟี่|แมว|หมา|สุนัข|สัตวแพทย์|สัตว์เลี้ยง|\bvet\b|grooming/i.test(s+' '+c)) return /อาบน้ำ|ตัดเล็บ|ถ่ายพยาธิ|หยอดเห็บ|grooming/i.test(s) ? 'petRoutine' : 'pet';
+  if(/หมอ|โรงพยาบาล|รพ\.|คลินิก|ทันต|ฟัน|ตรวจสุขภาพ|ตรวจเลือด|doctor|dentist|hospital|clinic/i.test(s)) return 'doctor';
+  if(/tesla|รถ|ศูนย์บริการ|เช็กระยะ|เช็คระยะ|ยาง|service center|ล้างรถ/i.test(s)) return 'car';
+  if(/egat|กฟผ|แม่เมาะ|work|งาน|office|outlook|exchange/i.test(c) || /ppa|ncc|ประชุม|meeting|rolling plan|black start|รายงาน|เดดไลน์|deadline/i.test(s)) return 'egat';
+  if(/ทริป|เที่ยว|flight|เที่ยวบิน|โรงแรม|hotel|check-?in/i.test(s)) return 'trip';
+  return 'other';
+}
+// รูปแบบที่ Shortcut ส่งมา: แต่ละบรรทัด "YYYY-MM-DD HH:mm|ชื่อนัด|ชื่อปฏิทิน|allday" (allday = Yes/No/ใช่/ไม่ใช่/1/0)
+function wpParseIphoneText(txt){
+  const out = [];
+  String(txt||'').split(/\r?\n/).forEach(line=>{
+    line = line.trim(); if(!line) return;
+    const p = line.split('|');
+    const m = (p[0]||'').match(/(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2}))?/);
+    if(!m) return;
+    let y = Number(m[1]); if(y > 2400) y -= 543; // ปี พ.ศ. → ค.ศ.
+    const date = y+'-'+m[2]+'-'+m[3];
+    const allDay = /^(yes|true|1|ใช่)$/i.test(String(p[3]||'').trim());
+    const time = (!allDay && m[4]) ? pad2(Number(m[4]))+':'+m[5] : '';
+    const title = (p[1]||'').trim() || '(ไม่มีชื่อ)';
+    const cal = (p[2]||'').trim();
+    out.push({date, time, title, cal, category: wpClassify(title, cal)});
+  });
+  return out.sort((a,b)=>String(a.date+a.time).localeCompare(String(b.date+b.time)));
+}
+function wpIphoneCatToReminder(cat){
+  if(cat==='egat') return 'egat';
+  if(cat==='doctor') return 'doctor';
+  if(cat==='pet' || cat==='petRoutine') return 'health';
+  return 'other';
+}
+// อ่าน #cal=… / ?wp=1 ตอนเปิดหน้า (Shortcut เปิด URL นี้มา) — เก็บนัดแทนชุดเดิมแล้วเปิดหน้าต่างวอลเปเปอร์ให้เลย
+function wpHandleLaunchParams(){
+  let open = false;
+  try{
+    const h = location.hash || '';
+    if(h.indexOf('#cal=') === 0){
+      const raw = h.slice(5);
+      let txt = raw; try{ txt = decodeURIComponent(raw); }catch(e){}
+      const ip = wpIphone();
+      ip.events = wpParseIphoneText(txt);
+      ip.importedAt = new Date().toISOString();
+      saveState();
+      open = true;
+    }
+    if(/[?&]wp=1\b/.test(location.search || '')) open = true;
+    if(open && history.replaceState) history.replaceState(null, '', location.pathname + (location.search||'').replace(/[?&]wp=1\b/, '').replace(/^&/, '?'));
+  }catch(e){ console.warn('[wallpaper] launch params', e); }
+  if(open) setTimeout(()=>openWallpaper(true), 60);
+}
+
+/* ----- ข้อมูลที่ใช้วาด ----- */
+function wpUpcoming(t){
+  const items = [];
+  const push = (o)=>{ if(o.date) items.push(o); };
+  wpIphone().events.forEach(ev=>{ if(ev.date >= t) push({date:ev.date, time:ev.time, title:ev.title, cat:ev.category, src:'iphone'}); });
+  state.calendar.events.forEach(ev=>{ if(ev.date >= t && !ev.demo) push({date:ev.date, time:ev.time||'', title:ev.title, cat: ev.category==='egat'?'egat':ev.category==='doctor'?'doctor':wpClassify(ev.title,''), src:'lifeos'}); });
+  state.work.tasks.filter(tk=>!tk.done && tk.due).forEach(tk=>{ push({date:String(tk.due).slice(0,10), time:String(tk.due).slice(11,16), title:tk.text, cat:'egat', src:'task'}); });
+  allHealthReminders().forEach(({member, rem, due})=>{
+    if(rem.demo || member.demo) return;
+    let cat = 'doctor';
+    if(member.isPet){
+      const v = Number(rem.intervalValue)||0, u = rem.intervalUnit;
+      const routine = rem.recurring && (u==='day' || u==='week' || (u==='month' && v<=3)) && !/วัคซีน|หมอ|ตรวจ/i.test(rem.title||'');
+      cat = routine ? 'petRoutine' : 'pet';
+    }
+    push({date:due, time:'', title: member.name+' · '+rem.title, cat, src:'health'});
+  });
+  (state.car.items||[]).forEach(it=>{
+    const st = carItemStatus(it);
+    if(st.status==='unset') return;
+    const baseDate = it.lastServiceDate || state.car.deliveryDate;
+    if(it.intervalMonths && baseDate){
+      push({date:addMonths(baseDate, it.intervalMonths), time:'', title:'รถ · '+it.name, cat:'car', src:'car'});
+    } else if(st.status==='soon' || st.status==='overdue'){
+      push({date:t, time:'', title:'รถ · '+it.name+(st.dueKmLabel?(' ('+st.dueKmLabel+')'):''), cat:'car', src:'car', kmOnly:true, late: st.status==='overdue'});
+    }
+  });
+  (state.trips.list||[]).forEach(tr=>{ const d = tr.days && tr.days[0] ? tr.days[0].date : tr.startDate; if(d && d >= t && !tr.demo) push({date:d, time:'', title:'ทริป · '+tr.name, cat:'trip', src:'trip'}); });
+  const tgt = targetRaceFrom(t);
+  upcomingRaces().forEach(r=>{ if(tgt && r.id===tgt.id) return; if(r.demo) return; push({date:r.date, time:'', title:'แข่ง · '+r.name, cat:'raceB', src:'race'}); });
+  const seen = new Set();
+  return items.filter(it=>{
+    const d = daysUntil(it.date);
+    if(d < 0){ if(!(it.src==='task' || it.src==='health' || it.src==='car')) return false; if(d < -60) return false; }
+    else if(d > wpLead(it.cat) && !it.kmOnly) return false;
+    const k = it.date+'|'+String(it.title).toLowerCase().replace(/\s+/g,' ');
+    if(seen.has(k)) return false; seen.add(k); return true;
+  }).map(it=>{
+    const d = daysUntil(it.date);
+    let badge, tone = '';
+    if(it.late || d < 0){ badge = it.kmOnly ? 'เลยกำหนด' : 'เลย '+Math.abs(d)+' วัน'; tone = 'late'; }
+    else if(it.kmOnly){ badge = 'ใกล้ถึง'; tone = 'soon'; }
+    else if(d === 0){ badge = it.time ? 'วันนี้ '+it.time : 'วันนี้'; tone = 'hot'; }
+    else if(d === 1){ badge = it.time ? 'พรุ่งนี้ '+it.time : 'พรุ่งนี้'; tone = 'hot'; }
+    else { badge = 'อีก '+d+' วัน'; tone = d <= 3 ? 'soon' : ''; }
+    return Object.assign({}, it, {d, badge, tone, color:(WP_CATS[it.cat]||WP_CATS.other).color});
+  }).sort((a,b)=>{
+    const la = a.tone==='late'?0:1, lb = b.tone==='late'?0:1;
+    if(la!==lb) return la-lb;
+    return String(a.date+(a.time||'99')).localeCompare(String(b.date+(b.time||'99')));
+  });
+}
+// จุดสีบนปฏิทินเดือน — ทุกอย่างในเดือนนั้น (ไม่กรองช่วงแจ้งล่วงหน้า)
+function wpMonthMarks(ym){
+  const marks = {};
+  const add = (date, cat)=>{ if(!date || date.slice(0,7)!==ym) return; const d = Number(date.slice(8,10)); (marks[d] = marks[d] || []); if(marks[d].indexOf(cat)===-1) marks[d].push(cat); };
+  wpIphone().events.forEach(ev=>add(ev.date, ev.category));
+  state.calendar.events.forEach(ev=>{ if(!ev.demo) add(ev.date, ev.category==='egat'?'egat':ev.category==='doctor'?'doctor':'other'); });
+  state.work.tasks.forEach(tk=>{ if(tk.due && !tk.done) add(String(tk.due).slice(0,10), 'egat'); });
+  allHealthReminders().forEach(({member,rem,due})=>{ if(!rem.demo && !member.demo) add(due, member.isPet?'pet':'doctor'); });
+  (state.car.items||[]).forEach(it=>{ const b = it.lastServiceDate || state.car.deliveryDate; if(it.intervalMonths && b) add(addMonths(b, it.intervalMonths), 'car'); });
+  (state.trips.list||[]).forEach(tr=>{ if(!tr.demo) (tr.days||[]).forEach(d=>add(d.date, 'trip')); });
+  sortedRaces().forEach(r=>{ if(!r.demo) add(r.date, 'race'); });
+  return marks;
+}
+function wpWeekStats(t){
+  const d = new Date(t+'T00:00:00'); const dow = (d.getDay()+6)%7; const mon = addDays(t, -dow);
+  let min = 0, km = 0, el = 0;
+  state.running.activities.filter(a=>a.date>=mon && a.date<=t && a.done!==false && !a.demo).forEach(a=>{
+    min += Number(a.moving_time_min)||0; km += Number(a.distance_km)||0; el += Number(a.elevation_gain_m)||0;
+  });
+  return {min, km, el};
+}
+// สัดส่วนความเข้ม 21 วันล่าสุด จากเวลาในโซน HR (ไม่นับวันแข่ง) — ถ้ายังไม่มี zone times ใช้ประเภทเซสชันแทน
+function wpIntensity(t){
+  const start = addDays(t,-20), end = addDays(t,1);
+  const raceDays = new Set(sortedRaces().map(r=>r.date));
+  const acts = state.running.activities.filter(a=>a.date>=start && a.date<end && !raceDays.has(a.date) && !a.demo && (isRunAct(a)||a.type==='ride'));
+  const z = [0,0,0,0,0]; let n = 0;
+  acts.forEach(a=>{ const zm = activityZoneMinutes(a); if(!zm) return; n++; zm.forEach((v,i)=>z[i]+=v); });
+  let tot = z.reduce((s,v)=>s+v,0), source = 'zones';
+  if(!n || !tot){
+    source = 'sessions';
+    acts.forEach(a=>{ const k = sessionType(a); const i = HR_ZONE_META.findIndex(m=>m.key===k); if(i>=0) z[i] += Number(a.moving_time_min)||0; });
+    tot = z.reduce((s,v)=>s+v,0);
+  }
+  if(!tot) return null;
+  const share = z.map(v=>v/tot);
+  return {share, light: share[0]+share[1], hard: share[3]+share[4], source};
+}
+function wpEisenhower(t){
+  const soon = addDays(t,3);
+  const q = {q1:[], q2:[]};
+  state.work.tasks.filter(tk=>!tk.done).forEach(tk=>{
+    const due = tk.due ? String(tk.due).slice(0,10) : '';
+    const urgent = due && due <= soon;
+    if(tk.priority==='high') (urgent ? q.q1 : q.q2).push(tk.text);
+  });
+  return q;
+}
+function wpData(){
+  const t = todayISO();
+  const info = fitnessNow();
+  const race = targetRaceFrom(t);
+  const cb = currentBlock(info);
+  const y = Number(t.slice(0,4));
+  const start = new Date(y,0,1), end = new Date(y+1,0,1), now = new Date(t+'T00:00:00');
+  const daysInYear = Math.round((end-start)/86400000), dayIdx = Math.round((now-start)/86400000)+1;
+  return {
+    t, race, raceDays: race ? daysUntil(race.date) : null,
+    ctl: info.cur.ctl, atl: info.cur.atl, tsb: info.cur.tsb,
+    hasFit: info.fit.days.length > 0,
+    block: cb.key ? {label:(TRAIN_BLOCKS[cb.key]||{}).label || cb.key, confirmed: !!(cb.confirmed && !cb.stale)} : null,
+    intensity: wpIntensity(t),
+    week: wpWeekStats(t),
+    yearPct: Math.round(dayIdx/daysInYear*100), yearLeft: daysInYear-dayIdx,
+    ym: t.slice(0,7), marks: wpMonthMarks(t.slice(0,7)),
+    upcoming: wpUpcoming(t),
+    eis: wpEisenhower(t)
+  };
+}
+
+/* ----- วาด ----- */
+function wpPixelSize(){
+  const s = wpSettings().size || 'auto';
+  if(s !== 'auto'){ const m = s.match(/(\d+)x(\d+)/); if(m) return {w:Number(m[1]), h:Number(m[2])}; }
+  const dpr = window.devicePixelRatio || 1, sw = (window.screen && screen.width) || 0, sh = (window.screen && screen.height) || 0;
+  const w = Math.round(Math.min(sw,sh)*dpr), h = Math.round(Math.max(sw,sh)*dpr);
+  if(w >= 1000 && h/w > 1.9 && h/w < 2.4 && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent||'')) return {w, h};
+  return {w:1179, h:2556};
+}
+async function wpLoadFonts(){
+  if(!document.fonts || !document.fonts.load) return;
+  const specs = ['400 20px Prompt','500 20px Prompt','600 20px Prompt','700 20px Prompt','500 20px "JetBrains Mono"','700 20px "JetBrains Mono"','800 20px "JetBrains Mono"'];
+  try{ await Promise.race([Promise.all(specs.map(s=>document.fonts.load(s, 'กขค0123'))), new Promise(r=>setTimeout(r, 2500))]); }catch(e){}
+}
+async function wpRender(){
+  await wpLoadFonts();
+  const D = wpData();
+  const px = wpPixelSize();
+  const cv = document.createElement('canvas'); cv.width = px.w; cv.height = px.h;
+  const ctx = cv.getContext('2d');
+  const S = px.w/390, LW = 390, LH = px.h/S;
+  ctx.scale(S, S);
+  const TH = 'Prompt, system-ui, sans-serif', MONO = '"JetBrains Mono", ui-monospace, monospace';
+  const C = {bg:'#0D1712', ink:'#EDF3EE', soft:'#9DB0A3', dim:'#6D8073', lime:'#C6F36B', card:'rgba(255,255,255,0.05)', line:'rgba(255,255,255,0.08)'};
+  const font = (size, weight, mono)=>{ ctx.font = (weight||400)+' '+size+'px '+(mono?MONO:TH); };
+  const txt = (s, x, y, size, color, weight, mono, align)=>{ font(size, weight, mono); ctx.fillStyle = color; ctx.textAlign = align||'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(String(s), x, y); return ctx.measureText(String(s)).width; };
+  const tw = (s, size, weight, mono)=>{ font(size, weight, mono); return ctx.measureText(String(s)).width; };
+  const fit = (s, maxW, size, weight, mono)=>{ s = String(s); font(size, weight, mono); if(ctx.measureText(s).width <= maxW) return s; while(s.length > 1 && ctx.measureText(s+'…').width > maxW) s = s.slice(0,-1); return s+'…'; };
+  const rr = (x, y, w, h, r, fill, stroke)=>{ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else { ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); } if(fill){ ctx.fillStyle = fill; ctx.fill(); } if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); } };
+  const dot = (x, y, r, color)=>{ ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fillStyle = color; ctx.fill(); };
+
+  // พื้นหลัง + เส้นคอนทัวร์ด้านบน (หลังนาฬิกา)
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, LW, LH);
+  ctx.strokeStyle = 'rgba(198,243,107,0.10)'; ctx.lineWidth = 1.2;
+  for(let i=0;i<8;i++){ const o = i*30; ctx.beginPath(); ctx.moveTo(-20, 260-o); ctx.bezierCurveTo(60, 210-o, 110, 250-o, 180, 200-o); ctx.bezierCurveTo(250, 150-o, 330, 170-o, 410, 140-o); ctx.stroke(); }
+
+  const X = 14, W = LW - 28;
+  const up = D.upcoming.slice(0, 5);
+  const gridStart = (()=>{ const d0 = new Date(D.ym+'-01T00:00:00'); return (d0.getDay()+6)%7; })();
+  const dim = new Date(Number(D.ym.slice(0,4)), Number(D.ym.slice(5,7)), 0).getDate();
+  const rows = Math.ceil((gridStart + dim)/7);
+  const H_HERO = 60, H_INT = 46, H_STATS = 52, H_CAL = 54 + rows*26 + 6, H_UP = Math.max(1, up.length)*27 + 12, H_EIS = 30;
+  const TOP = 200, BOTTOM = LH - 86;
+  const used = H_HERO+H_INT+H_STATS+H_CAL+H_UP+H_EIS;
+  const gap = Math.max(8, Math.min(18, (BOTTOM - TOP - used)/5));
+  let y = TOP + Math.max(0, (BOTTOM - TOP - used - gap*5) * 0.35);
+
+  // 1) สนามเป้าหมาย + นับถอยหลัง
+  if(D.race){
+    const dd = new Date(D.race.date+'T00:00:00');
+    txt('NEXT RACE · '+(D.race.priority||'A')+' · '+dd.getDate()+' '+thaiMonths[dd.getMonth()], X+2, y+12, 10, C.lime, 500, true);
+    const numW = tw(String(D.raceDays), 56, 800, true);
+    txt(fit(D.race.name, W - numW - 50, 19, 700), X+2, y+38, 19, C.ink, 700);
+    if(D.race.distanceKm) txt(D.race.distanceKm+' กม.'+(D.race.elevationM?(' · ↑'+fmtMoney(D.race.elevationM)+' ม.'):''), X+2, y+56, 11, C.soft, 400);
+    txt('วัน', X+W-2, y+54, 12, C.soft, 400, false, 'right');
+    txt(String(D.raceDays), X+W-2-tw('วัน',12,400)-5, y+54, 56, C.lime, 800, true, 'right');
+  } else {
+    txt('ยังไม่มีสนามเป้าหมาย', X+2, y+36, 17, C.ink, 600);
+    txt('เพิ่มได้ที่หน้า "กิจกรรม"', X+2, y+54, 11, C.soft, 400);
+  }
+  y += H_HERO + gap;
+
+  // 2) ความเข้ม 21 วันล่าสุด (เวลาในโซน)
+  txt('ความเข้ม 21 วันล่าสุด'+(D.intensity && D.intensity.source==='sessions' ? ' (ตามประเภทเซสชัน)' : ' (เวลาในโซน)'), X+2, y+11, 10.5, C.soft, 400);
+  if(D.block){
+    const chip = 'บล็อก: '+D.block.label+(D.block.confirmed?' ✓':' ?');
+    const cw = tw(chip, 10, 500) + 16;
+    rr(X+W-cw, y, cw, 17, 8.5, 'rgba(198,243,107,0.14)');
+    txt(chip, X+W-cw/2, y+12, 10, C.lime, 500, false, 'center');
+  }
+  const ZC = ['#4C7BD9', '#C6F36B', '#E8D36B', '#E8A64A', '#F26D6D'];
+  const by = y + 22;
+  if(D.intensity){
+    let bx = X; const gapB = 2, avail = W - gapB*4;
+    D.intensity.share.forEach((s,i)=>{ if(s <= 0) return; const w = Math.max(3, avail*s); rr(bx, by, w, 9, 3, ZC[i]); bx += w + gapB; });
+  } else {
+    rr(X, by, W, 9, 3, 'rgba(255,255,255,0.10)');
+  }
+  let lx = X+2; const ly = y + 44;
+  ['Rec','End','Steady','Tempo','Int'].forEach((l,i)=>{ dot(lx+3, ly-3.5, 3, ZC[i]); lx += 9; lx += txt(l, lx, ly, 10, C.soft, 400) + 7; });
+  if(D.intensity){
+    const r = 'หนัก '+Math.round(D.intensity.hard*100)+'%';
+    const rw = txt(r, X+W-2, ly, 10, C.soft, 500, true, 'right');
+    const l = Math.round(D.intensity.light*100)+'%';
+    const l2w = txt(l+' · ', X+W-2-rw, ly, 10.5, C.ink, 700, true, 'right');
+    txt('เบา ', X+W-2-rw-l2w, ly, 10, C.soft, 400, false, 'right');
+  } else {
+    txt('ยังไม่มีข้อมูล HR — Sync ที่หน้า "กิจกรรม"', X+W-2, ly, 10, C.dim, 400, false, 'right');
+  }
+  y += H_INT + gap;
+
+  // 3) ฟอร์ม CTL/ATL/TSB + สัปดาห์นี้ (เวลา/ระยะ/เกน)
+  const w1 = (W-8)*0.44, w2 = W-8-w1;
+  rr(X, y, w1, H_STATS, 18, C.card, C.line);
+  const fitCols = [['CTL', D.hasFit?Math.round(D.ctl):'–', C.ink, C.soft], ['ATL', D.hasFit?Math.round(D.atl):'–', C.ink, C.soft], ['TSB', D.hasFit?fmtSigned(Math.round(D.tsb)):'–', (D.tsb < -10 ? '#FFC48A' : C.lime), (D.tsb < -10 ? '#FFC48A' : C.lime)]];
+  fitCols.forEach((c,i)=>{ const cx = X + 14 + i*((w1-28)/2.6); txt(c[0], cx, y+19, 9.5, c[3], 400); txt(c[1], cx, y+39, 16, c[2], 700, true); });
+  const x2 = X + w1 + 8;
+  rr(x2, y, w2, H_STATS, 18, C.card, C.line);
+  txt('สัปดาห์นี้', x2+12, y+17, 9.5, C.soft, 400);
+  const wk = D.week;
+  const vals = [[fmtDur(wk.min), ' ชม.', C.ink], [(wk.km>=100?Math.round(wk.km):wk.km.toFixed(1).replace(/\.0$/,'')), ' กม.', C.ink], ['↑'+fmtMoney(Math.round(wk.el)), ' ม.', C.lime]];
+  const colW = (w2-24)/3;
+  vals.forEach((v,i)=>{ const vx = x2+12 + i*colW; const vw = txt(v[0], vx, y+39, 15, v[2], 700, true); txt(v[1], vx+vw, y+39, 9.5, C.soft, 400); });
+  y += H_STATS + gap;
+
+  // 4) ปฏิทินเดือน + เวลาที่ผ่านไปของปี
+  rr(X, y, W, H_CAL, 18, C.card, C.line);
+  const mIdx = Number(D.ym.slice(5,7))-1, yBE = Number(D.ym.slice(0,4))+543;
+  txt(thaiMonthsFull[mIdx]+' '+yBE, X+13, y+20, 12.5, C.ink, 700);
+  const yr2 = 'เหลือ '+D.yearLeft+' วัน';
+  const yr2w = txt(yr2, X+W-13, y+20, 10.5, C.soft, 400, false, 'right');
+  const yr1w = txt(D.yearPct+'%', X+W-13-yr2w-4, y+20, 10.5, C.ink, 700, true, 'right');
+  txt('ปีผ่านไป', X+W-13-yr2w-4-yr1w-4, y+20, 10.5, C.soft, 400, false, 'right');
+  rr(X+13, y+27, W-26, 3, 1.5, 'rgba(255,255,255,0.10)');
+  rr(X+13, y+27, Math.max(3,(W-26)*D.yearPct/100), 3, 1.5, C.lime);
+  const gx = X+10, gw = W-20, cw7 = gw/7;
+  ['จ','อ','พ','พฤ','ศ','ส','อา'].forEach((l,i)=>txt(l, gx+cw7*i+cw7/2, y+46, 9.5, C.dim, 400, false, 'center'));
+  const todayD = Number(D.t.slice(8,10));
+  const MC = {egat:'#F59E4B', doctor:'#F26D6D', pet:'#F07AB8', petRoutine:'#F07AB8', car:'#A78BFA', trip:'#5AB0FF', race:'#C6F36B', raceB:'#C6F36B', other:'#7FB2FF'};
+  for(let dnum=1; dnum<=dim; dnum++){
+    const idx = gridStart + dnum - 1, col = idx%7, row = Math.floor(idx/7);
+    const cx = gx + col*cw7, cy = y + 52 + row*26;
+    const isToday = dnum===todayD, past = dnum<todayD, wkend = col>=5;
+    if(isToday) rr(cx+3, cy, cw7-6, 24, 8, C.lime);
+    txt(dnum, cx+cw7/2, cy+13, 11, isToday ? C.bg : past ? '#56685B' : wkend ? '#E8C38A' : '#CFDAD2', isToday?700:500, true, 'center');
+    const mk = (D.marks[dnum]||[]).slice(0,3);
+    mk.forEach((m,i)=>dot(cx+cw7/2 + (i-(mk.length-1)/2)*6, cy+19.5, 2, isToday ? C.bg : (MC[m]||MC.other)));
+  }
+  y += H_CAL + gap;
+
+  // 5) นัดใกล้ถึง (กรองด้วยช่วงแจ้งล่วงหน้าของแต่ละหมวด)
+  rr(X, y, W, H_UP, 18, C.card, C.line);
+  if(!up.length){
+    txt('ไม่มีนัดในช่วงแจ้งล่วงหน้า', X+14, y+24, 12, C.soft, 400);
+  }
+  up.forEach((u,i)=>{
+    const ry = y + 6 + i*27 + 18;
+    dot(X+17, ry-4.5, 3.5, u.color);
+    const dd = new Date(u.date+'T00:00:00');
+    txt(u.d===0 ? 'วันนี้' : dd.getDate()+' '+thaiMonths[dd.getMonth()], X+28, ry, 10.5, C.soft, 500, true);
+    const bw = tw(u.badge, 10.5, u.tone==='hot'?700:400) + 16;
+    const bg = u.tone==='late' ? 'rgba(242,109,109,0.22)' : u.tone==='hot' ? C.lime : u.tone==='soon' ? 'rgba(245,158,75,0.20)' : 'rgba(255,255,255,0.08)';
+    const fg = u.tone==='late' ? '#FF9B9B' : u.tone==='hot' ? C.bg : u.tone==='soon' ? '#FFC48A' : '#CFDAD2';
+    rr(X+W-12-bw, ry-13, bw, 18, 9, bg);
+    txt(u.badge, X+W-12-bw/2, ry, 10.5, fg, u.tone==='hot'?700:400, false, 'center');
+    txt(fit(u.title, W-12-bw-10-86, 12.5, 400), X+86, ry, 12.5, C.ink, 400);
+  });
+  y += H_UP + gap;
+
+  // 6) Eisenhower (2 กล่องที่สำคัญ)
+  const half = (W-6)/2;
+  const q1 = D.eis.q1.length ? D.eis.q1.join(' · ') : '—', q2 = D.eis.q2.length ? D.eis.q2.join(' · ') : '—';
+  rr(X, y, half, H_EIS, 12, 'rgba(242,109,109,0.14)');
+  const l1 = txt('ด่วน+สำคัญ ', X+10, y+19.5, 11, '#FF9B9B', 700);
+  txt(fit(q1, half-20-l1, 11, 400), X+10+l1, y+19.5, 11, C.ink, 400);
+  rr(X+half+6, y, half, H_EIS, 12, 'rgba(90,176,255,0.12)');
+  const l2 = txt('สำคัญ ', X+half+16, y+19.5, 11, '#8CC8FF', 700);
+  txt(fit(q2, half-20-l2, 11, 400), X+half+16+l2, y+19.5, 11, C.ink, 400);
+
+  return cv;
+}
+
+/* ----- หน้าต่างวอลเปเปอร์ ----- */
+let wpLastBlobUrl = null, wpLastBlob = null, wpShowGuide = false;
+function wpEnsureOverlay(){
+  let ov = document.getElementById('wpOverlay');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.className = 'modal-overlay'; ov.id = 'wpOverlay'; ov.style.display = 'none';
+    ov.onclick = (e)=>{ if(e.target===ov) closeWallpaper(); };
+    ov.innerHTML = '<div class="modal-box" id="wpBox" style="max-width:560px"></div>';
+    document.body.appendChild(ov);
+  }
+  return ov;
+}
+function wpModalHtml(){
+  const ip = wpIphone(), ws = wpSettings();
+  const imp = ip.importedAt ? ('นัดจาก iPhone '+ip.events.length+' รายการ · ดึงล่าสุด '+fmtDate(ip.importedAt.slice(0,10))+' '+new Date(ip.importedAt).toTimeString().slice(0,5)) : 'ยังไม่ได้ดึงนัดจาก iPhone Calendar';
+  const canShare = !!(navigator.canShare && window.File);
+  return `
+  <div class="modal-head">
+    <div><h3>📱 วอลเปเปอร์หน้าล็อก</h3><div class="muted" style="margin-top:2px">${escapeHtml(imp)}</div></div>
+    <button class="modal-close" onclick="closeWallpaper()">✕</button>
+  </div>
+  <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px">
+    <div style="flex:0 0 190px; max-width:100%">
+      <div id="wpPreview" style="width:190px; aspect-ratio:9/19.5; border-radius:22px; overflow:hidden; background:#0D1712; display:flex; align-items:center; justify-content:center; color:#9DB0A3; font-size:12px">กำลังสร้าง…</div>
+    </div>
+    <div style="flex:1 1 240px; min-width:0; display:flex; flex-direction:column; gap:8px">
+      <button class="btn" onclick="wpShare()">${canShare ? 'บันทึก / แชร์รูป' : 'ดาวน์โหลดรูป'}</button>
+      <button class="btn btn-ghost" onclick="wpRegenerate()">สร้างใหม่</button>
+      <div class="muted" style="font-size:11.5px; line-height:1.5">บน iPhone: กด "บันทึก / แชร์รูป" → บันทึกภาพ แล้วตั้งเป็นภาพพื้นหลังหน้าล็อก (หรือแตะค้างที่รูปตัวอย่าง → เพิ่มไปยังรูปภาพ)</div>
+      <label style="font-size:12px">ขนาดรูป
+        <select onchange="wpSetSize(this.value)" style="width:100%; margin-top:4px">${WP_SIZES.map(s=>`<option value="${s.key}" ${ws.size===s.key?'selected':''}>${escapeHtml(s.label)}</option>`).join('')}</select>
+      </label>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <div style="font-weight:600; font-size:13px; margin-bottom:6px">ช่วงแสดงนัดล่วงหน้า (วัน)</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px 10px">
+      ${Object.keys(WP_LEAD_DEFAULTS).map(k=>`<label style="display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11.5px"><span style="display:flex; align-items:center; gap:5px"><span style="width:8px; height:8px; border-radius:4px; background:${WP_CATS[k].color}"></span>${escapeHtml(WP_CATS[k].label)}</span><input type="number" min="0" max="365" value="${wpLead(k)}" style="width:56px" onchange="wpSetLead('${k}', this.value)"></label>`).join('')}
+    </div>
+    <div class="muted" style="font-size:11px; margin-top:6px">นัดที่เลยกำหนดแต่ยังไม่ได้ทำ (งาน EGAT, เตือนสุขภาพ, ดูแลรถ) ขึ้นสีแดงค้างไว้ · วันแข่ง A แสดงเป็นตัวนับถอยหลังด้านบนเสมอ</div>
+  </div>
+  <div style="margin-top:14px">
+    <button class="btn btn-sm btn-ghost" onclick="wpToggleGuide()">${wpShowGuide?'▾':'▸'} วิธีตั้ง Shortcut ดึงนัดจาก iPhone Calendar</button>
+    ${wpShowGuide ? wpGuideHtml() : ''}
+  </div>`;
+}
+function wpGuideHtml(){
+  const url = location.origin + location.pathname;
+  return `<ol style="font-size:12px; line-height:1.65; padding-left:18px; margin:8px 0 0">
+    <li>เปิดแอป <b>คำสั่งลัด (Shortcuts)</b> → กด <b>+</b> สร้างคำสั่งลัดใหม่ ตั้งชื่อ "Life OS Wallpaper"</li>
+    <li>เพิ่ม <b>ค้นหาเหตุการณ์ในปฏิทิน (Find Calendar Events)</b> → ตัวกรอง <b>วันที่เริ่มต้น</b> อยู่ใน <b>30 วันถัดไป</b> (ถ้าอยากได้งานจาก Outlook ด้วย ให้บัญชีนั้นซิงก์อยู่ในแอปปฏิทินของ iPhone ก่อน)</li>
+    <li>เพิ่ม <b>ทำซ้ำกับแต่ละรายการ (Repeat with Each)</b> → ข้างในใส่ <b>ข้อความ (Text)</b>: <code>[วันที่เริ่มต้น]|[ชื่อเรื่อง]|[ปฏิทิน]|[ทั้งวัน]</code><br>
+      — แตะตัวแปร "วันที่เริ่มต้น" → รูปแบบวันที่ <b>กำหนดเอง</b> = <code>yyyy-MM-dd HH:mm</code> และตั้งปฏิทินเป็น <b>คริสต์ศักราช (Gregorian)</b></li>
+    <li>ต่อจาก Repeat ใส่ <b>รวมข้อความ (Combine Text)</b> → คั่นด้วย <b>บรรทัดใหม่</b></li>
+    <li>ใส่ <b>เข้ารหัส URL (URL Encode)</b> กับข้อความที่รวมแล้ว</li>
+    <li>ใส่ <b>URL</b>: <code>${escapeHtml(url)}#cal=</code> ตามด้วยตัวแปร <b>ข้อความที่เข้ารหัส URL</b> แล้วต่อด้วย <b>เปิด URL (Open URLs)</b></li>
+    <li>ลองรันครั้งแรก กด <b>อนุญาต</b> ให้เข้าถึงปฏิทิน → Life OS จะเปิดหน้าต่างนี้พร้อมรูปใหม่ ข้างบนจะขึ้นจำนวนนัดที่ดึงมา</li>
+    <li>(ไม่บังคับ) แท็บ <b>อัตโนมัติ (Automation)</b> → <b>เวลาของวัน</b> เช่น 05:00 ทุกวัน → เรียกคำสั่งลัดนี้ เพื่อให้นัดอัปเดตทุกเช้า</li>
+  </ol>
+  <div class="muted" style="font-size:11px; margin-top:4px">ข้อมูลซ้อม/งาน/เตือนสุขภาพมาจาก Life OS ในเบราว์เซอร์ที่เปิด — บน iPhone ให้เปิด Life OS ใน Safari (ใส่ intervals.icu API key ในตั้งค่าไว้ด้วย) ไม่งั้นส่วนนั้นจะว่าง · นัดจาก iPhone ถูกเก็บในเครื่องนี้เท่านั้น ไม่ได้ส่งไปที่ไหน</div>`;
+}
+async function openWallpaper(){
+  const ov = wpEnsureOverlay();
+  document.getElementById('wpBox').innerHTML = wpModalHtml();
+  ov.style.display = 'flex';
+  await wpRegenerate();
+}
+function closeWallpaper(){ const ov = document.getElementById('wpOverlay'); if(ov) ov.style.display = 'none'; }
+async function wpRegenerate(){
+  const pv = document.getElementById('wpPreview'); if(!pv) return;
+  try{
+    const cv = await wpRender();
+    const blob = await new Promise(res=>cv.toBlob(res, 'image/png'));
+    if(wpLastBlobUrl) URL.revokeObjectURL(wpLastBlobUrl);
+    wpLastBlob = blob; wpLastBlobUrl = URL.createObjectURL(blob);
+    pv.innerHTML = `<img src="${wpLastBlobUrl}" alt="ตัวอย่างวอลเปเปอร์หน้าล็อก" style="width:100%; height:100%; object-fit:cover; display:block">`;
+  }catch(e){
+    console.error('[wallpaper]', e);
+    pv.textContent = 'สร้างรูปไม่สำเร็จ: ' + (e && e.message || e);
+  }
+}
+async function wpShare(){
+  if(!wpLastBlob) await wpRegenerate();
+  if(!wpLastBlob) return;
+  const name = 'lifeos-wallpaper-'+todayISO()+'.png';
+  try{
+    const file = new File([wpLastBlob], name, {type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Life OS Wallpaper'}); return; }
+  }catch(e){ if(e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = wpLastBlobUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+function wpSetSize(v){ wpSettings().size = v; saveState(); wpRegenerate(); }
+function wpSetLead(k, v){ const n = parseInt(v,10); wpSettings().leadDays[k] = Number.isFinite(n) && n>=0 ? n : ''; saveState(); wpRegenerate(); }
+function wpToggleGuide(){ wpShowGuide = !wpShowGuide; const box = document.getElementById('wpBox'); if(box){ const img = document.getElementById('wpPreview') && document.getElementById('wpPreview').innerHTML; box.innerHTML = wpModalHtml(); if(img) document.getElementById('wpPreview').innerHTML = img; } }
+
 render();
+wpHandleLaunchParams();
+window.addEventListener('hashchange', ()=>{ if((location.hash||'').indexOf('#cal=')===0){ wpHandleLaunchParams(); render(); } });
 </script>
 <script src="milk-money-bridge.js"></script>
 </body>
