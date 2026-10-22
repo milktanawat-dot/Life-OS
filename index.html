@@ -7413,7 +7413,7 @@ async function wpRender(){
   const S = px.w/390, LW = 390, LH = px.h/S;
   ctx.scale(S, S);
   const TH = 'Prompt, system-ui, sans-serif', MONO = '"JetBrains Mono", ui-monospace, monospace';
-  const C = {bg:'#0D1712', ink:'#EDF3EE', soft:'#9DB0A3', dim:'#6D8073', lime:'#C6F36B', card:'rgba(255,255,255,0.05)', line:'rgba(255,255,255,0.08)'};
+  const C = {bg:'#0D1712', ink:'#F2F6F3', soft:'#B4C4B9', dim:'#8A9B90', lime:'#C6F36B', card:'rgba(255,255,255,0.05)', line:'rgba(255,255,255,0.08)'};
   const font = (size, weight, mono)=>{ ctx.font = (weight||400)+' '+size+'px '+(mono?MONO:TH); };
   const txt = (s, x, y, size, color, weight, mono, align)=>{ font(size, weight, mono); ctx.fillStyle = color; ctx.textAlign = align||'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(String(s), x, y); return ctx.measureText(String(s)).width; };
   const tw = (s, size, weight, mono)=>{ font(size, weight, mono); return ctx.measureText(String(s)).width; };
@@ -7421,23 +7421,62 @@ async function wpRender(){
   const rr = (x, y, w, h, r, fill, stroke)=>{ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else { ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); } if(fill){ ctx.fillStyle = fill; ctx.fill(); } if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); } };
   const dot = (x, y, r, color)=>{ ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fillStyle = color; ctx.fill(); };
 
-  // พื้นหลัง + เส้นคอนทัวร์ด้านบน (หลังนาฬิกา)
-  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, LW, LH);
-  ctx.strokeStyle = 'rgba(198,243,107,0.10)'; ctx.lineWidth = 1.2;
-  for(let i=0;i<8;i++){ const o = i*30; ctx.beginPath(); ctx.moveTo(-20, 260-o); ctx.bezierCurveTo(60, 210-o, 110, 250-o, 180, 200-o); ctx.bezierCurveTo(250, 150-o, 330, 170-o, 410, 140-o); ctx.stroke(); }
+  // พื้นหลัง: รูปที่เลือกเอง (cover) หรือพื้นเขียวเทรลค่าเริ่มต้น + เวอร์ชันเบลอสำหรับการ์ดแบบกระจกฝ้า
+  const ws = wpSettings();
+  const bgImg = await wpLoadBgImage();
+  const bgCv = document.createElement('canvas'); bgCv.width = px.w; bgCv.height = px.h;
+  const bctx = bgCv.getContext('2d');
+  if(bgImg){
+    const r = Math.max(px.w/bgImg.width, px.h/bgImg.height), iw = bgImg.width*r, ih = bgImg.height*r;
+    bctx.drawImage(bgImg, (px.w-iw)/2, (px.h-ih)/2, iw, ih);
+    const dimA = Number.isFinite(Number(ws.bgDim)) ? Number(ws.bgDim) : 0.25;
+    const g = bctx.createLinearGradient(0, 0, 0, px.h);
+    g.addColorStop(0, 'rgba(0,0,0,'+(dimA*0.4)+')'); g.addColorStop(0.35, 'rgba(0,0,0,'+dimA+')'); g.addColorStop(1, 'rgba(0,0,0,'+Math.min(0.85, dimA+0.25)+')');
+    bctx.fillStyle = g; bctx.fillRect(0, 0, px.w, px.h);
+  } else {
+    bctx.save(); bctx.scale(S, S);
+    const g = bctx.createLinearGradient(0, 0, 0, LH); g.addColorStop(0, '#16261D'); g.addColorStop(0.45, '#0E1914'); g.addColorStop(1, '#0A120E');
+    bctx.fillStyle = g; bctx.fillRect(0, 0, LW, LH);
+    const glow = (cx, cy, rad, col)=>{ const rg = bctx.createRadialGradient(cx, cy, 0, cx, cy, rad); rg.addColorStop(0, col); rg.addColorStop(1, 'rgba(0,0,0,0)'); bctx.fillStyle = rg; bctx.fillRect(0, 0, LW, LH); };
+    glow(320, 90, 260, 'rgba(198,243,107,0.16)'); glow(40, LH*0.62, 300, 'rgba(76,123,217,0.16)'); glow(330, LH*0.9, 260, 'rgba(232,166,74,0.10)');
+    bctx.strokeStyle = 'rgba(198,243,107,0.10)'; bctx.lineWidth = 1.2;
+    for(let i=0;i<9;i++){ const o = i*30; bctx.beginPath(); bctx.moveTo(-20, 270-o); bctx.bezierCurveTo(60, 220-o, 110, 260-o, 180, 210-o); bctx.bezierCurveTo(250, 160-o, 330, 180-o, 410, 150-o); bctx.stroke(); }
+    bctx.restore();
+  }
+  const blurCv = (()=>{ // เบลอแบบย่อ-ขยาย (ใช้ได้ทุกเบราว์เซอร์ รวม Safari)
+    let src = bgCv;
+    [10, 22].forEach(f=>{ const c = document.createElement('canvas'); c.width = Math.max(8, Math.round(px.w/f)); c.height = Math.max(8, Math.round(px.h/f)); const cx2 = c.getContext('2d'); cx2.imageSmoothingQuality = 'high'; cx2.drawImage(src, 0, 0, c.width, c.height); src = c; });
+    const out = document.createElement('canvas'); out.width = px.w; out.height = px.h; const ox = out.getContext('2d'); ox.imageSmoothingQuality = 'high'; ox.drawImage(src, 0, 0, px.w, px.h); return out;
+  })();
+  ctx.drawImage(bgCv, 0, 0, LW, LH);
+  const glassA = Number.isFinite(Number(ws.glass)) ? Number(ws.glass) : 0.42;
+  const path = (x, y, w, h, r)=>{ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else { ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); } };
+  const glass = (x, y, w, h, r, tint)=>{
+    ctx.save(); path(x, y, w, h, r); ctx.clip();
+    ctx.drawImage(blurCv, 0, 0, LW, LH);
+    ctx.fillStyle = 'rgba(8,14,11,'+glassA+')'; ctx.fillRect(x, y, w, h);
+    if(tint){ ctx.fillStyle = tint; ctx.fillRect(x, y, w, h); }
+    const hl = ctx.createLinearGradient(0, y, 0, y+h); hl.addColorStop(0, 'rgba(255,255,255,0.10)'); hl.addColorStop(0.5, 'rgba(255,255,255,0.02)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hl; ctx.fillRect(x, y, w, h);
+    ctx.restore();
+    path(x+0.5, y+0.5, w-1, h-1, r); ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1; ctx.stroke();
+  };
+  const shadowOn = ()=>{ ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 1; };
+  const shadowOff = ()=>{ ctx.shadowColor = 'rgba(0,0,0,0)'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; };
 
   const X = 14, W = LW - 28;
   const up = D.upcoming.slice(0, 5);
   const gridStart = (()=>{ const d0 = new Date(D.ym+'-01T00:00:00'); return (d0.getDay()+6)%7; })();
   const dim = new Date(Number(D.ym.slice(0,4)), Number(D.ym.slice(5,7)), 0).getDate();
   const rows = Math.ceil((gridStart + dim)/7);
-  const H_HERO = 60, H_INT = 46, H_STATS = 52, H_CAL = 54 + rows*26 + 6, H_UP = Math.max(1, up.length)*27 + 12, H_EIS = 30;
+  const H_HERO = 60, H_INT = 62, H_STATS = 52, H_CAL = 54 + rows*26 + 6, H_UP = Math.max(1, up.length)*27 + 12, H_EIS = 30;
   const TOP = 200, BOTTOM = LH - 86;
   const used = H_HERO+H_INT+H_STATS+H_CAL+H_UP+H_EIS;
   const gap = Math.max(8, Math.min(18, (BOTTOM - TOP - used)/5));
   let y = TOP + Math.max(0, (BOTTOM - TOP - used - gap*5) * 0.35);
 
   // 1) สนามเป้าหมาย + นับถอยหลัง
+  shadowOn();
   if(D.race){
     const dd = new Date(D.race.date+'T00:00:00');
     txt('NEXT RACE · '+(D.race.priority||'A')+' · '+dd.getDate()+' '+thaiMonths[dd.getMonth()], X+2, y+12, 10, C.lime, 500, true);
@@ -7450,44 +7489,47 @@ async function wpRender(){
     txt('ยังไม่มีสนามเป้าหมาย', X+2, y+36, 17, C.ink, 600);
     txt('เพิ่มได้ที่หน้า "กิจกรรม"', X+2, y+54, 11, C.soft, 400);
   }
+  shadowOff();
   y += H_HERO + gap;
 
   // 2) ความเข้ม 21 วันล่าสุด (เวลาในโซน)
-  txt('ความเข้ม 21 วันล่าสุด'+(D.intensity && D.intensity.source==='sessions' ? ' (ตามประเภทเซสชัน)' : ' (เวลาในโซน)'), X+2, y+11, 10.5, C.soft, 400);
+  glass(X, y, W, H_INT, 18);
+  { const IX = X+13, IW = W-26, iy = y+9;
+  txt('ความเข้ม 21 วันล่าสุด'+(D.intensity && D.intensity.source==='sessions' ? ' (ตามประเภทเซสชัน)' : ' (เวลาในโซน)'), IX, iy+12, 10.5, C.soft, 400);
   if(D.block){
     const chip = 'บล็อก: '+D.block.label+(D.block.confirmed?' ✓':' ?');
     const cw = tw(chip, 10, 500) + 16;
-    rr(X+W-cw, y, cw, 17, 8.5, 'rgba(198,243,107,0.14)');
-    txt(chip, X+W-cw/2, y+12, 10, C.lime, 500, false, 'center');
+    rr(IX+IW-cw, iy, cw, 17, 8.5, 'rgba(198,243,107,0.16)');
+    txt(chip, IX+IW-cw/2, iy+12, 10, C.lime, 500, false, 'center');
   }
-  const ZC = ['#4C7BD9', '#C6F36B', '#E8D36B', '#E8A64A', '#F26D6D'];
-  const by = y + 22;
+  const ZC = ['#5B8BEA', '#C6F36B', '#E8D36B', '#E8A64A', '#F26D6D'];
+  const by = iy + 23;
   if(D.intensity){
-    let bx = X; const gapB = 2, avail = W - gapB*4;
+    let bx = IX; const gapB = 2, avail = IW - gapB*4;
     D.intensity.share.forEach((s,i)=>{ if(s <= 0) return; const w = Math.max(3, avail*s); rr(bx, by, w, 9, 3, ZC[i]); bx += w + gapB; });
   } else {
-    rr(X, by, W, 9, 3, 'rgba(255,255,255,0.10)');
+    rr(IX, by, IW, 9, 3, 'rgba(255,255,255,0.12)');
   }
-  let lx = X+2; const ly = y + 44;
+  let lx = IX; const ly = iy + 46;
   ['Rec','End','Steady','Tempo','Int'].forEach((l,i)=>{ dot(lx+3, ly-3.5, 3, ZC[i]); lx += 9; lx += txt(l, lx, ly, 10, C.soft, 400) + 7; });
   if(D.intensity){
     const r = 'หนัก '+Math.round(D.intensity.hard*100)+'%';
-    const rw = txt(r, X+W-2, ly, 10, C.soft, 500, true, 'right');
+    const rw = txt(r, IX+IW, ly, 10, C.soft, 500, true, 'right');
     const l = Math.round(D.intensity.light*100)+'%';
-    const l2w = txt(l+' · ', X+W-2-rw, ly, 10.5, C.ink, 700, true, 'right');
-    txt('เบา ', X+W-2-rw-l2w, ly, 10, C.soft, 400, false, 'right');
+    const l2w = txt(l+' · ', IX+IW-rw, ly, 10.5, C.ink, 700, true, 'right');
+    txt('เบา ', IX+IW-rw-l2w, ly, 10, C.soft, 400, false, 'right');
   } else {
-    txt('ยังไม่มีข้อมูล HR — Sync ที่หน้า "กิจกรรม"', X+W-2, ly, 10, C.dim, 400, false, 'right');
-  }
+    txt('ยังไม่มีข้อมูล HR', IX+IW, ly, 10, C.soft, 400, false, 'right');
+  } }
   y += H_INT + gap;
 
   // 3) ฟอร์ม CTL/ATL/TSB + สัปดาห์นี้ (เวลา/ระยะ/เกน)
   const w1 = (W-8)*0.44, w2 = W-8-w1;
-  rr(X, y, w1, H_STATS, 18, C.card, C.line);
+  glass(X, y, w1, H_STATS, 18);
   const fitCols = [['CTL', D.hasFit?Math.round(D.ctl):'–', C.ink, C.soft], ['ATL', D.hasFit?Math.round(D.atl):'–', C.ink, C.soft], ['TSB', D.hasFit?fmtSigned(Math.round(D.tsb)):'–', (D.tsb < -10 ? '#FFC48A' : C.lime), (D.tsb < -10 ? '#FFC48A' : C.lime)]];
   fitCols.forEach((c,i)=>{ const cx = X + 14 + i*((w1-28)/2.6); txt(c[0], cx, y+19, 9.5, c[3], 400); txt(c[1], cx, y+39, 16, c[2], 700, true); });
   const x2 = X + w1 + 8;
-  rr(x2, y, w2, H_STATS, 18, C.card, C.line);
+  glass(x2, y, w2, H_STATS, 18);
   txt('สัปดาห์นี้', x2+12, y+17, 9.5, C.soft, 400);
   const wk = D.week;
   const vals = [[fmtDur(wk.min), ' ชม.', C.ink], [(wk.km>=100?Math.round(wk.km):wk.km.toFixed(1).replace(/\.0$/,'')), ' กม.', C.ink], ['↑'+fmtMoney(Math.round(wk.el)), ' ม.', C.lime]];
@@ -7496,7 +7538,7 @@ async function wpRender(){
   y += H_STATS + gap;
 
   // 4) ปฏิทินเดือน + เวลาที่ผ่านไปของปี
-  rr(X, y, W, H_CAL, 18, C.card, C.line);
+  glass(X, y, W, H_CAL, 18);
   const mIdx = Number(D.ym.slice(5,7))-1, yBE = Number(D.ym.slice(0,4))+543;
   txt(thaiMonthsFull[mIdx]+' '+yBE, X+13, y+20, 12.5, C.ink, 700);
   const yr2 = 'เหลือ '+D.yearLeft+' วัน';
@@ -7514,14 +7556,14 @@ async function wpRender(){
     const cx = gx + col*cw7, cy = y + 52 + row*26;
     const isToday = dnum===todayD, past = dnum<todayD, wkend = col>=5;
     if(isToday) rr(cx+3, cy, cw7-6, 24, 8, C.lime);
-    txt(dnum, cx+cw7/2, cy+13, 11, isToday ? C.bg : past ? '#56685B' : wkend ? '#E8C38A' : '#CFDAD2', isToday?700:500, true, 'center');
+    txt(dnum, cx+cw7/2, cy+13, 11, isToday ? C.bg : past ? 'rgba(237,243,238,0.38)' : wkend ? '#E8C38A' : '#CFDAD2', isToday?700:500, true, 'center');
     const mk = (D.marks[dnum]||[]).slice(0,3);
     mk.forEach((m,i)=>dot(cx+cw7/2 + (i-(mk.length-1)/2)*6, cy+19.5, 2, isToday ? C.bg : (MC[m]||MC.other)));
   }
   y += H_CAL + gap;
 
   // 5) นัดใกล้ถึง (กรองด้วยช่วงแจ้งล่วงหน้าของแต่ละหมวด)
-  rr(X, y, W, H_UP, 18, C.card, C.line);
+  glass(X, y, W, H_UP, 18);
   if(!up.length){
     txt('ไม่มีนัดในช่วงแจ้งล่วงหน้า', X+14, y+24, 12, C.soft, 400);
   }
@@ -7542,15 +7584,42 @@ async function wpRender(){
   // 6) Eisenhower (2 กล่องที่สำคัญ)
   const half = (W-6)/2;
   const q1 = D.eis.q1.length ? D.eis.q1.join(' · ') : '—', q2 = D.eis.q2.length ? D.eis.q2.join(' · ') : '—';
-  rr(X, y, half, H_EIS, 12, 'rgba(242,109,109,0.14)');
+  glass(X, y, half, H_EIS, 12, 'rgba(242,109,109,0.16)');
   const l1 = txt('ด่วน+สำคัญ ', X+10, y+19.5, 11, '#FF9B9B', 700);
   txt(fit(q1, half-20-l1, 11, 400), X+10+l1, y+19.5, 11, C.ink, 400);
-  rr(X+half+6, y, half, H_EIS, 12, 'rgba(90,176,255,0.12)');
+  glass(X+half+6, y, half, H_EIS, 12, 'rgba(90,176,255,0.14)');
   const l2 = txt('สำคัญ ', X+half+16, y+19.5, 11, '#8CC8FF', 700);
   txt(fit(q2, half-20-l2, 11, 400), X+half+16+l2, y+19.5, 11, C.ink, 400);
 
   return cv;
 }
+
+/* ----- รูปพื้นหลัง (เก็บแยก key ใน localStorage ไม่ปนกับ state หลัก) ----- */
+const WP_BG_KEY = 'milkLifeOS_wpBg';
+function wpLoadBgImage(){
+  let src = null; try{ src = localStorage.getItem(WP_BG_KEY); }catch(e){}
+  if(!src) return Promise.resolve(null);
+  return new Promise(res=>{ const im = new Image(); im.onload = ()=>res(im); im.onerror = ()=>res(null); im.src = src; });
+}
+function wpPickBg(input){
+  const f = input.files && input.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    const im = new Image();
+    im.onload = ()=>{
+      const max = 1400, r = Math.min(1, max/Math.max(im.width, im.height));
+      const c = document.createElement('canvas'); c.width = Math.round(im.width*r); c.height = Math.round(im.height*r);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      try{ localStorage.setItem(WP_BG_KEY, c.toDataURL('image/jpeg', 0.85)); }catch(e){ alert('รูปใหญ่เกินที่จะเก็บในเครื่อง ลองใช้รูปอื่น'); return; }
+      wpRefreshModal(); wpRegenerate();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+}
+function wpClearBg(){ try{ localStorage.removeItem(WP_BG_KEY); }catch(e){} wpRefreshModal(); wpRegenerate(); }
+function wpHasBg(){ try{ return !!localStorage.getItem(WP_BG_KEY); }catch(e){ return false; } }
+function wpSetNum(k, v){ wpSettings()[k] = Number(v); saveState(); clearTimeout(wpSetNum._t); wpSetNum._t = setTimeout(wpRegenerate, 150); }
 
 /* ----- หน้าต่างวอลเปเปอร์ ----- */
 let wpLastBlobUrl = null, wpLastBlob = null, wpShowGuide = false;
@@ -7590,6 +7659,15 @@ function wpModalHtml(){
         <input type="text" value="${escapeHtml(wpShortcutName())}" onchange="wpSetShortcutName(this.value)" style="width:100%; margin-top:4px">
       </label>
       <div class="muted" style="font-size:11.5px; line-height:1.5">บน iPhone: กด "บันทึก / แชร์รูป" → บันทึกภาพ แล้วตั้งเป็นภาพพื้นหลังหน้าล็อก (หรือแตะค้างที่รูปตัวอย่าง → เพิ่มไปยังรูปภาพ)</div>
+      <div style="font-size:12px; display:flex; flex-direction:column; gap:6px; padding:8px 10px; border-radius:12px; background:rgba(0,0,0,0.03)">
+        <div style="font-weight:600">พื้นหลัง & ความโปร่ง</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">
+          <label class="btn btn-sm btn-ghost" style="cursor:pointer">เลือกรูปพื้นหลัง<input type="file" accept="image/*" onchange="wpPickBg(this)" style="display:none"></label>
+          ${wpHasBg() ? '<button class="btn btn-sm btn-ghost" onclick="wpClearBg()">ใช้พื้นค่าเริ่มต้น</button>' : '<span class="muted" style="font-size:11px">ตอนนี้ใช้พื้นเขียวเทรล</span>'}
+        </div>
+        <label style="display:flex; align-items:center; gap:8px">ใส <input type="range" min="0.1" max="0.8" step="0.02" value="${Number.isFinite(Number(ws.glass))?ws.glass:0.42}" oninput="wpSetNum('glass', this.value)" style="flex:1"> ทึบ</label>
+        ${wpHasBg() ? `<label style="display:flex; align-items:center; gap:8px">รูปสว่าง <input type="range" min="0" max="0.7" step="0.02" value="${Number.isFinite(Number(ws.bgDim))?ws.bgDim:0.25}" oninput="wpSetNum('bgDim', this.value)" style="flex:1"> มืด</label>` : ''}
+      </div>
       <label style="font-size:12px">ขนาดรูป
         <select onchange="wpSetSize(this.value)" style="width:100%; margin-top:4px">${WP_SIZES.map(s=>`<option value="${s.key}" ${ws.size===s.key?'selected':''}>${escapeHtml(s.label)}</option>`).join('')}</select>
       </label>
