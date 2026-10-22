@@ -7581,6 +7581,14 @@ function wpModalHtml(){
     <div style="flex:1 1 240px; min-width:0; display:flex; flex-direction:column; gap:8px">
       <button class="btn" onclick="wpShare()">${canShare ? 'บันทึก / แชร์รูป' : 'ดาวน์โหลดรูป'}</button>
       <button class="btn btn-ghost" onclick="wpRegenerate()">สร้างใหม่</button>
+      <div style="display:flex; gap:6px; flex-wrap:wrap">
+        <button class="btn btn-sm btn-ghost" onclick="wpRunShortcut()">① ดึงนัดจาก iPhone</button>
+        <button class="btn btn-sm btn-ghost" onclick="wpPasteFromClipboard()">② วางนัดที่คัดลอกไว้</button>
+      </div>
+      <div id="wpPasteBox"></div>
+      <label style="font-size:12px">ชื่อคำสั่งลัด
+        <input type="text" value="${escapeHtml(wpShortcutName())}" onchange="wpSetShortcutName(this.value)" style="width:100%; margin-top:4px">
+      </label>
       <div class="muted" style="font-size:11.5px; line-height:1.5">บน iPhone: กด "บันทึก / แชร์รูป" → บันทึกภาพ แล้วตั้งเป็นภาพพื้นหลังหน้าล็อก (หรือแตะค้างที่รูปตัวอย่าง → เพิ่มไปยังรูปภาพ)</div>
       <label style="font-size:12px">ขนาดรูป
         <select onchange="wpSetSize(this.value)" style="width:100%; margin-top:4px">${WP_SIZES.map(s=>`<option value="${s.key}" ${ws.size===s.key?'selected':''}>${escapeHtml(s.label)}</option>`).join('')}</select>
@@ -7601,19 +7609,46 @@ function wpModalHtml(){
 }
 function wpGuideHtml(){
   const url = location.origin + location.pathname;
-  return `<ol style="font-size:12px; line-height:1.65; padding-left:18px; margin:8px 0 0">
-    <li>เปิดแอป <b>คำสั่งลัด (Shortcuts)</b> → กด <b>+</b> สร้างคำสั่งลัดใหม่ ตั้งชื่อ "Life OS Wallpaper"</li>
-    <li>เพิ่ม <b>ค้นหาเหตุการณ์ในปฏิทิน (Find Calendar Events)</b> → ตัวกรอง <b>วันที่เริ่มต้น</b> อยู่ใน <b>30 วันถัดไป</b> (ถ้าอยากได้งานจาก Outlook ด้วย ให้บัญชีนั้นซิงก์อยู่ในแอปปฏิทินของ iPhone ก่อน)</li>
+  return `<div style="font-size:12px; font-weight:600; margin:8px 0 2px">แบบใช้ในแอป Life OS บนหน้าโฮม (แนะนำ)</div>
+  <ol style="font-size:12px; line-height:1.65; padding-left:18px; margin:4px 0 0">
+    <li>เปิดแอป <b>คำสั่งลัด (Shortcuts)</b> → กด <b>+</b> สร้างคำสั่งลัดใหม่ ตั้งชื่อให้ตรงกับช่อง "ชื่อคำสั่งลัด" ด้านบน (ค่าเริ่มต้น <b>Life OS Calendar</b>)</li>
+    <li>เพิ่ม <b>ค้นหาเหตุการณ์ในปฏิทิน (Find Calendar Events)</b> → ตัวกรอง <b>วันที่เริ่มต้น</b> อยู่ใน <b>30 วันถัดไป</b> (งานจาก Outlook ต้องซิงก์อยู่ในแอปปฏิทินของ iPhone ก่อน)</li>
     <li>เพิ่ม <b>ทำซ้ำกับแต่ละรายการ (Repeat with Each)</b> → ข้างในใส่ <b>ข้อความ (Text)</b>: <code>[วันที่เริ่มต้น]|[ชื่อเรื่อง]|[ปฏิทิน]|[ทั้งวัน]</code><br>
-      — แตะตัวแปร "วันที่เริ่มต้น" → รูปแบบวันที่ <b>กำหนดเอง</b> = <code>yyyy-MM-dd HH:mm</code> และตั้งปฏิทินเป็น <b>คริสต์ศักราช (Gregorian)</b></li>
+      — แตะตัวแปร "วันที่เริ่มต้น" → รูปแบบวันที่ <b>กำหนดเอง</b> = <code>yyyy-MM-dd HH:mm</code> (ปฏิทิน <b>คริสต์ศักราช</b>)</li>
     <li>ต่อจาก Repeat ใส่ <b>รวมข้อความ (Combine Text)</b> → คั่นด้วย <b>บรรทัดใหม่</b></li>
-    <li>ใส่ <b>เข้ารหัส URL (URL Encode)</b> กับข้อความที่รวมแล้ว</li>
-    <li>ใส่ <b>URL</b>: <code>${escapeHtml(url)}#cal=</code> ตามด้วยตัวแปร <b>ข้อความที่เข้ารหัส URL</b> แล้วต่อด้วย <b>เปิด URL (Open URLs)</b></li>
-    <li>ลองรันครั้งแรก กด <b>อนุญาต</b> ให้เข้าถึงปฏิทิน → Life OS จะเปิดหน้าต่างนี้พร้อมรูปใหม่ ข้างบนจะขึ้นจำนวนนัดที่ดึงมา</li>
-    <li>(ไม่บังคับ) แท็บ <b>อัตโนมัติ (Automation)</b> → <b>เวลาของวัน</b> เช่น 05:00 ทุกวัน → เรียกคำสั่งลัดนี้ เพื่อให้นัดอัปเดตทุกเช้า</li>
+    <li>ใส่ <b>คัดลอกไปยังคลิปบอร์ด (Copy to Clipboard)</b> จบแค่นี้</li>
+    <li>ใช้งาน: ในหน้าต่างนี้กด <b>① ดึงนัดจาก iPhone</b> → คำสั่งลัดจะรันแล้วคัดลอกนัดไว้ → <b>กลับมาที่แอป Life OS</b> (ปัดกลับ/แตะ "◀ Life OS" มุมซ้ายบน) → กด <b>② วางนัดที่คัดลอกไว้</b> → กด "วาง" เมื่อ iPhone ถาม → รูปใหม่ขึ้นทันที</li>
   </ol>
-  <div class="muted" style="font-size:11px; margin-top:4px">ข้อมูลซ้อม/งาน/เตือนสุขภาพมาจาก Life OS ในเบราว์เซอร์ที่เปิด — บน iPhone ให้เปิด Life OS ใน Safari (ใส่ intervals.icu API key ในตั้งค่าไว้ด้วย) ไม่งั้นส่วนนั้นจะว่าง · นัดจาก iPhone ถูกเก็บในเครื่องนี้เท่านั้น ไม่ได้ส่งไปที่ไหน</div>`;
+  <div style="font-size:12px; font-weight:600; margin:10px 0 2px">แบบเปิดผ่าน Safari (ทางเลือก)</div>
+  <div style="font-size:12px; line-height:1.6">ทำข้อ 1–4 เหมือนกัน แล้วแทนข้อ 5 ด้วย <b>เข้ารหัส URL (URL Encode)</b> → <b>URL</b> <code>${escapeHtml(url)}#cal=</code>+ตัวแปรที่เข้ารหัส → <b>เปิด URL</b> · คำสั่งลัดจะเปิด Life OS ใน Safari แทนแอปบนหน้าโฮม</div>
+  <div class="muted" style="font-size:11px; margin-top:6px">แอป Life OS บนหน้าโฮมกับ Safari เก็บข้อมูลแยกกันคนละที่ — ใช้ที่ไหนเป็นหลักก็สร้างรูปจากที่นั่น (ใส่ intervals.icu API key ในตั้งค่าของที่นั้นด้วย) · นัดจาก iPhone เก็บในเครื่องนี้เท่านั้น ไม่ได้ส่งไปที่ไหน</div>`;
 }
+function wpShortcutName(){ return wpSettings().shortcutName || 'Life OS Calendar'; }
+function wpSetShortcutName(v){ wpSettings().shortcutName = String(v||'').trim() || 'Life OS Calendar'; saveState(); }
+function wpRunShortcut(){ location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(wpShortcutName()); }
+function wpImportText(txt){
+  const evs = wpParseIphoneText(txt);
+  if(!evs.length && String(txt||'').trim()) return false;
+  const ip = wpIphone(); ip.events = evs; ip.importedAt = new Date().toISOString(); saveState();
+  return true;
+}
+async function wpPasteFromClipboard(){
+  let txt = null;
+  try{ if(navigator.clipboard && navigator.clipboard.readText) txt = await navigator.clipboard.readText(); }catch(e){ txt = null; }
+  if(txt == null){ wpShowPasteBox('อ่านคลิปบอร์ดไม่ได้ — แตะค้างในช่องนี้แล้วเลือก "วาง" แทน'); return; }
+  if(!wpImportText(txt)){ wpShowPasteBox('ข้อความในคลิปบอร์ดไม่ใช่รายการนัดจากคำสั่งลัด — ลองกด ① อีกครั้ง หรือวางเองในช่องนี้'); return; }
+  wpRefreshModal(); render(); await wpRegenerate();
+}
+function wpShowPasteBox(msg){
+  const el = document.getElementById('wpPasteBox'); if(!el) return;
+  el.innerHTML = `<div class="muted" style="font-size:11.5px; margin:6px 0 4px">${escapeHtml(msg)}</div><textarea id="wpPasteArea" rows="3" style="width:100%; box-sizing:border-box; font-size:12px"></textarea><button class="btn btn-sm" style="margin-top:4px" onclick="wpPasteManual()">ใช้ข้อความนี้</button>`;
+}
+async function wpPasteManual(){
+  const ta = document.getElementById('wpPasteArea'); if(!ta) return;
+  if(!wpImportText(ta.value)){ wpShowPasteBox('อ่านรายการนัดไม่ได้ — ตรวจรูปแบบ yyyy-MM-dd HH:mm|ชื่อ|ปฏิทิน|ทั้งวัน'); return; }
+  wpRefreshModal(); render(); await wpRegenerate();
+}
+function wpRefreshModal(){ const box = document.getElementById('wpBox'); if(!box) return; const pv = document.getElementById('wpPreview'); const img = pv && pv.innerHTML; box.innerHTML = wpModalHtml(); if(img) document.getElementById('wpPreview').innerHTML = img; }
 async function openWallpaper(){
   const ov = wpEnsureOverlay();
   document.getElementById('wpBox').innerHTML = wpModalHtml();
@@ -7646,7 +7681,7 @@ async function wpShare(){
 }
 function wpSetSize(v){ wpSettings().size = v; saveState(); wpRegenerate(); }
 function wpSetLead(k, v){ const n = parseInt(v,10); wpSettings().leadDays[k] = Number.isFinite(n) && n>=0 ? n : ''; saveState(); wpRegenerate(); }
-function wpToggleGuide(){ wpShowGuide = !wpShowGuide; const box = document.getElementById('wpBox'); if(box){ const img = document.getElementById('wpPreview') && document.getElementById('wpPreview').innerHTML; box.innerHTML = wpModalHtml(); if(img) document.getElementById('wpPreview').innerHTML = img; } }
+function wpToggleGuide(){ wpShowGuide = !wpShowGuide; wpRefreshModal(); }
 
 render();
 wpHandleLaunchParams();
