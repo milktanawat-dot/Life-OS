@@ -3617,7 +3617,7 @@ function mapIntervalsType(t){
   return 'other';
 }
 async function syncIntervals(){
-  const msgEl = document.getElementById('runSyncMsg');
+  const msgEl = document.getElementById('runSyncMsg') || document.createElement('div'); // เรียกจาก auto-sync ตอนอยู่หน้าอื่นได้
   const key = state.settings.intervalsApiKey;
   const athlete = state.settings.intervalsAthleteId || '0';
   if(!key){ msgEl.innerHTML = `<div class="msg msg-err">ยังไม่ได้ใส่ API key — ไปที่หน้า "ตั้งค่า" ก่อน</div>`; return; }
@@ -7650,8 +7650,32 @@ function wpSnapshot(){
     leadDays: Object.assign({}, WP_LEAD_DEFAULTS, ws.leadDays||{}),
     glass: Number.isFinite(Number(ws.glass)) ? Number(ws.glass) : 0.42,
     fallback: {ctl: D.hasFit?D.ctl:null, atl: D.hasFit?D.atl:null, tsb: D.hasFit?D.tsb:null, intensity: D.intensity, week: D.week, weekStart: addDays(t, -dow)},
-    icu: state.settings.intervalsApiKey ? {key: state.settings.intervalsApiKey, athlete: state.settings.intervalsAthleteId || '0'} : null
+    icu: state.settings.intervalsApiKey ? {key: state.settings.intervalsApiKey, athlete: state.settings.intervalsAthleteId || '0'} : null,
+    training: wpTrainingExport(t)
   };
+}
+// ข้อมูลซ้อม 120 วันสำหรับสรุปการซ้อมรายสัปดาห์ (Claude อ่านจากไฟล์ snapshot ใน Drive ทุกเช้าวันจันทร์)
+function wpTrainingExport(t){
+  try{
+    const oldest = addDays(t, -120), r1 = v => { v = Number(v); return Number.isFinite(v) ? Math.round(v*10)/10 : null; };
+    const info = fitnessNow(), cb = currentBlock(info);
+    const acts = state.running.activities.filter(a=>!a.demo && a.done!==false && a.date>=oldest && a.date<=t).map(a=>{
+      const zm = activityZoneMinutes(a);
+      return {date:a.date, name:a.name||'', type:a.type||'', session: sessionType(a)||null, distanceKm:r1(a.distance_km), movingMin: a.moving_time_min!=null?Math.round(a.moving_time_min):null,
+        elapsedMin:a.elapsed_min||null, elevGainM: Math.round(Number(a.elevation_gain_m)||0), load: a.load!=null?a.load:null, loadUsed: Math.round(activityLoad(a)),
+        avgHr:a.avg_hr||null, maxHr:a.max_hr||null, rpe:a.icu_rpe||null, note:a.note||a.notes||null, zoneMin: zm ? zm.map(v=>Math.round(v)) : null};
+    }).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const well = Object.keys(state.running.wellness||{}).filter(d=>d>=oldest && d<=t).sort().map(d=>{ const w = state.running.wellness[d]||{};
+      return {date:d, ctl:r1(w.ctl), atl:r1(w.atl), tsb:(Number.isFinite(w.ctl)&&Number.isFinite(w.atl))?r1(w.ctl-w.atl):null, restingHR:w.restingHR||null, hrv:w.hrv||null, sleepH: w.sleepSecs?r1(w.sleepSecs/3600):null}; });
+    return {
+      v:1, lastSync: state.running.lastSync || null, weeklyGoalKm: state.running.weeklyGoalKm || null,
+      races: sortedRaces().filter(r=>!r.demo).map(r=>({name:r.name, date:r.date, distanceKm:r.distanceKm||null, elevationM:r.elevationM||null, priority:r.priority||'A', location:r.location||'', note:r.note||'', result:r.result||null})),
+      phaseNow: info.phase ? {key:info.phase.key, race: info.phase.race ? info.phase.race.name : null} : null,
+      block: cb.key ? {key:cb.key, label:(TRAIN_BLOCKS[cb.key]||{}).label||cb.key, confirmed:!!(cb.confirmed&&!cb.stale), setOn: cb.confirmed?cb.confirmed.setOn:null, detectedWhy: cb.det?cb.det.why:null} : null,
+      hrZones: hrZones(), fitnessNow: {ctl:r1(info.cur.ctl), atl:r1(info.cur.atl), tsb:r1(info.cur.tsb), ramp7d:r1(info.ramp), acwr:r1(info.acwr)},
+      activities: acts, wellness: well
+    };
+  }catch(e){ console.warn('[training export]', e); return null; }
 }
 let wpPushBusy = false;
 async function wpPushToMilkMoney(force){
@@ -7868,6 +7892,12 @@ function wpToggleGuide(){ wpShowGuide = !wpShowGuide; wpRefreshModal(); }
 render();
 wpHandleLaunchParams();
 wpAutoPushSoon();
+// เปิดแอปแล้ว sync intervals.icu ให้เองถ้าเกิน 3 ชม. (ข้อมูลซ้อมจะได้สดสำหรับวอลเปเปอร์ + สรุปรายสัปดาห์)
+setTimeout(()=>{ try{
+  if(!state.settings.intervalsApiKey) return;
+  const last = state.running.lastSync ? new Date(state.running.lastSync).getTime() : 0;
+  if(Date.now() - last > 3*3600*1000) syncIntervals();
+}catch(e){ console.warn('[auto-sync]', e); } }, 1500);
 window.addEventListener('hashchange', ()=>{ if((location.hash||'').indexOf('#cal=')===0){ wpHandleLaunchParams(); render(); } });
 </script>
 <script src="milk-money-bridge.js"></script>
