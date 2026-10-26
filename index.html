@@ -331,6 +331,65 @@ a{color:inherit;}
 .tr-trend .l, .tr-mini .l{position:absolute; bottom:-16px; font-size:9.5px; color:var(--ink-soft);}
 .tr-goal{position:absolute; left:0; right:0; border-top:1.5px dashed #FF6B8A; pointer-events:none; margin-bottom:18px;}
 .tr-goal span{position:absolute; right:0; top:-15px; font-size:9.5px; color:#C2385A;}
+/* สรุปการซ้อม (รีวิวรายสัปดาห์/รายเดือน) */
+.rv{margin-top:20px; padding-top:18px; border-top:1px dashed var(--line);}
+.rv-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+.rv-head h4{margin:0; font-size:15px; font-weight:700;}
+.rv-fresh{background:#FDF1D8; color:#8A5A00; border-radius:12px; padding:8px 12px; font-size:12px; margin-bottom:12px;}
+.rv-hero{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
+.rv-hero > div{border-radius:16px; padding:12px 14px; color:#fff; position:relative; overflow:hidden;}
+.rv-hero .k{font-size:11px; opacity:.85; font-weight:600;}
+.rv-hero .v{font-size:15px; font-weight:700; line-height:1.4; margin-top:3px;}
+.rv-hero .s{font-size:11.5px; opacity:.9; margin-top:4px;}
+.rv-g1{background:linear-gradient(135deg,#22C3A6,#3E8DFF);} .rv-g2{background:linear-gradient(135deg,#5B6EF5,#7B5CE0);} .rv-g3{background:linear-gradient(135deg,#FF6B8A,#F5A623);}
+@media (max-width:800px){.rv-hero{grid-template-columns:1fr;}}
+.rv-metrics{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
+@media (max-width:1000px){.rv-metrics{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:560px){.rv-metrics{grid-template-columns:repeat(2,1fr);}}
+.rv-m{border:1px solid var(--line); border-radius:14px; padding:10px 12px; display:flex; flex-direction:column; gap:4px;}
+.rv-m .v{font-size:20px; font-weight:700; line-height:1.1;} .rv-m .v span{font-size:11px; font-weight:400; color:var(--ink-soft);}
+.rv-cmp{display:flex; flex-direction:column; gap:3px; margin-top:2px;}
+.rv-cmp div{height:5px; border-radius:99px;}
+.rv-cmp .a{background:var(--c);} .rv-cmp .b{background:#D9DEEA;}
+.rv-d{font-size:11px; font-weight:700;}
+.rv-sec{margin-top:16px;}
+.rv-sec > .t{font-size:12.5px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.rv-zrow{display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:11.5px;}
+.rv-zrow .lb{width:118px; color:var(--ink-soft); flex-shrink:0;}
+.rv-zbar{flex:1; position:relative; display:flex; height:16px; border-radius:6px; overflow:visible; background:var(--line);}
+.rv-zbar i{display:block; height:100%;} .rv-zbar i:first-child{border-radius:6px 0 0 6px;} .rv-zbar i:last-of-type{border-radius:0 6px 6px 0;}
+.rv-zbar .m80{position:absolute; top:-4px; bottom:-4px; left:80%; width:0; border-left:2px dashed #1D2233;}
+.rv-zrow .pc{width:118px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; flex-shrink:0;}
+.rv-two{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:900px){.rv-two{grid-template-columns:1fr;}}
+.rv-box{border:1px solid var(--line); border-radius:14px; padding:12px 14px;}
+.rv-form{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.rv-form > div{background:var(--bg); border-radius:12px; padding:8px 10px;}
+.rv-form .v{font-size:18px; font-weight:700;}
+.rv-well{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px;}
+.rv-well > div{border-radius:12px; padding:8px 10px; border:1px solid var(--line); font-size:11.5px;}
+.rv-well .v{font-size:15px; font-weight:700;}
+.rv-strip{display:flex; height:22px; gap:2px; border-radius:8px; overflow:hidden;}
+.rv-strip div{color:#fff; font-size:10.5px; font-weight:600; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;}
+.rv-ready .row{display:flex; align-items:center; gap:10px; margin-bottom:9px; font-size:12px;}
+.rv-ready .row .lb{width:150px; flex-shrink:0;}
+.rv-ready .row .tr{flex:1; height:8px; background:var(--line); border-radius:99px; overflow:hidden; position:relative;}
+.rv-ready .row .tr i{display:block; height:100%; border-radius:99px;}
+.rv-ready .row .vv{width:170px; text-align:right; font-size:11.5px; flex-shrink:0;}
+@media (max-width:600px){.rv-ready .row{flex-wrap:wrap;} .rv-ready .row .lb{width:100%;} .rv-ready .row .vv{width:auto;}}
+.rv-cd{display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap;}
+.rv-cd .n{width:62px; height:62px; border-radius:16px; background:linear-gradient(135deg,#7B5CE0,#FF6B8A); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;}
+.rv-cd .n b{font-size:22px; line-height:1;} .rv-cd .n span{font-size:10px;}
+.rv-adv{display:flex; flex-direction:column; gap:8px;}
+.rv-adv > div{display:flex; gap:10px; align-items:flex-start; border-radius:12px; padding:10px 12px; background:var(--bg); font-size:12.5px; line-height:1.55;}
+.rv-adv .ix{width:22px; height:22px; border-radius:50%; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.rv-adv b.h{display:block; margin-bottom:1px;}
+.rv-ph{width:100%; border-collapse:collapse; font-size:11.5px;}
+.rv-ph th{text-align:left; color:var(--ink-soft); font-weight:600; padding:6px 6px; border-bottom:1px solid var(--line); white-space:nowrap;}
+.rv-ph td{padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:top;}
+.rv-ph .mini{display:flex; height:6px; width:70px; border-radius:99px; overflow:hidden; margin-top:3px;}
+.rv-det summary{cursor:pointer; font-size:12.5px; font-weight:700; padding:6px 0;}
+.rv-scroll{overflow-x:auto;}
 .tr-ins{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
 @media (max-width:900px){.tr-ins{grid-template-columns:1fr;}}
 .tr-in{border-left:3px solid; background:var(--bg); border-radius:0 10px 10px 0; padding:8px 11px; font-size:12.5px; margin-bottom:6px;}
@@ -3441,6 +3500,264 @@ function todayFormLine(){
   return `<div class="stat-note" style="margin-top:-6px">ฟอร์ม TSB <b class="mono">${fmtSigned(info.cur.tsb)}</b> ${trChip(ts.level, ts.text)} · เฟส ${TR_PHASES[info.phase.key].label}</div>`;
 }
 
+/* =====================================================================================
+   สรุปการซ้อม (รีวิวรายสัปดาห์/รายเดือน) — อยู่ใต้ "ภาพรวมกิจกรรม" และตามช่วงที่กำลังดู
+   ใช้หลักเดียวกับรายงานเช้าวันจันทร์: สัปดาห์นี้ vs เฉลี่ยก่อนหน้า, 80/20, ฟอร์ม, เฟส, ความพร้อมสนาม
+   ===================================================================================== */
+function rvPeriod(isWeek, weekDays, ym){
+  if(isWeek){
+    const start = weekDays[0], end = weekDays[6];
+    const prev = [1,2,3,4].map(i=>{ const d = currentWeekMondayToSunday(addDays(start,-7*i)); return {start:d[0], end:d[6]}; });
+    return {isWeek, start, end, days:7, label:weekRangeLabel(weekDays), prev, prevLabel:'เฉลี่ย 4 สัปดาห์ก่อน', unit:'สัปดาห์'};
+  }
+  const start = ym+'-01', end = addDays(shiftYM(ym,1)+'-01', -1);
+  const prev = [1,2,3].map(i=>{ const m = shiftYM(ym,-i); return {start:m+'-01', end:addDays(shiftYM(m,1)+'-01',-1)}; });
+  return {isWeek, start, end, days:dayDiff(start,end)+1, label:ymLabel(ym), prev, prevLabel:'เฉลี่ย 3 เดือนก่อน', unit:'เดือน'};
+}
+function rvStats(start, end){ // ช่วงรวมหัวท้าย
+  const today = todayISO();
+  const acts = state.running.activities.filter(a=>a.date>=start && a.date<=end && a.done!==false);
+  const runs = acts.filter(isRunAct);
+  const s = (arr,f)=>arr.reduce((t,a)=>t+(Number(f(a))||0),0);
+  const lastDay = end < today ? end : today;
+  const counted = lastDay >= start ? dayDiff(start, lastDay)+1 : 0;
+  const active = new Set(acts.map(a=>a.date));
+  const z = [0,0,0,0,0]; let zN = 0;
+  acts.forEach(a=>{ if(!isRunAct(a) && a.type!=='ride') return; const zm = activityZoneMinutes(a); if(!zm) return; zN++; zm.forEach((v,i)=>z[i]+=v); });
+  const zt = z.reduce((a,b)=>a+b,0);
+  const longest = runs.reduce((m,a)=>(Number(a.distance_km)||0)>(Number(m&&m.distance_km)||0)?a:m, null);
+  return {acts, runs, n:acts.length, min:s(acts,a=>a.moving_time_min), km:s(runs,a=>a.distance_km), elev:s(acts,a=>a.elevation_gain_m),
+    load:s(acts,activityLoad), rest: Math.max(0, counted - [...active].filter(d=>d<=lastDay).length), counted,
+    z, zt, light: zt ? (z[0]+z[1])/zt : null, steady: zt ? z[2]/zt : null, hard: zt ? (z[3]+z[4])/zt : null, longest};
+}
+function rvAvg(list){
+  const keys = ['n','min','km','elev','load','rest'], out = {};
+  keys.forEach(k=>out[k] = list.reduce((t,x)=>t+x[k],0)/(list.length||1));
+  const z = [0,0,0,0,0]; list.forEach(x=>x.z.forEach((v,i)=>z[i]+=v)); const zt = z.reduce((a,b)=>a+b,0);
+  out.z = z; out.zt = zt; out.light = zt ? (z[0]+z[1])/zt : null; out.steady = zt ? z[2]/zt : null; out.hard = zt ? (z[3]+z[4])/zt : null;
+  return out;
+}
+function rvWellAvg(key, endIso, days, maxV){
+  const w = state.running.wellness || {}; const v = [];
+  for(let i=0;i<days;i++){ const r = w[addDays(endIso,-i)]; if(!r) continue;
+    let x = key==='sleep' ? (r.sleepSecs ? r.sleepSecs/3600 : null) : r[key];
+    x = Number(x); if(!Number.isFinite(x) || x<=0 || (maxV && x>maxV)) continue; v.push(x); }
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+}
+function rvCtlBand(dist){ dist = Number(dist)||0; return dist>=140 ? [70,85] : dist>=80 ? [60,75] : dist>=40 ? [50,65] : [40,55]; }
+function rvReadiness(endIso, info){
+  const today = todayISO();
+  const ref = addDays(endIso,1) < today ? addDays(endIso,1) : today;
+  const race = targetRaceFrom(ref);
+  if(!race || dayDiff(ref, race.date) > 120) return null;
+  const dist = Number(race.distanceKm)||0, vert = Number(race.elevationM)||0;
+  const wEnd = endIso < today ? endIso : today, wStart = addDays(wEnd, -55);
+  const runs = state.running.activities.filter(a=>a.date>=wStart && a.date<=wEnd && isRunAct(a) && a.done!==false);
+  const byDay = {}; runs.forEach(a=>{ const d = byDay[a.date] || (byDay[a.date]={km:0,el:0,min:0}); d.km+=Number(a.distance_km)||0; d.el+=Number(a.elevation_gain_m)||0; d.min+=Number(a.moving_time_min)||0; });
+  const isRaceDay = d => sortedRaces().some(r=>r.date===d);
+  const train = runs.filter(a=>!isRaceDay(a.date));
+  const longest = train.reduce((m,a)=>(Number(a.distance_km)||0)>(Number(m&&m.distance_km)||0)?a:m, null);
+  const longestAny = runs.reduce((m,a)=>(Number(a.distance_km)||0)>(Number(m&&m.distance_km)||0)?a:m, null);
+  const maxTime = runs.reduce((m,a)=>Math.max(m, Number(a.moving_time_min)||0), 0);
+  let b2b = null; Object.keys(byDay).sort().forEach(d=>{ const n = byDay[addDays(d,1)]; if(n){ const t = {d, km:byDay[d].km+n.km, el:byDay[d].el+n.el, min:byDay[d].min+n.min}; if(!b2b || t.km>b2b.km) b2b = t; } });
+  let maxWkEl = 0, maxWkStart = null;
+  for(let i=0;i<9;i++){ const wd = currentWeekMondayToSunday(addDays(wEnd,-7*i)); const e = runs.filter(a=>a.date>=wd[0] && a.date<=wd[6]).reduce((t,a)=>t+(Number(a.elevation_gain_m)||0),0); if(e>maxWkEl){ maxWkEl = e; maxWkStart = wd[0]; } }
+  const taperStart = addDays(race.date, -raceTaperDays(dist));
+  const fitEnd = info.fit.byDate[wEnd] || info.cur;
+  return {race, dist, vert, ref, daysLeft:dayDiff(ref, race.date), toTaper:dayDiff(ref, taperStart), taperStart,
+    longest, longestAny, maxTime, b2b, maxWkEl, maxWkStart, ctl:fitEnd.ctl, band:rvCtlBand(dist)};
+}
+function rvAdvice(P, cur, avg, form, rd, info){
+  const out = [], push = (level, h, d)=>out.push({level, h, d});
+  const ph = phaseAt(P.end < todayISO() ? P.end : todayISO()), pk = ph.key;
+  const easyPhase = pk==='recovery' || pk==='taper' || pk==='race';
+  const pct = (a,b)=> b ? Math.round(100*(a-b)/b) : null;
+  // 1) เฟสฟื้นตัว
+  if(pk==='recovery' && ph.race){
+    const left = raceRecoveryDays(ph.race.distanceKm) - ph.since;
+    push('info', `ฟื้นตัวหลัง ${ph.race.name}${left>0?` อีก ~${left} วัน`:''}`, `วิ่งเบา Z1–Z2 ≤45–60 นาที งด interval/ลงเขาหนัก แล้วค่อยเพิ่มเวลาซ้อม${avg.min?` (ช่วงนี้ ${fmtHM(cur.min)} · ${P.prevLabel} ${fmtHM(avg.min)})`:''} — เพิ่มทีละขั้น ไม่กระโดดกลับไปปริมาณ peak ทันที`);
+  }
+  // 2) 80/20
+  if(cur.light!=null){
+    const lp = Math.round(cur.light*100), z3 = Math.round(cur.z[2]);
+    if(cur.light < 0.75 && pk!=='race') push(lp<65?'bad':'warn', `เบาแค่ ${lp}% ของเวลา (เป้า ≥75–80%)`, `Steady/Z3 ${fmtHM(z3)}${cur.hard?` · หนัก ${Math.round(cur.hard*100)}%`:''} — ${easyPhase?'ช่วงนี้ควรเกือบทั้งหมดเป็นโซนเบา':'ให้ long run อยู่ Z1–Z2 เป็นหลัก เก็บความหนักไว้ 1–2 เซสชันที่ตั้งใจ'}${rd && rd.dist>=100?` · สนาม ${Math.round(rd.dist)} กม. ต้องคุม HR ให้อยู่ Z2 เป็นส่วนใหญ่`:''}`);
+    else push('good', `สัดส่วนเบา ${lp}% — ผ่านหลัก 80/20`, `Steady ${Math.round((cur.steady||0)*100)}% · หนัก ${Math.round((cur.hard||0)*100)}%`);
+  }
+  // 3) ปริมาณ vs ก่อนหน้า
+  const dMin = pct(cur.min, avg.min);
+  if(!easyPhase && dMin!=null && dMin > 15) push('warn', `เวลาซ้อมเพิ่ม ${dMin}% จาก${P.prevLabel}`, 'เกินหลักเพิ่มไม่เกิน ~10%/สัปดาห์ — สัปดาห์ถัดไปคงปริมาณหรือทำ deload ถ้าเพิ่มติดกัน 3 สัปดาห์');
+  if(form && form.ramp > 7) push('bad', `CTL ramp ${fmtSigned(form.ramp,1)}/สัปดาห์`, 'สูงกว่า ~5–7/สัปดาห์ เสี่ยงบาดเจ็บ — ลดโหลดสัปดาห์หน้า 20–30%');
+  // 4) สัญญาณร่างกาย
+  if(form){
+    const sig = [];
+    if(form.tsb < -25) sig.push(`TSB ${fmtSigned(form.tsb)}`);
+    if(form.rhr7 && form.rhr28 && form.rhr7 - form.rhr28 >= 3) sig.push(`RHR ${form.rhr7.toFixed(0)} (ปกติ ${form.rhr28.toFixed(0)})`);
+    if(form.hrv7 && form.hrv28 && form.hrv7 < form.hrv28*0.9) sig.push(`HRV ${form.hrv7.toFixed(0)} (ปกติ ${form.hrv28.toFixed(0)})`);
+    if(form.sl7 && form.sl7 < 6.5) sig.push(`นอนเฉลี่ย ${form.sl7.toFixed(1)} ชม.`);
+    if(sig.length) push(sig.length>=2?'bad':'warn', 'สัญญาณล้าสะสม', sig.join(' · ')+' — เพิ่มวันพัก/วิ่งเบา นอนให้ถึง 7–8 ชม. ถ้ามีอาการผิดปกติให้พักและปรึกษาแพทย์/โค้ช');
+  }
+  // 5) เฉพาะสนาม
+  if(rd && rd.dist >= 60 && !['taper','race'].includes(pk)){
+    const b2b = rd.b2b ? `${rd.b2b.km.toFixed(1)} กม./↑${Math.round(rd.b2b.el).toLocaleString('th-TH')} ม.` : 'ยังไม่มี';
+    push('info', `ซ้อมเฉพาะ ${rd.race.name}${rd.toTaper>0?` — เหลือ ${rd.toTaper} วันก่อน taper`:''}`,
+      `back-to-back เทรลเสาร์–อาทิตย์ ฝึก power hike + ลงเขา (ยาวสุด 8 สัปดาห์: ${b2b}${rd.vert?` · D+ สัปดาห์สูงสุด ${Math.round(rd.maxWkEl).toLocaleString('th-TH')} จาก ${Math.round(rd.vert).toLocaleString('th-TH')} ม. ของสนาม`:''}) · ซ้อมกินคาร์บ 60–90 ก./ชม. + เกลือแร่${rd.dist>=100?' · ซ้อมวิ่งกลางคืน + อุปกรณ์บังคับเต็ม':''}`);
+  }
+  if(rd && pk==='taper') push('info', `Taper ${rd.race.name} — อีก ${rd.daysLeft} วัน`, 'ลดปริมาณ 30–50% คงความเข้มสั้นๆ (strides, 3–4×3 นาทีที่ race effort), นอนสะสม, เช็กอุปกรณ์');
+  // 6) strength (+ บทเรียนเข่า/อาการจากผลแข่ง)
+  const issues = sortedRaces().filter(r=>r.date<=P.end && r.result && Array.isArray(r.result.issues) && r.result.issues.length).slice(-1)[0];
+  if(out.length < 6) push('info', 'Strength 2 ครั้ง/สัปดาห์', issues ? `บทเรียน ${issues.name}: ${escapeHtml(issues.result.issues.join(', '))}${issues.result.whatDidnt?` (“${escapeHtml(issues.result.whatDidnt)}”)`:''} — เน้น step-down, split squat, eccentric quad, hip/glute` : 'step-down, split squat, calf raise, hip/glute — ช่วยกันบาดเจ็บจากลงเขา');
+  // 7) เป้าระยะ
+  const goal = (Number(state.running.weeklyGoalKm)||0) * P.days/7;
+  if(out.length < 6 && goal && !easyPhase && cur.counted >= P.days && cur.km < goal*0.7) push('warn', `ระยะ ${cur.km.toFixed(0)} จากเป้า ${goal.toFixed(0)} กม. (${Math.round(100*cur.km/goal)}%)`, 'ถ้าตั้งใจลด (deload) ถือว่าโอเค ถ้าไม่ใช่ ให้เติมวิ่งเบาวันธรรมดา 1 ครั้ง');
+  return out.slice(0,6);
+}
+function rvPhaseRows(endIso, info){
+  // แบ่งเฟสตาม phaseAt แต่ให้วันแข่งทุก priority (รวม B/C) เป็นช่วง Race ของตัวเอง
+  const raceDays = new Set(sortedRaces().filter(r=>!raceIsSkipped(r)).map(r=>r.date));
+  const segs = []; let d = addDays(endIso,-119), guard = 0;
+  while(d <= endIso && guard++ < 200){
+    const k = raceDays.has(d) ? 'race' : phaseAt(d).key;
+    if(segs.length && segs[segs.length-1].key===k && k!=='race') segs[segs.length-1].end = d; else segs.push({key:k, start:d, end:d});
+    d = addDays(d,1);
+  }
+  const prevVol = [];
+  return segs.map((s,idx)=>{
+    const st = rvStats(s.start, s.end), wk = (dayDiff(s.start,s.end)+1)/7, m = TR_PHASES[s.key];
+    const c0 = (info.fit.byDate[addDays(s.start,-1)]||info.fit.byDate[s.start]||{}).ctl, c1 = (info.fit.byDate[s.end]||{}).ctl;
+    const raceOn = s.key==='race' ? sortedRaces().find(r=>r.date===s.start) : null;
+    let ev = '';
+    if(s.key==='race'){ const res = raceOn && raceOn.result; ev = res ? (res.status==='DNF' ? trChip('bad','DNF'+(res.dnfKm?' @'+res.dnfKm+' กม.':'')) : res.status==='DNS' ? trChip('info','DNS') : trChip('good','จบ'+(res.finishTime?' '+res.finishTime:''))) : trChip('info','ยังไม่ใส่ผล'); }
+    else if(s.key==='recovery') ev = st.min/wk <= 5*60 ? trChip('good','พักเพียงพอ') : trChip('warn','ซ้อมเยอะไปสำหรับช่วงฟื้น');
+    else if(s.key==='taper'){ const pv = prevVol.length ? prevVol[prevVol.length-1] : null; const drop = pv ? 1 - (st.min/wk)/pv : null;
+      ev = drop==null ? '' : drop >= 0.25 ? trChip('good',`ลดปริมาณ ${Math.round(drop*100)}%`) : trChip('warn',`ลดแค่ ${Math.round(drop*100)}%`); }
+    else if(st.light!=null) ev = st.light >= 0.75 ? trChip('good','80/20 ผ่าน') : trChip('warn',`เบา ${Math.round(st.light*100)}%`);
+    if(['build','peak','base'].includes(s.key) && c0!=null && c1!=null && wk>=1){ const r = (c1-c0)/wk; if(r>7) ev += ' '+trChip('bad',`ramp ${r.toFixed(1)}/สป.`); }
+    if(!['race','recovery'].includes(s.key)) prevVol.push(st.min/wk);
+    const zbar = st.zt ? `<div class="mini">${st.z.map((v,i)=>`<i style="width:${100*v/st.zt}%; background:${HR_ZONE_META[i].color}"></i>`).join('')}</div>` : '';
+    const isRace = s.key==='race' && st.longest;
+    return `<tr>
+      <td><span class="tr-chip" style="background:${m.color}; color:#fff">${m.label}</span>${raceOn?`<div class="muted" style="margin-top:2px">${escapeHtml(raceOn.name)}</div>`:''}</td>
+      <td style="white-space:nowrap">${fmtDateShort(s.start).replace(/ \d{4}$/,'')}${s.end!==s.start?' – '+fmtDateShort(s.end).replace(/ \d{4}$/,''):''}</td>
+      ${isRace ? `<td colspan="3" class="mono">${st.km.toFixed(1)} กม. · ↑${Math.round(st.elev).toLocaleString('th-TH')} ม. · ${fmtDur(st.min)} ชม.</td>`
+        : `<td class="mono">${(st.min/60/wk).toFixed(1)}</td><td class="mono">${(st.km/wk).toFixed(0)}</td><td class="mono">${Math.round(st.elev/wk).toLocaleString('th-TH')}</td>`}
+      <td class="mono">${st.zt?`${Math.round(st.light*100)}/${Math.round(st.steady*100)}/${Math.round(st.hard*100)}`:'—'}${zbar}</td>
+      <td class="mono" style="white-space:nowrap">${c0!=null?c0.toFixed(0):'—'} → ${c1!=null?c1.toFixed(0):'—'}</td>
+      <td>${ev}</td></tr>`;
+  }).join('');
+}
+function renderPeriodReview(isWeek, weekDays, ym, info){
+  const r = state.running, today = todayISO();
+  const P = rvPeriod(isWeek, weekDays, ym);
+  if(P.start > today) return '';
+  const cur = rvStats(P.start, P.end), avg = rvAvg(P.prev.map(p=>rvStats(p.start, p.end)));
+  const inProgress = P.end >= today;
+  const endEff = inProgress ? today : P.end;
+  const fe = info.fit.byDate[endEff], f7 = info.fit.byDate[addDays(endEff,-7)];
+  const form = fe ? {ctl:fe.ctl, atl:fe.atl, tsb:fe.tsb, ramp: f7 ? fe.ctl - f7.ctl : 0,
+    rhr7:rvWellAvg('restingHR', endEff, 7), rhr28:rvWellAvg('restingHR', endEff, 28),
+    hrv7:rvWellAvg('hrv', endEff, 7), hrv28:rvWellAvg('hrv', endEff, 28),
+    sl7:rvWellAvg('sleep', endEff, 7, 14), sl28:rvWellAvg('sleep', endEff, 28, 14)} : null;
+  const ph = phaseAt(endEff), pm = TR_PHASES[ph.key];
+  const rd = rvReadiness(P.end, info);
+  const goal = (Number(r.weeklyGoalKm)||0) * P.days/7;
+  const pct = (a,b)=> b ? Math.round(100*(a-b)/b) : null;
+  // ความสดของข้อมูล
+  let fresh = '';
+  if(r.lastSync && P.end >= addDays(today,-7)){
+    const ls = new Date(r.lastSync), cut = new Date(P.end+'T18:00:00');
+    if(ls < cut && ls.toISOString().slice(0,10) >= P.start) fresh = `<div class="rv-fresh">⏱ ข้อมูลล่าสุดถึง ${fmtDateShort(ls.toISOString().slice(0,10))} ${pad2(ls.getHours())}:${pad2(ls.getMinutes())} น. — กิจกรรมหลังจากนั้นยังไม่รวม (กด Sync ด้านล่างเพื่ออัปเดต)</div>`;
+  }
+  if(!cur.n && inProgress) return `<div class="rv"><div class="rv-head"><h4>📋 สรุปการซ้อม · ${P.label}</h4><span class="tr-chip" style="background:${pm.color}; color:#fff">${pm.label}</span></div>
+    <div class="muted">${P.isWeek?'สัปดาห์':'เดือน'}นี้ยังไม่มีกิจกรรม — สรุปจะขึ้นเมื่อมีการซ้อม</div>
+    ${P.isWeek?`<button class="btn btn-sm" style="margin-top:10px" onclick="activityWeekShift(-1)">ดูสรุปสัปดาห์ที่แล้ว ›</button>`:`<button class="btn btn-sm" style="margin-top:10px" onclick="activityMonthShift(-1)">ดูสรุปเดือนที่แล้ว ›</button>`}</div>`;
+  // Hero 3 บรรทัด
+  const dTime = pct(cur.min, avg.min);
+  const ts = form ? tsbStatus(form.tsb, ph.key) : null;
+  const hero = `<div class="rv-hero">
+    <div class="rv-g1"><div class="k">${P.isWeek?'สัปดาห์':'เดือน'}${inProgress?'นี้ (ถึงวันนี้)':'นี้'}</div>
+      <div class="v">${cur.n} ครั้ง · ${fmtHM(cur.min)} · ${cur.km.toFixed(1)} กม.</div>
+      <div class="s">↑${Math.round(cur.elev).toLocaleString('th-TH')} ม. · พัก ${cur.rest} วัน${goal?` · ${Math.round(100*cur.km/goal)}% ของเป้า ${goal.toFixed(0)} กม.`:''}${dTime!=null?` · เวลา ${dTime>=0?'+':''}${dTime}% vs ${P.prevLabel}`:''}</div></div>
+    <div class="rv-g2"><div class="k">ฟอร์ม ณ ${fmtDateShort(endEff).replace(/ \d{4}$/,'')}</div>
+      <div class="v">${form?`CTL ${form.ctl.toFixed(1)} · TSB ${fmtSigned(form.tsb,1)}`:'—'}</div>
+      <div class="s">${form?`ATL ${form.atl.toFixed(1)} · ramp ${fmtSigned(form.ramp,1)}/7 วัน · ${ts.text}`:'ยังไม่มีข้อมูลฟอร์ม'}</div></div>
+    <div class="rv-g3"><div class="k">${rd?'สนามเป้าหมาย':'เฟสตอนนี้'}</div>
+      <div class="v">${rd?`${escapeHtml(rd.race.name)} อีก ${rd.daysLeft} วัน`:`${pm.label} · ${pm.th}`}</div>
+      <div class="s">${rd?`${rd.dist?rd.dist+' กม.':''}${rd.vert?' · ↑'+Math.round(rd.vert).toLocaleString('th-TH')+' ม.':''} · ${rd.toTaper>0?`เหลือ ${rd.toTaper} วันก่อน taper`:'อยู่ในช่วง taper'}`:(ph.race?escapeHtml(ph.race.name):'')} · เฟส ${pm.label}</div></div>
+  </div>`;
+  // ตัวเลขหลัก vs ก่อนหน้า
+  const metric = (label, val, unit, a, b, color, invert, fmtB) => {
+    const p = pct(a,b), mx = Math.max(a,b,1e-9);
+    const up = p!=null && p>=0, good = invert ? !up : up;
+    return `<div class="rv-m" style="--c:${color}" data-tip="${tipAttr(`<b>${label}</b><br>ช่วงนี้ ${val} ${unit}<br>${P.prevLabel} ${fmtB(b)} ${unit}`)}">
+      <div class="card-sub">${label}</div>
+      <div class="v mono" style="color:${color}">${val} <span>${unit}</span></div>
+      <div class="rv-cmp"><div class="a" style="width:${Math.max(3,100*a/mx)}%"></div><div class="b" style="width:${Math.max(3,100*b/mx)}%"></div></div>
+      <div class="rv-d" style="color:${p==null?'#8891A5':good?'#2F8F55':'#8891A5'}">${p==null?'—':`${up?'▲':'▼'} ${Math.abs(p)}%`} <span class="muted" style="font-weight:400">vs ${fmtB(b)}</span></div></div>`;
+  };
+  const metrics = `<div class="rv-metrics">
+    ${metric('จำนวนครั้ง', cur.n, 'ครั้ง', cur.n, avg.n, '#3E8DFF', false, v=>v.toFixed(1))}
+    ${metric('เวลารวม', fmtDur(cur.min), 'ชม.', cur.min, avg.min, 'var(--indigo)', false, v=>fmtDur(v))}
+    ${metric(goal?`ระยะวิ่ง (เป้า ${goal.toFixed(0)})`:'ระยะวิ่ง', cur.km.toFixed(1), 'กม.', cur.km, avg.km, 'var(--teal)', false, v=>v.toFixed(1))}
+    ${metric('ความสูงสะสม', Math.round(cur.elev).toLocaleString('th-TH'), 'ม.', cur.elev, avg.elev, 'var(--amber)', false, v=>Math.round(v).toLocaleString('th-TH'))}
+    ${metric('Training load', Math.round(cur.load), '', cur.load, avg.load, '#C2477E', false, v=>Math.round(v))}
+    ${metric('วันพัก', cur.rest, 'วัน', cur.rest, avg.rest, '#8891A5', true, v=>v.toFixed(1))}
+  </div>`;
+  // ความเข้ม (โซน HR)
+  const zrow = (label, st) => !st.zt ? `<div class="rv-zrow"><div class="lb">${label}</div><div class="muted">ไม่มีข้อมูลโซน HR</div></div>` :
+    `<div class="rv-zrow"><div class="lb">${label}</div><div class="rv-zbar">${st.z.map((v,i)=>`<i style="width:${100*v/st.zt}%; background:${HR_ZONE_META[i].color}" data-tip="${tipAttr(`<b>${HR_ZONE_META[i].label}</b> · ${HR_ZONE_META[i].th}<br>${fmtHM(v)} (${Math.round(100*v/st.zt)}%)`)}"></i>`).join('')}<span class="m80" data-tip="${tipAttr('เส้น 80% — ส่วนซ้ายควรเป็นโซนเบา (Recovery+Endurance)')}"></span></div>
+      <div class="pc">เบา <b style="color:${st.light>=0.75?'#2F8F55':'#B87800'}">${Math.round(st.light*100)}%</b> · หนัก ${Math.round(st.hard*100)}%</div></div>`;
+  const zones = `<div class="rv-sec"><div class="t">ความเข้ม (เวลาในโซน HR) ${cur.light!=null?(cur.light>=0.75?trChip('good','ผ่าน 80/20'):trChip(cur.light>=0.65?'warn':'bad','เบาน้อยกว่า 75%')):''}</div>
+    ${zrow(P.isWeek?'สัปดาห์นี้':'เดือนนี้', cur)}${zrow(P.prevLabel, avg)}
+    <div class="tr-legend" style="margin-top:6px">${HR_ZONE_META.map(z=>`<span><i style="background:${z.color}; height:8px; width:8px; border-radius:2px"></i>${z.label}</span>`).join('')}</div></div>`;
+  // ฟอร์ม + ร่างกาย
+  const wtile = (label, a, b, unit, digits, lowerBetter) => {
+    if(a==null) return `<div><div class="muted">${label}</div><div class="v mono">—</div></div>`;
+    const d = b ? (a-b)/b : 0, bad = lowerBetter ? d > 0.05 : d < -0.08;
+    return `<div><div class="muted">${label} (7 วัน)</div><div class="v mono">${a.toFixed(digits)} <span class="muted" style="font-size:11px; font-weight:400">${unit}</span></div>
+      <div style="color:${bad?'#B87800':'#2F8F55'}">${b?`${a>=b?'▲':'▼'} ${Math.abs(Math.round(d*100))}% vs 28 วัน (${b.toFixed(digits)})`:''}</div></div>`;
+  };
+  const formBox = form ? `<div class="rv-box"><div class="rv-sec" style="margin-top:0"><div class="t">ฟอร์ม ณ ${fmtDateShort(endEff)} ${trChip(ts.level, ts.text)} ${trChip(rampStatus(form.ramp, ph.key).level, 'ramp '+fmtSigned(form.ramp,1))}</div></div>
+    <div class="rv-form">
+      <div><div class="muted">Fitness (CTL)</div><div class="v mono" style="color:#2F6FD6">${form.ctl.toFixed(1)}</div></div>
+      <div><div class="muted">Fatigue (ATL)</div><div class="v mono" style="color:#C2477E">${form.atl.toFixed(1)}</div></div>
+      <div><div class="muted">Form (TSB)</div><div class="v mono">${fmtSigned(form.tsb,1)}</div></div>
+    </div>
+    <div class="rv-well">${wtile('ชีพจรขณะพัก', form.rhr7, form.rhr28, 'bpm', 0, true)}${wtile('HRV', form.hrv7, form.hrv28, 'ms', 0, false)}${wtile('การนอน', form.sl7, form.sl28, 'ชม.', 1, false)}</div>
+    <div class="muted" style="margin-top:8px">ช่วงนี้: ${phaseSegments(P.start, endEff).map(s=>`<span class="tr-chip" style="background:${TR_PHASES[s.key].color}; color:#fff">${TR_PHASES[s.key].label}</span>`).join(' ')}${cur.longest?` · ยาวสุด <b>${escapeHtml(cur.longest.name||'')}</b> ${Number(cur.longest.distance_km||0).toFixed(1)} กม. ↑${Math.round(cur.longest.elevation_gain_m||0)} ม. ${fmtDur(cur.longest.moving_time_min)} ชม. (${fmtDateShort(cur.longest.date).replace(/ \d{4}$/,'')})`:''}</div>
+  </div>` : '';
+  // ความพร้อมสนาม
+  const bar = (label, v, target, txt, color) => { const p = target ? Math.min(100, 100*v/target) : 0;
+    return `<div class="row"><div class="lb">${label}</div><div class="tr"><i style="width:${Math.max(2,p)}%; background:${color||(p>=60?'#2F8F55':p>=35?'#F5A623':'#FF6B8A')}"></i></div><div class="vv mono">${txt}</div></div>`; };
+  const readyBox = rd ? `<div class="rv-box rv-ready">
+    <div class="rv-cd"><div class="n"><b>${rd.daysLeft}</b><span>วัน</span></div>
+      <div><div style="font-weight:700">${escapeHtml(rd.race.name)} ${rd.race.priority?`<span class="tag">${escapeHtml(rd.race.priority)}</span>`:''}</div>
+      <div class="muted">${fmtDateShort(rd.race.date)}${rd.dist?' · '+rd.dist+' กม.':''}${rd.vert?' · ↑'+Math.round(rd.vert).toLocaleString('th-TH')+' ม.':''}</div>
+      <div class="muted">${rd.toTaper>0?`taper เริ่ม ${fmtDateShort(rd.taperStart).replace(/ \d{4}$/,'')} — เหลือ <b>${rd.toTaper} วัน</b> (~${(rd.toTaper/7).toFixed(1)} สัปดาห์)`:'อยู่ในช่วง taper แล้ว'}</div></div></div>
+    <div class="muted" style="margin-bottom:8px">ความพร้อม (8 สัปดาห์ล่าสุด) เทียบกับสนาม</div>
+    ${rd.dist?bar('ยาวสุด (ซ้อม)', rd.longest?Number(rd.longest.distance_km)||0:0, rd.dist, rd.longest?`${Number(rd.longest.distance_km).toFixed(1)} / ${rd.dist} กม.`:'—'):''}
+    ${rd.dist?bar('Back-to-back ยาวสุด', rd.b2b?rd.b2b.km:0, rd.dist, rd.b2b?`${rd.b2b.km.toFixed(1)} กม. · ↑${Math.round(rd.b2b.el).toLocaleString('th-TH')}`:'—'):''}
+    ${rd.vert?bar('D+ สัปดาห์สูงสุด', rd.maxWkEl, rd.vert, `${Math.round(rd.maxWkEl).toLocaleString('th-TH')} / ${Math.round(rd.vert).toLocaleString('th-TH')} ม.`):''}
+    ${bar('เวลาบนขานานสุด', rd.maxTime, rd.dist>=140?30*60:rd.dist>=80?16*60:rd.dist>=40?8*60:4*60, `${fmtDur(rd.maxTime)} ชม.`)}
+    ${bar(`CTL (แนวทาง ${rd.band[0]}–${rd.band[1]})`, rd.ctl, rd.band[0], `${rd.ctl.toFixed(1)}`, rd.ctl>=rd.band[0]?'#2F8F55':rd.ctl>=rd.band[0]-10?'#F5A623':'#FF6B8A')}
+    ${rd.longestAny && rd.longest && rd.longestAny!==rd.longest?`<div class="muted">รวมสนามแข่ง: ยาวสุด ${Number(rd.longestAny.distance_km).toFixed(1)} กม. (${fmtDateShort(rd.longestAny.date).replace(/ \d{4}$/,'')})</div>`:''}
+  </div>` : `<div class="rv-box"><div class="muted">ไม่มีสนามเป้าหมายใน 120 วันข้างหน้า — เพิ่มที่ "เป้าหมายการแข่ง" ด้านล่าง</div></div>`;
+  // คำแนะนำ
+  const adv = rvAdvice(P, cur, avg, form, rd, info);
+  const advBox = `<div class="rv-sec"><div class="t">💡 คำแนะนำ${inProgress?`ช่วงนี้`:` (ต่อจาก${P.isWeek?'สัปดาห์':'เดือน'}นี้)`}</div>
+    <div class="rv-adv">${adv.map((a,i)=>`<div><div class="ix" style="background:${TR_ST[a.level].c}">${i+1}</div><div><b class="h">${escapeHtml(a.h)}</b>${a.d}</div></div>`).join('')}</div>
+    <div class="muted" style="margin-top:6px">ข้อเสนอเพื่อคุยกับโค้ช ไม่ทับแผนใน TrainingPeaks · ไม่ใช่คำแนะนำทางการแพทย์</div></div>`;
+  // เฟส 120 วัน
+  const phases = `<details class="rv-det rv-sec"><summary>📈 เฟสการซ้อม 120 วัน (ถึง ${fmtDateShort(endEff)})</summary><div class="rv-scroll">
+    <table class="rv-ph"><tr><th>เฟส</th><th>ช่วงวันที่</th><th>ชม./สป.</th><th>กม./สป.</th><th>D+/สป.</th><th>เบา/Steady/หนัก %</th><th>CTL</th><th>ประเมิน</th></tr>${rvPhaseRows(endEff, info)}</table></div></details>`;
+  return `<div class="rv">
+    <div class="rv-head"><h4>📋 สรุปการซ้อม · ${P.label}</h4><span class="tr-chip" style="background:${pm.color}; color:#fff">${pm.label}</span>${inProgress?trChip('info','ยังไม่จบ'+(P.isWeek?'สัปดาห์':'เดือน')):''}
+      ${inProgress && P.isWeek?`<button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="activityWeekShift(-1)">‹ สรุปสัปดาห์ที่แล้ว</button>`:''}</div>
+    ${fresh}${hero}${metrics}${zones}
+    <div class="rv-two rv-sec">${formBox}${readyBox}</div>
+    ${advBox}${phases}
+  </div>`;
+}
+
 function renderRunning(){
   const r = state.running;
   const weekDays = currentWeekMondayToSunday();
@@ -3512,6 +3829,7 @@ function renderRunning(){
     <div class="tag-row" style="margin-top:16px">
       ${ACTIVITY_TYPES.map(t=>`<span class="tag" style="background:${t.color}; color:#fff">${t.label}</span>`).join('')}
     </div>
+    ${renderPeriodReview(isWeek, chartWeekDays, activityViewMonthEnd, trInfo)}
   </div>
 
   <div class="panel">
