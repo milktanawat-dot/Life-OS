@@ -278,6 +278,123 @@ a{color:inherit;}
 .aexp-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
 .aexp-row:last-child{border-bottom:none;}
 .aexp-icon{width:36px; height:36px; border-radius:10px; background:var(--sienna-pale); color:var(--sienna); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; flex-shrink:0;}
+/* ---------- Health: body & recovery (สุขภาพ > ร่างกาย) ---------- */
+.hb-tabs{display:inline-flex; gap:4px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:4px; margin-bottom:18px; box-shadow:var(--shadow-sm); flex-wrap:wrap;}
+.hb-tab{border:none; background:none; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink-soft); padding:8px 16px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:background .15s ease, color .15s ease;}
+.hb-tab:hover{color:var(--ink);}
+.hb-tab.on{background:linear-gradient(135deg,var(--rose),#F58FB8); color:#fff; box-shadow:0 6px 14px -8px rgba(236,111,160,.7);}
+.hb-tab .cnt{font-size:10px; background:rgba(255,255,255,.28); padding:1px 7px; border-radius:99px;}
+.hb-tab:not(.on) .cnt{background:var(--coral-pale); color:var(--coral);}
+
+.hb-hero{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:18px; margin-bottom:18px; align-items:start;}
+@media (max-width:900px){.hb-hero{grid-template-columns:1fr;}}
+.hb-ready{position:relative; overflow:hidden; border-radius:var(--radius); padding:22px; color:#fff; background:radial-gradient(120% 140% at 0% 0%, #6C5FD6 0%, #3B2F8F 55%, #24204F 100%); box-shadow:0 18px 40px -24px rgba(59,47,143,.75);}
+.hb-ready::after{content:''; position:absolute; right:-60px; top:-60px; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle, rgba(236,111,160,.35), transparent 70%);}
+.hb-ready-top{display:flex; gap:18px; align-items:center; position:relative; z-index:1; flex-wrap:wrap;}
+.hb-ring{width:132px; height:132px; flex-shrink:0; position:relative;}
+.hb-ring svg{width:100%; height:100%; transform:rotate(-90deg);}
+.hb-ring .c{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.hb-ring .n{font-family:'JetBrains Mono',monospace; font-size:38px; font-weight:800; line-height:1;}
+.hb-ring .u{font-size:10.5px; opacity:.75; margin-top:3px;}
+.hb-ready h2{font-size:12px; font-weight:500; opacity:.75; letter-spacing:.02em;}
+.hb-ready .lab{font-size:22px; font-weight:700; margin:2px 0 6px; letter-spacing:-.01em;}
+.hb-ready .adv{font-size:12.5px; line-height:1.55; opacity:.92; max-width:340px;}
+.hb-comps{position:relative; z-index:1; margin-top:16px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 18px;}
+@media (max-width:480px){.hb-comps{grid-template-columns:1fr;}}
+.hb-comp .t{display:flex; justify-content:space-between; font-size:11.5px; opacity:.88; margin-bottom:4px; gap:8px;}
+.hb-comp .t b{font-family:'JetBrains Mono',monospace; font-weight:700;}
+.hb-comp .tr{height:6px; border-radius:99px; background:rgba(255,255,255,.16); overflow:hidden;}
+.hb-comp .tr i{display:block; height:100%; border-radius:99px;}
+.hb-comp .d{font-size:10.5px; opacity:.7; margin-top:3px;}
+.hb-ready-empty{position:relative; z-index:1; font-size:12.5px; opacity:.9; line-height:1.6; margin-top:12px;}
+
+.hb-log h3{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+.hb-fgrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:10px;}
+@media (max-width:560px){.hb-fgrid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.hb-f{display:flex; flex-direction:column; gap:4px; min-width:0;}
+.hb-f span{font-size:10.5px; color:var(--ink-soft); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hb-f input, .hb-log select, .hb-log input[type=date], .hb-log input[type=text]{border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:12.5px; font-family:inherit; background:var(--bg); color:var(--ink); width:100%; min-width:0;}
+.hb-f input:focus, .hb-log input:focus{outline:none; border-color:var(--rose); box-shadow:0 0 0 3px var(--rose-pale);}
+.hb-group{font-size:11px; font-weight:600; color:var(--ink); margin:4px 0 7px; display:flex; align-items:center; gap:6px;}
+.hb-group::after{content:''; flex:1; height:1px; background:var(--line);}
+.hb-rate{display:flex; align-items:center; gap:8px; margin-bottom:7px; flex-wrap:wrap;}
+.hb-rate .lb{font-size:11.5px; color:var(--ink-soft); width:74px; flex-shrink:0;}
+.hb-rate .opts{display:flex; gap:5px;}
+.hb-rate button{width:32px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--bg); font-family:inherit; font-size:14px; cursor:pointer; transition:transform .1s ease, background .12s ease, border-color .12s ease;}
+.hb-rate button:hover{transform:translateY(-1px);}
+.hb-rate button.on{background:var(--rose-pale); border-color:var(--rose); box-shadow:0 0 0 2px var(--rose-pale);}
+.hb-more{font-size:11.5px; color:var(--ink-soft); margin:2px 0 8px;}
+.hb-more summary{cursor:pointer; font-weight:600; color:var(--purple-deep); list-style:none;}
+.hb-more summary::-webkit-details-marker{display:none;}
+.hb-more[open] summary{margin-bottom:8px;}
+
+.hb-tiles{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px;}
+@media (max-width:1100px){.hb-tiles{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media (max-width:760px){.hb-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.hb-tile{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:13px 14px 10px; box-shadow:var(--shadow-sm); cursor:pointer; text-align:left; font-family:inherit; color:inherit; display:flex; flex-direction:column; gap:2px; position:relative; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; min-width:0;}
+.hb-tile:hover{transform:translateY(-2px); box-shadow:var(--shadow-card-hover);}
+.hb-tile.sel{border-color:var(--tc); box-shadow:0 0 0 2px color-mix(in srgb, var(--tc) 22%, transparent), var(--shadow-card);}
+.hb-tile .hd{display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--ink-soft); font-weight:500;}
+.hb-tile .ic{width:24px; height:24px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; background:var(--tc); flex-shrink:0;}
+.hb-tile .src{margin-left:auto; font-size:9.5px; padding:1px 7px; border-radius:99px; background:var(--bg); color:var(--ink-soft); white-space:nowrap;}
+.hb-tile .v{font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:800; letter-spacing:-.02em; margin-top:6px; line-height:1.1;}
+.hb-tile .v small{font-family:'Prompt',sans-serif; font-size:11px; font-weight:500; color:var(--ink-soft); margin-left:3px; letter-spacing:0;}
+.hb-tile .v.na{color:#C3C8D6;}
+.hb-tile .sub{font-size:10.5px; color:var(--ink-soft); display:flex; gap:6px; align-items:center; flex-wrap:wrap; min-height:16px;}
+.hb-tile .dl{font-weight:600; font-family:'JetBrains Mono',monospace;}
+.hb-tile svg{width:100%; height:30px; display:block; margin-top:4px;}
+
+.hb-seg{display:inline-flex; background:var(--bg); border-radius:10px; padding:3px; gap:2px;}
+.hb-seg button{border:none; background:none; font-family:inherit; font-size:11px; font-weight:600; color:var(--ink-soft); padding:5px 10px; border-radius:8px; cursor:pointer;}
+.hb-seg button.on{background:var(--panel); color:var(--ink); box-shadow:var(--shadow-sm);}
+.hb-chips{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
+.hb-chip{border:1px solid var(--line); background:var(--panel); font-family:inherit; font-size:11px; font-weight:600; color:var(--ink-soft); padding:5px 11px; border-radius:99px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;}
+.hb-chip i{width:8px; height:8px; border-radius:50%; display:inline-block;}
+.hb-chip.on{color:var(--ink); border-color:var(--ink); }
+.hb-stats{display:flex; gap:18px; flex-wrap:wrap; margin:6px 0 2px;}
+.hb-stats div{font-size:11px; color:var(--ink-soft);}
+.hb-stats b{display:block; font-family:'JetBrains Mono',monospace; font-size:15px; color:var(--ink);}
+
+.hb-two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px;}
+@media (max-width:900px){.hb-two{grid-template-columns:1fr;}}
+.hb-two .panel{margin-bottom:18px;}
+.hb-scale{position:relative; height:10px; border-radius:99px; display:flex; overflow:hidden; margin:24px 0 6px;}
+.hb-scale span{height:100%;}
+.hb-scale-wrap{position:relative;}
+.hb-mark{position:absolute; top:-2px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; pointer-events:none;}
+.hb-mark b{font-family:'JetBrains Mono',monospace; font-size:11px; background:var(--ink); color:#fff; padding:2px 7px; border-radius:7px; white-space:nowrap;}
+.hb-mark i{width:2px; height:16px; background:var(--ink);}
+.hb-scale-lb{display:flex; justify-content:space-between; font-size:9.5px; color:var(--ink-soft);}
+.hb-kv{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:12px;}
+.hb-kv > div{background:var(--bg); border-radius:12px; padding:10px 12px; min-width:0;}
+.hb-kv .k{font-size:10.5px; color:var(--ink-soft);}
+.hb-kv .vv{font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; margin-top:2px;}
+.hb-kv .n{font-size:10px; color:var(--ink-soft); margin-top:1px;}
+
+.hb-lab-row{display:grid; grid-template-columns:minmax(0,1.5fr) 0.9fr 1fr minmax(0,1.1fr) auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
+.hb-lab-row:last-child{border-bottom:none;}
+.hb-lab-row .nm{font-weight:600;}
+.hb-lab-row .nm small{display:block; font-weight:400; color:var(--ink-soft); font-size:10.5px;}
+.hb-lab-row .val{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px;}
+.hb-lab-row .val small{font-family:'Prompt',sans-serif; font-weight:400; color:var(--ink-soft); font-size:10.5px; margin-left:3px;}
+.hb-lab-head{font-size:10.5px; color:var(--ink-soft); font-weight:600; padding-bottom:6px;}
+@media (max-width:700px){.hb-lab-row{grid-template-columns:1fr auto; } .hb-lab-row .rng, .hb-lab-row .prev{display:none;}}
+.hb-range{position:relative; height:6px; border-radius:99px; background:var(--line); margin-top:4px;}
+.hb-range .ok{position:absolute; top:0; bottom:0; background:var(--teal-pale); border-left:2px solid var(--teal); border-right:2px solid var(--teal);}
+.hb-range .dot{position:absolute; top:50%; width:10px; height:10px; border-radius:50%; transform:translate(-50%,-50%); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.hb-hist{font-size:11px; color:var(--ink-soft); grid-column:1/-1; margin-top:-2px;}
+.hb-hist summary{cursor:pointer; list-style:none;}
+.hb-hist summary::-webkit-details-marker{display:none;}
+.hb-hist .h{display:flex; gap:10px; align-items:center; padding:3px 0;}
+
+.hb-table{width:100%; border-collapse:collapse; font-size:12px;}
+.hb-table th{font-size:10.5px; color:var(--ink-soft); font-weight:600; text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
+.hb-table td{padding:8px; border-bottom:1px solid var(--line); white-space:nowrap;}
+.hb-table td.mono{font-family:'JetBrains Mono',monospace;}
+.hb-table tr:last-child td{border-bottom:none;}
+.hb-scroll{overflow-x:auto;}
+.hb-src{font-size:11.5px; color:var(--ink-soft); line-height:1.65;}
+.hb-src b{color:var(--ink); font-weight:600;}
 /* ---------- Training analysis (กิจกรรม) ---------- */
 .tr-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:99px; white-space:nowrap;}
 .tr-tip{position:fixed; z-index:9999; pointer-events:none; background:#1D2233; color:#fff; font-size:11.5px; line-height:1.55; padding:8px 11px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); max-width:280px; display:none;}
@@ -2017,6 +2134,12 @@ function renderToday(){
         <div class="card-title"><div class="card-icon icon-health">✚</div><div><h3>สุขภาพ</h3><div class="card-sub">${state.health.members.length} คน/สัตว์เลี้ยง</div></div></div>
         ${healthUpcomingList.length ? `<div class="pill ${healthUpcomingList[0].st.status==='overdue'?'pill-coral':healthUpcomingList[0].st.status==='soon'?'pill-amber':'pill-teal'}">${healthUpcomingList[0].st.status==='overdue'?'เลยกำหนด':healthUpcomingList[0].st.status==='soon'?'ใกล้ถึงกำหนด':'ปกติ'}</div>` : ''}
       </div>
+      ${(()=>{ let r = null; try{ r = hbReadiness(); }catch(e){} if(!r) return '';
+        const hrv = hbLatest('hrv',2), rhr = hbLatest('rhr',2), sl = hbLatest('sleep',1);
+        return `<div style="display:flex; align-items:center; gap:10px; background:var(--rose-pale); border-radius:12px; padding:9px 12px; margin-bottom:10px; cursor:pointer" onclick="hbTab='body'; nav('health')">
+          <div class="mono" style="font-size:22px; font-weight:800; color:#B83E72">${r.score}</div>
+          <div style="flex:1; min-width:0"><div style="font-size:12px; font-weight:600">ความพร้อม: ${r.label}</div>
+          <div class="muted" style="font-size:10.5px">${[hrv?'HRV '+Math.round(hrv.v):'', rhr?'RHR '+Math.round(rhr.v):'', sl?'นอน '+hbFmtH(sl.v):''].filter(Boolean).join(' · ')}</div></div></div>`; })()}
       ${healthUpcomingList.length ? healthUpcomingList.slice(0,4).map(({member,rem,due,st})=>`
         <div class="bar-row" style="align-items:center">
           <div class="tl-dot" style="background:${st.color}; margin-right:6px"></div>
@@ -4023,7 +4146,11 @@ async function syncIntervals(){
           const d = String(w.id||w.date||'').slice(0,10); if(!d) return;
           state.running.wellness[d] = {
             ctl: Number.isFinite(w.ctl) ? w.ctl : null, atl: Number.isFinite(w.atl) ? w.atl : null,
-            restingHR: w.restingHR || null, hrv: w.hrv || w.hrvSDNN || null, sleepSecs: w.sleepSecs || null
+            restingHR: w.restingHR || null, hrv: w.hrv || w.hrvSDNN || null, sleepSecs: w.sleepSecs || null,
+            // Extra daily fields for the สุขภาพ > ร่างกาย dashboard (null when the device doesn't send them)
+            sleepScore: w.sleepScore || null, avgSleepingHR: w.avgSleepingHR || null, weight: w.weight || null,
+            bodyFat: w.bodyFat || null, spO2: w.spO2 || null, systolic: w.systolic || null, diastolic: w.diastolic || null,
+            respiration: w.respiration || null, vo2max: w.vo2max || null, steps: w.steps || null, readiness: w.readiness || null
           };
           wellCount++;
         });
@@ -4363,6 +4490,526 @@ function saveEditSub(){
   saveState(); render();
 }
 
+/* ---------- Health: body & recovery (สุขภาพ > ร่างกาย & การฟื้นตัว) ----------
+   Daily metrics come from two places, merged per date (see hbVal()):
+   1. state.running.wellness[date] — synced from intervals.icu (RHR, HRV, sleep, weight, SpO2, BP …)
+   2. state.health.body.log[date]  — typed in here (weight, body fat, waist, BP, how you feel …)
+   A manual value for the same date always wins over the synced one, so a wrong reading from
+   the watch can be overridden without touching intervals.icu. */
+let hbTab = 'body';      // 'body' | 'reminders'
+let hbMetric = 'hrv';    // metric shown in the big trend chart
+let hbRange = 90;        // days shown in the big trend chart
+let hbEditDate = null;   // date loaded into the daily-log form (null = today)
+let hbSyncMsg = '';
+const HB_RATE_KEYS = ['energy','soreness','stress','mood'];
+
+function hbBody(){
+  if(!state.health.body) state.health.body = {heightCm:null, log:{}, labs:[]};
+  const b = state.health.body;
+  if(!b.log) b.log = {}; if(!b.labs) b.labs = [];
+  return b;
+}
+const HB_METRICS = {
+  hrv:       {label:'HRV', unit:'ms', icon:'∿', color:'#5A4CC4', better:'up', dec:0, icu:w=>w.hrv, man:'hrv', min:5, max:300, base:true},
+  rhr:       {label:'ชีพจรขณะพัก', unit:'bpm', icon:'♥', color:'#FF6B8A', better:'down', dec:0, icu:w=>w.restingHR, man:'rhr', min:25, max:130, base:true},
+  sleep:     {label:'การนอน', unit:'ชม.', icon:'☾', color:'#5B6EF5', better:'up', dec:1, icu:w=>w.sleepSecs ? w.sleepSecs/3600 : null, man:'sleepH', min:0.5, max:16},
+  sleepScore:{label:'คะแนนการนอน', unit:'/100', icon:'★', color:'#8B7FD1', better:'up', dec:0, icu:w=>w.sleepScore, man:null, min:1, max:100},
+  weight:    {label:'น้ำหนัก', unit:'kg', icon:'⚖', color:'#22C3A6', better:null, dec:1, icu:w=>w.weight, man:'weight', min:20, max:300},
+  bodyFat:   {label:'ไขมันร่างกาย', unit:'%', icon:'◔', color:'#F5A623', better:'down', dec:1, icu:w=>w.bodyFat, man:'bodyFat', min:2, max:70},
+  bp:        {label:'ความดันโลหิต', unit:'mmHg', icon:'⊕', color:'#C97B4A', better:'down', dec:0, icu:w=>w.systolic, man:'sys', min:60, max:250},
+  spo2:      {label:'SpO₂', unit:'%', icon:'◉', color:'#2BB6C9', better:'up', dec:0, icu:w=>w.spO2, man:'spo2', min:70, max:100},
+  resp:      {label:'อัตราหายใจ', unit:'/นาที', icon:'≋', color:'#3E8DFF', better:null, dec:1, icu:w=>w.respiration, man:null, min:4, max:40},
+  vo2max:    {label:'VO₂max', unit:'', icon:'▲', color:'#EC6FA0', better:'up', dec:1, icu:w=>w.vo2max, man:'vo2max', min:15, max:95},
+  steps:     {label:'ก้าวเดิน', unit:'ก้าว', icon:'⋯', color:'#5CB85C', better:'up', dec:0, icu:w=>w.steps, man:null, min:1, max:150000}
+};
+const HB_DIA = {icu:w=>w.diastolic, man:'dia', min:30, max:160};
+function hbNum(x, lo, hi){ const v = Number(x); return (x!=null && x!=='' && Number.isFinite(v) && v>=lo && v<=hi) ? v : null; }
+// {v, src:'manual'|'icu'} for one metric on one date, or null.
+function hbVal(key, d, spec){
+  const m = spec || HB_METRICS[key]; if(!m) return null;
+  const log = hbBody().log[d];
+  if(m.man && log){ const v = hbNum(log[m.man], m.min, m.max); if(v!=null) return {v, src:'manual'}; }
+  const w = (state.running.wellness||{})[d];
+  if(w && m.icu){ const v = hbNum(m.icu(w), m.min, m.max); if(v!=null) return {v, src:'icu'}; }
+  return null;
+}
+function hbSeries(key, fromIso, toIso, spec){
+  const out = []; let d = fromIso, g = 0;
+  while(d <= toIso && g++ < 800){ const r = hbVal(key, d, spec); out.push({date:d, v:r?r.v:null, src:r?r.src:null}); d = addDays(d,1); }
+  return out;
+}
+function hbLatest(key, maxAge, spec){
+  const t = todayISO();
+  for(let i=0;i<=(maxAge||120);i++){ const d = addDays(t,-i); const r = hbVal(key, d, spec); if(r) return {...r, date:d}; }
+  return null;
+}
+function hbStats(key, endIso, days, skip){
+  const v = []; for(let i=(skip||0);i<days+(skip||0);i++){ const r = hbVal(key, addDays(endIso,-i)); if(r) v.push(r.v); }
+  if(!v.length) return null;
+  const mean = v.reduce((a,b)=>a+b,0)/v.length;
+  const sd = v.length>1 ? Math.sqrt(v.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(v.length-1)) : 0;
+  return {mean, sd, n:v.length};
+}
+function hbFmt(v, dec){ if(v==null) return '—'; return Number(v).toLocaleString('en-US',{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+function hbFmtH(h){ if(h==null) return '—'; const m = Math.round(h*60); return Math.floor(m/60)+':'+pad2(m%60); }
+function hbAgo(d){ const n = dayDiff(d, todayISO()); return n<=0 ? 'วันนี้' : n===1 ? 'เมื่อวาน' : n<7 ? n+' วันก่อน' : fmtDateShort(d); }
+const hbClamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+
+/* Readiness — HRV4Training-style: today vs your own 60-day normal, not vs population numbers. */
+function hbReadiness(){
+  const t = todayISO(), comps = [];
+  const zComp = (key, label, invert) => {
+    const cur = hbLatest(key, 1); if(!cur) return;
+    const base = hbStats(key, cur.date, 60, 1); if(!base || base.n < 10) return;
+    const sdFloor = key==='rhr' ? 1.5 : base.mean*0.06;
+    const z = (cur.v - base.mean)/Math.max(base.sd, sdFloor) * (invert?-1:1);
+    const score = hbClamp(72 + z*18, 5, 100);
+    const unit = HB_METRICS[key].unit;
+    const diff = cur.v - base.mean;
+    comps.push({key, label, score, w:key==='hrv'?0.32:0.22,
+      detail:`${hbFmt(cur.v,0)} ${unit} · ปกติ ${hbFmt(base.mean-base.sd,0)}–${hbFmt(base.mean+base.sd,0)} (${diff>=0?'+':''}${hbFmt(diff,0)})`});
+  };
+  zComp('hrv','HRV', false);
+  zComp('rhr','ชีพจรขณะพัก', true);
+  const sl = hbLatest('sleep', 1), ss = hbLatest('sleepScore', 1);
+  if(sl || ss){
+    let s = sl ? hbClamp((sl.v-4.5)/(8-4.5)*100, 0, 100) : null;
+    if(ss) s = s==null ? ss.v : (s*0.6 + ss.v*0.4);
+    comps.push({key:'sleep', label:'การนอนเมื่อคืน', score:s, w:0.22, detail:(sl?hbFmtH(sl.v)+' ชม.':'')+(ss?` · คะแนน ${hbFmt(ss.v,0)}`:'')});
+  }
+  try{
+    if((state.running.activities||[]).length){
+      const fn = fitnessNow(); const tsb = fn.cur.tsb;
+      if(fn.cur.ctl > 0){
+        const s = tsb>=5 ? 92 : tsb>=-10 ? 78 : tsb>=-20 ? 58 : tsb>=-30 ? 36 : 15;
+        comps.push({key:'tsb', label:'ความล้าจากการซ้อม', score:s, w:0.14, detail:`Form (TSB) ${fmtSigned(tsb,0)} · ${tsbStatus(tsb, fn.phase.key).text}`});
+      }
+    }
+  }catch(e){}
+  const lg = hbBody().log[t];
+  if(lg){
+    const parts = []; if(lg.energy) parts.push(lg.energy); if(lg.soreness) parts.push(6-lg.soreness); if(lg.stress) parts.push(6-lg.stress); if(lg.mood) parts.push(lg.mood);
+    if(parts.length){ const avg = parts.reduce((a,b)=>a+b,0)/parts.length; comps.push({key:'feel', label:'ความรู้สึกวันนี้', score:(avg-1)/4*100, w:0.14, detail:'จากที่บันทึกไว้วันนี้'}); }
+  }
+  if(!comps.length) return null;
+  const tw = comps.reduce((a,c)=>a+c.w,0);
+  const score = Math.round(comps.reduce((a,c)=>a+c.score*c.w,0)/tw);
+  const low = comps.filter(c=>c.score<45).map(c=>c.label);
+  let label, color, adv;
+  if(score>=75){ label='พร้อมลุย'; color='#4FE3B5'; adv='ร่างกายฟื้นตัวดี วันนี้ซ้อมหนัก/คุณภาพตามแผนได้เลย'; }
+  else if(score>=58){ label='ปกติ'; color='#9BB8FF'; adv='ซ้อมตามแผนได้ แต่อย่าเพิ่มความหนักเกินที่วางไว้'; }
+  else if(score>=42){ label='เบาลงหน่อย'; color='#FFC36B'; adv='ร่างกายยังฟื้นไม่เต็มที่ — เปลี่ยน interval/tempo เป็น Z2 สั้นๆ หรือย้ายวันหนักออกไป'; }
+  else { label='ควรพัก'; color='#FF8FA6'; adv='สัญญาณล้าชัดเจน — พักหรือเดินเบาๆ นอนให้พอ ถ้าเป็นหลายวันติดหรือมีไข้/เจ็บคอ ให้หยุดซ้อม'; }
+  if(low.length && score>=42) adv += ` (ตัวที่ฉุด: ${low.join(', ')})`;
+  return {score, label, color, adv, comps, partial: comps.length < 3};
+}
+
+/* ---- small SVG helpers ---- */
+function hbSpark(key, color){
+  const t = todayISO(); const s = hbSeries(key, addDays(t,-29), t).filter(p=>p.v!=null);
+  if(s.length < 2) return '<svg viewBox="0 0 120 30"></svg>';
+  const vs = s.map(p=>p.v); let lo = Math.min(...vs), hi = Math.max(...vs); if(hi-lo < 1e-6){ lo-=1; hi+=1; }
+  const X = d => 2 + (29 - dayDiff(d,t))/29*116, Y = v => 27 - (v-lo)/(hi-lo)*23;
+  const path = s.map((p,i)=>(i?'L':'M')+X(p.date).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
+  const last = s[s.length-1];
+  const area = path + ` L${X(last.date).toFixed(1)} 30 L${X(s[0].date).toFixed(1)} 30 Z`;
+  const gid = 'hbg'+key;
+  return `<svg viewBox="0 0 120 30" preserveAspectRatio="none"><defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".22"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#${gid})"/><path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${X(last.date)}" cy="${Y(last.v)}" r="2.4" fill="${color}"/></svg>`;
+}
+function hbRing(score, color){
+  const r = 54, c = 2*Math.PI*r, off = c*(1-score/100);
+  return `<svg viewBox="0 0 132 132"><circle cx="66" cy="66" r="${r}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="11"/>
+    <circle cx="66" cy="66" r="${r}" fill="none" stroke="${color}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" style="filter:drop-shadow(0 0 6px ${color}88)"/></svg>`;
+}
+
+/* ---- tiles ---- */
+const HB_TILE_ORDER = ['hrv','rhr','sleep','weight','bp','bodyFat','spo2','vo2max','sleepScore','resp','steps'];
+function hbTile(key){
+  const m = HB_METRICS[key]; const cur = hbLatest(key, 60);
+  const sel = hbMetric===key ? ' sel' : '';
+  let vHtml, sub = '';
+  if(!cur){
+    vHtml = `<div class="v na">—</div>`; sub = m.man ? 'ยังไม่มีข้อมูล · กรอกได้ด้านบน' : 'ยังไม่มีข้อมูลจาก intervals.icu';
+  } else {
+    if(key==='bp'){
+      const dia = hbVal('bp', cur.date, HB_DIA);
+      vHtml = `<div class="v">${hbFmt(cur.v,0)}<span style="color:var(--ink-soft); font-weight:500">/</span>${dia?hbFmt(dia.v,0):'—'}<small>${m.unit}</small></div>`;
+      const st = hbBpClass(cur.v, dia?dia.v:null); sub = `<span style="color:${st.color}; font-weight:600">${st.label}</span>`;
+    } else if(key==='sleep'){
+      vHtml = `<div class="v">${hbFmtH(cur.v)}<small>ชม.</small></div>`;
+    } else vHtml = `<div class="v">${hbFmt(cur.v, m.dec)}<small>${m.unit}</small></div>`;
+    const base = hbStats(key, cur.date, 28, 1);
+    if(key!=='bp' && base && base.n>=4){
+      const diff = cur.v - base.mean; const pct = base.mean ? diff/base.mean*100 : 0;
+      const good = m.better==null || Math.abs(pct) < 2 ? null : (m.better==='up') === (diff>0);
+      const col = good==null ? 'var(--ink-soft)' : good ? 'var(--green-deep)' : 'var(--coral)';
+      const arrow = Math.abs(pct) < 2 ? '→' : diff>0 ? '↑' : '↓';
+      sub += `<span class="dl" style="color:${col}">${arrow} ${key==='sleep'?hbFmtH(Math.abs(diff)):hbFmt(Math.abs(diff), m.dec)}</span><span>เทียบเฉลี่ย 28 วัน</span>`;
+    }
+    if(key==='weight'){ const bmi = hbBmi(cur.v); if(bmi) sub += `<span>BMI ${hbFmt(bmi,1)}</span>`; }
+    sub += `<span style="margin-left:auto">${hbAgo(cur.date)}</span>`;
+  }
+  const src = cur ? (cur.src==='manual' ? 'กรอกเอง' : 'intervals') : '';
+  return `<button class="hb-tile${sel}" style="--tc:${m.color}" onclick="hbSetMetric('${key}')">
+    <div class="hd"><span class="ic">${m.icon}</span>${m.label}${src?`<span class="src">${src}</span>`:''}</div>
+    ${vHtml}<div class="sub">${sub}</div>${hbSpark(key, m.color)}</button>`;
+}
+function hbBpClass(s, d){
+  if(s==null) return {label:'—', color:'var(--ink-soft)'};
+  if(s>=140 || (d!=null && d>=90)) return {label:'สูงระดับ 2', color:'#D23F3F'};
+  if(s>=130 || (d!=null && d>=80)) return {label:'สูงระดับ 1', color:'#E07B26'};
+  if(s>=120) return {label:'สูงกว่าปกติเล็กน้อย', color:'#C99A1A'};
+  if(s<90) return {label:'ค่อนข้างต่ำ', color:'#3E8DFF'};
+  return {label:'ปกติ', color:'var(--green-deep)'};
+}
+function hbBmi(w){ const h = Number(hbBody().heightCm); return (w && h>=100 && h<=230) ? w/((h/100)*(h/100)) : null; }
+
+/* ---- big trend chart ---- */
+function hbTrendChart(){
+  const key = hbMetric, m = HB_METRICS[key]; const t = todayISO();
+  const from = addDays(t, -(hbRange-1));
+  const s = hbSeries(key, from, t);
+  const dia = key==='bp' ? hbSeries('bp', from, t, HB_DIA) : null;
+  const pts = s.filter(p=>p.v!=null);
+  if(pts.length < 2) return `<div class="muted" style="padding:30px 0; text-align:center">ยังมีข้อมูล${m.label}ไม่พอจะวาดกราฟในช่วง ${hbRange} วันนี้${m.man?' — กรอกค่าในกล่อง "บันทึกวันนี้" ด้านบนได้':' — ค่านี้มาจาก intervals.icu เท่านั้น (ต้องมีอุปกรณ์ที่ส่งค่านี้เข้า intervals.icu)'}</div>`;
+  const W = 760, H = 230, pl = 40, pr = 16, pt = 14, pb = 26;
+  const n = s.length, xw = (W-pl-pr)/Math.max(1,n-1); const X = i => pl + i*xw;
+  // rolling 7-day mean + rolling 60-day normal band (HRV/RHR)
+  const roll = s.map((p,i)=>{ const w = s.slice(Math.max(0,i-6), i+1).filter(q=>q.v!=null); return w.length>=2 ? w.reduce((a,q)=>a+q.v,0)/w.length : null; });
+  const band = m.base ? s.map(p=>{ const st = hbStats(key, p.date, 60, 1); return st && st.n>=14 ? [st.mean-st.sd, st.mean+st.sd] : null; }) : null;
+  let all = pts.map(p=>p.v); if(dia) all = all.concat(dia.filter(p=>p.v!=null).map(p=>p.v));
+  if(band) band.forEach(b=>{ if(b){ all.push(b[0], b[1]); } });
+  if(key==='sleep') all.push(6, 9);
+  if(key==='bp') all.push(80, 130);
+  let lo = Math.min(...all), hi = Math.max(...all); const pad = (hi-lo)*0.12 || 2; lo -= pad; hi += pad;
+  if(key==='sleep') lo = Math.max(0, lo);
+  const Y = v => pt + (H-pt-pb)*(1-(v-lo)/(hi-lo));
+  const step = (()=>{ const r = hi-lo; const raw = r/5; const p = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw/p; return (f<1.5?1:f<3.5?2:f<7.5?5:10)*p; })();
+  let grid = ''; for(let v=Math.ceil(lo/step)*step; v<=hi; v+=step){ grid += `<line x1="${pl}" x2="${W-pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#EBEEF5"/><text x="${pl-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" class="tr-ax">${key==='sleep'?hbFmtH(v):hbFmt(v, step<1?1:0)}</text>`; }
+  let xt = ''; const every = Math.max(1, Math.round(n/7));
+  for(let i=0;i<n;i+=every){ const d = new Date(s[i].date+'T00:00:00'); xt += `<text x="${X(i).toFixed(1)}" y="${H-8}" text-anchor="middle" class="tr-ax">${d.getDate()} ${thaiMonths[d.getMonth()]}</text>`; }
+  let bandSvg = '';
+  if(band){
+    const segs = []; let cur = [];
+    band.forEach((b,i)=>{ if(b) cur.push([i,b]); else if(cur.length){ segs.push(cur); cur=[]; } }); if(cur.length) segs.push(cur);
+    bandSvg = segs.filter(sg=>sg.length>1).map(sg=>{
+      const top = sg.map(([i,b],j)=>(j?'L':'M')+X(i).toFixed(1)+' '+Y(b[1]).toFixed(1)).join(' ');
+      const bot = sg.slice().reverse().map(([i,b])=>'L'+X(i).toFixed(1)+' '+Y(b[0]).toFixed(1)).join(' ');
+      return `<path d="${top} ${bot} Z" fill="${m.color}" opacity=".10"/>`; }).join('');
+  }
+  let refSvg = '';
+  if(key==='sleep') refSvg = `<rect x="${pl}" width="${W-pl-pr}" y="${Y(9).toFixed(1)}" height="${(Y(7)-Y(9)).toFixed(1)}" fill="#5B6EF5" opacity=".08"/><text x="${W-pr-4}" y="${(Y(9)+12).toFixed(1)}" text-anchor="end" class="tr-ax" style="fill:#5B6EF5">เป้า 7–9 ชม.</text>`;
+  if(key==='bp') refSvg = [[120,'120'],[80,'80']].map(([v])=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#C97B4A" stroke-dasharray="4 4" opacity=".55"/>`).join('');
+  const dots = (series, col) => series.map((p,i)=>p.v==null?'':`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${n>120?1.8:2.6}" fill="${p.src==='manual'?'#fff':col}" stroke="${col}" stroke-width="${p.src==='manual'?1.6:0}" opacity="${roll && key!=='bp' && key!=='weight'?.55:1}"/>`).join('');
+  const linePath = arr => { let d = '', pen = false; arr.forEach((v,i)=>{ if(v==null){ pen=false; return; } d += (pen?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '; pen = true; }); return d; };
+  const mainLine = key==='bp' || key==='weight' ? linePath(s.map(p=>p.v)) : linePath(roll);
+  const diaLine = dia ? `<path d="${linePath(dia.map(p=>p.v))}" fill="none" stroke="#E0A87F" stroke-width="2"/>${dots(dia,'#E0A87F')}` : '';
+  const hov = s.map((p,i)=>{
+    const d = new Date(p.date+'T00:00:00');
+    let tip = `<b>${thaiDays[d.getDay()]} ${d.getDate()} ${thaiMonths[d.getMonth()]}</b><br>`;
+    if(key==='bp') tip += p.v!=null ? `${hbFmt(p.v,0)}/${dia[i].v!=null?hbFmt(dia[i].v,0):'—'} mmHg` : 'ไม่มีข้อมูล';
+    else tip += p.v!=null ? `${m.label} <b>${key==='sleep'?hbFmtH(p.v)+' ชม.':hbFmt(p.v,m.dec)+' '+m.unit}</b>${p.src==='manual'?' (กรอกเอง)':''}` : 'ไม่มีข้อมูล';
+    if(roll[i]!=null && key!=='bp') tip += `<br>เฉลี่ย 7 วัน ${key==='sleep'?hbFmtH(roll[i]):hbFmt(roll[i],m.dec)}`;
+    if(band && band[i]) tip += `<br>ช่วงปกติ ${hbFmt(band[i][0],0)}–${hbFmt(band[i][1],0)}`;
+    return `<rect class="tr-hov" x="${(X(i)-xw/2).toFixed(1)}" y="${pt}" width="${Math.max(2,xw).toFixed(1)}" height="${H-pt-pb}" data-tip="${tipAttr(tip)}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="tr-svg" role="img" aria-label="กราฟ ${escapeHtml(m.label)}">
+    ${grid}${refSvg}${bandSvg}
+    <path d="${mainLine}" fill="none" stroke="${m.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots(s, m.color)}${diaLine}${xt}${hov}</svg>`;
+}
+function hbTrendPanel(){
+  const m = HB_METRICS[hbMetric]; const t = todayISO();
+  const st = hbStats(hbMetric, t, hbRange, 0);
+  const first = hbSeries(hbMetric, addDays(t,-(hbRange-1)), t).find(p=>p.v!=null);
+  const last = hbLatest(hbMetric, hbRange);
+  const fmtv = v => hbMetric==='sleep' ? hbFmtH(v) : hbFmt(v, m.dec);
+  const legend = hbMetric==='bp'
+    ? `<span><i style="background:${m.color}"></i>ตัวบน</span><span><i style="background:#E0A87F"></i>ตัวล่าง</span><span><i class="dash"></i>เส้น 120/80</span>`
+    : `<span><i style="background:${m.color}"></i>${hbMetric==='weight'?'ค่ารายวัน':'เฉลี่ย 7 วัน'}</span>${m.base?`<span><i style="background:${m.color}; opacity:.25; height:8px"></i>ช่วงปกติของคุณ (60 วัน ±1 SD)</span>`:''}<span><i style="background:#fff; border:1.5px solid ${m.color}; width:8px; height:8px; border-radius:50%"></i>กรอกเอง</span>`;
+  return `<div class="panel">
+    <div class="ribbon-head" style="flex-wrap:wrap; gap:10px">
+      <h3 style="margin:0">แนวโน้ม · ${escapeHtml(m.label)}</h3>
+      <div class="hb-seg">${[30,90,180,365].map(r=>`<button class="${hbRange===r?'on':''}" onclick="hbSetRange(${r})">${r===365?'1 ปี':r+' วัน'}</button>`).join('')}</div>
+    </div>
+    <div class="hb-chips">${HB_TILE_ORDER.map(k=>`<button class="hb-chip ${hbMetric===k?'on':''}" onclick="hbSetMetric('${k}')"><i style="background:${HB_METRICS[k].color}"></i>${HB_METRICS[k].label}</button>`).join('')}</div>
+    ${st ? `<div class="hb-stats">
+      <div>เฉลี่ยช่วงนี้<b>${fmtv(st.mean)} <small style="font-size:10px;color:var(--ink-soft)">${hbMetric==='sleep'?'ชม.':m.unit}</small></b></div>
+      <div>ต่ำสุด–สูงสุด<b>${fmtv(Math.min(...hbSeries(hbMetric, addDays(t,-(hbRange-1)), t).filter(p=>p.v!=null).map(p=>p.v)))}–${fmtv(Math.max(...hbSeries(hbMetric, addDays(t,-(hbRange-1)), t).filter(p=>p.v!=null).map(p=>p.v)))}</b></div>
+      ${first && last && first.date!==last.date ? `<div>เปลี่ยนแปลง<b>${(last.v-first.v)>=0?'+':'−'}${fmtv(Math.abs(last.v-first.v))}</b></div>` : ''}
+      <div>จำนวนวันที่มีข้อมูล<b>${st.n}</b></div></div>` : ''}
+    <div class="tr-legend" style="margin-top:8px">${legend}</div>
+    ${hbTrendChart()}
+    <div class="muted" style="margin-top:6px">${hbMetricNote(hbMetric)}</div>
+  </div>`;
+}
+function hbMetricNote(k){
+  return ({
+    hrv:'HRV ดูแนวโน้มเทียบกับช่วงปกติของตัวเองเท่านั้น (คนละคนเทียบกันไม่ได้) — ต่ำกว่าแถบหลายวันติด = ร่างกายเครียด/ฟื้นตัวไม่ทัน, สูงขึ้นช้าๆ ระยะยาว = ฟิตขึ้น',
+    rhr:'ชีพจรขณะพักสูงกว่าปกติ ≥5 bpm หลายเช้าติดกัน มักมาก่อนอาการป่วย/ซ้อมเกิน — ลดความหนักก่อน',
+    sleep:'นักวิ่งระยะไกลควรนอน 7–9 ชม. ช่วงซ้อมหนัก/ก่อนแข่งเพิ่มอีกได้ — ค่าจากนาฬิกาอาจคลาดเคลื่อน 20–40 นาที',
+    sleepScore:'คะแนนการนอนคำนวณโดยอุปกรณ์/แอปต้นทาง (Suunto ฯลฯ) ส่งผ่าน intervals.icu',
+    weight:'ชั่งตอนเช้าหลังเข้าห้องน้ำ ก่อนกิน/ดื่ม จะเทียบกันได้แม่นที่สุด — ดูเส้นแนวโน้ม ไม่ใช่วันต่อวัน (ผันผวนได้ ±1 kg จากน้ำ)',
+    bodyFat:'ค่าจากเครื่องชั่งวัดไขมัน (BIA) ผันผวนตามความชุ่มชื้น — ใช้ดูแนวโน้มมากกว่าค่าสัมบูรณ์',
+    bp:'เกณฑ์ ACC/AHA: <120/<80 ปกติ · 120–129/<80 สูงเล็กน้อย · 130–139 หรือ 80–89 สูงระดับ 1 · ≥140 หรือ ≥90 สูงระดับ 2 — วัดหลังนั่งพัก 5 นาที',
+    spo2:'ปกติ 95–100% · ต่ำกว่า 94% ซ้ำๆ ขณะพักควรปรึกษาแพทย์ (บนที่สูงจะต่ำลงได้ตามปกติ)',
+    resp:'อัตราการหายใจขณะหลับ — เพิ่มขึ้นผิดปกติมักเกิดก่อน/ระหว่างป่วย',
+    vo2max:'VO₂max ประมาณการจากนาฬิกา/intervals.icu — ใช้ดูทิศทาง ไม่ใช่ค่าจากห้องแล็บ',
+    steps:'ก้าวเดินรวมทั้งวัน (ถ้าอุปกรณ์ส่งเข้า intervals.icu)'
+  })[k] || '';
+}
+
+/* ---- sleep nights + body composition ---- */
+function hbSleepPanel(){
+  const t = todayISO(); const s = hbSeries('sleep', addDays(t,-13), t);
+  const have = s.filter(p=>p.v!=null);
+  if(!have.length) return `<div class="panel"><h3>การนอน 14 คืนล่าสุด</h3><div class="muted">ยังไม่มีข้อมูลการนอน — sync intervals.icu (ถ้านาฬิกาส่งข้อมูลการนอน) หรือกรอก "นอนกี่ชั่วโมง" เองในกล่องบันทึกวันนี้</div></div>`;
+  const W = 360, H = 150, pl = 6, pr = 6, pt = 14, pb = 22; const bw = (W-pl-pr)/14;
+  const max = Math.max(10, ...have.map(p=>p.v));
+  const Y = v => pt + (H-pt-pb)*(1-v/max);
+  const avg = have.reduce((a,p)=>a+p.v,0)/have.length;
+  const debt = s.reduce((a,p)=>a + (p.v!=null ? Math.max(0, 7.5-p.v) : 0), 0);
+  const bars = s.map((p,i)=>{
+    const d = new Date(p.date+'T00:00:00'); const x = pl + i*bw + bw*0.18, w = bw*0.64;
+    const col = p.v==null ? '#EBEEF5' : p.v>=7 ? '#5B6EF5' : p.v>=6 ? '#F5A623' : '#FF6B8A';
+    const h = p.v==null ? 4 : (H-pb) - Y(p.v);
+    const y = p.v==null ? H-pb-4 : Y(p.v);
+    const tip = `<b>คืนก่อน ${thaiDays[d.getDay()]} ${d.getDate()} ${thaiMonths[d.getMonth()]}</b><br>${p.v!=null ? hbFmtH(p.v)+' ชม.' : 'ไม่มีข้อมูล'}`;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(2,h).toFixed(1)}" rx="4" fill="${col}"/>
+      <text x="${(x+w/2).toFixed(1)}" y="${H-7}" text-anchor="middle" class="tr-ax">${thaiDays[d.getDay()].replace('.','')}</text>
+      <rect class="tr-hov" x="${(pl+i*bw).toFixed(1)}" y="${pt}" width="${bw.toFixed(1)}" height="${H-pt-pb}" data-tip="${tipAttr(tip)}"/>`;
+  }).join('');
+  return `<div class="panel"><div class="ribbon-head"><h3 style="margin:0">การนอน 14 คืนล่าสุด</h3><span>เฉลี่ย <b class="mono" style="color:var(--ink)">${hbFmtH(avg)}</b> ชม.</span></div>
+    <svg viewBox="0 0 ${W} ${H}" class="tr-svg"><line x1="${pl}" x2="${W-pr}" y1="${Y(7).toFixed(1)}" y2="${Y(7).toFixed(1)}" stroke="#5B6EF5" stroke-dasharray="4 4" opacity=".6"/>
+    <text x="${W-pr}" y="${(Y(7)-4).toFixed(1)}" text-anchor="end" class="tr-ax" style="fill:#5B6EF5">7 ชม.</text>${bars}</svg>
+    <div class="hb-kv"><div><div class="k">คืนที่ ≥ 7 ชม.</div><div class="vv">${have.filter(p=>p.v>=7).length}/${have.length}</div></div>
+      <div><div class="k">นอนสะสมขาด*</div><div class="vv" style="color:${debt>7?'var(--coral)':'var(--ink)'}">${hbFmtH(debt)}</div><div class="n">เทียบเป้า 7:30/คืน</div></div>
+      <div><div class="k">สั้นสุด</div><div class="vv">${hbFmtH(Math.min(...have.map(p=>p.v)))}</div></div></div>
+  </div>`;
+}
+function hbBodyPanel(){
+  const b = hbBody(); const w = hbLatest('weight', 365); const bf = hbLatest('bodyFat', 365);
+  const t = todayISO();
+  const ch = days => { if(!w) return null; const old = hbSeries('weight', addDays(t,-days-7), addDays(t,-days)).filter(p=>p.v!=null); return old.length ? w.v - old[old.length-1].v : null; };
+  const c30 = ch(30), c90 = ch(90);
+  const bmi = w ? hbBmi(w.v) : null;
+  // Asian/Thai BMI cut-offs (WHO Asia-Pacific)
+  const segs = [[15,18.5,'#9BC3FF','ผอม'],[18.5,23,'#4FD1A5','ปกติ'],[23,25,'#FFC36B','ท้วม'],[25,30,'#FF9B6B','อ้วนระดับ 1'],[30,35,'#FF6B8A','อ้วนระดับ 2']];
+  const bmiCls = bmi==null ? null : (segs.find(s=>bmi>=s[0] && bmi<s[1]) || (bmi<15?segs[0]:segs[4]));
+  const lastWaist = (()=>{ for(let i=0;i<365;i++){ const lg = b.log[addDays(t,-i)]; if(lg && hbNum(lg.waist,40,200)) return {v:Number(lg.waist), date:addDays(t,-i)}; } return null; })();
+  const whtr = lastWaist && Number(b.heightCm) ? lastWaist.v/Number(b.heightCm) : null;
+  const fmtCh = v => v==null ? '—' : (v>0?'+':v<0?'−':'')+hbFmt(Math.abs(v),1);
+  return `<div class="panel"><div class="ribbon-head" style="flex-wrap:wrap; gap:8px"><h3 style="margin:0">องค์ประกอบร่างกาย</h3>
+      <label class="muted" style="display:flex; align-items:center; gap:6px">ส่วนสูง <input type="number" id="hbHeight" value="${b.heightCm||''}" placeholder="ซม." min="100" max="230" style="width:76px; border:1px solid var(--line); border-radius:9px; padding:5px 8px; font-family:inherit; background:var(--bg)" onchange="hbSetHeight(this.value)"> ซม.</label></div>
+    ${bmi ? `<div class="hb-scale-wrap"><div class="hb-mark" style="left:${hbClamp((bmi-15)/20*100,1,99)}%"><b>BMI ${hbFmt(bmi,1)}</b><i></i></div>
+      <div class="hb-scale">${segs.map(s=>`<span style="width:${(s[1]-s[0])/20*100}%; background:${s[2]}"></span>`).join('')}</div>
+      <div class="hb-scale-lb"><span>15</span><span>18.5</span><span>23</span><span>25</span><span>30</span><span>35</span></div></div>
+      <div class="muted" style="margin-top:4px">อยู่ในช่วง <b style="color:var(--ink)">${bmiCls[3]}</b> (เกณฑ์คนเอเชีย) — นักกีฬาที่มีกล้ามเนื้อมาก BMI อาจสูงกว่าความจริงได้</div>`
+      : `<div class="muted" style="padding:6px 0 2px">${w ? 'ใส่ส่วนสูงด้านบนเพื่อคำนวณ BMI' : 'ยังไม่มีน้ำหนัก — กรอกในกล่อง "บันทึกวันนี้"'}</div>`}
+    <div class="hb-kv">
+      <div><div class="k">น้ำหนักล่าสุด</div><div class="vv">${w?hbFmt(w.v,1):'—'}<small style="font-size:10px; color:var(--ink-soft)"> kg</small></div><div class="n">${w?hbAgo(w.date):''}</div></div>
+      <div><div class="k">เปลี่ยน 30 / 90 วัน</div><div class="vv" style="font-size:14px">${fmtCh(c30)} / ${fmtCh(c90)}</div><div class="n">kg</div></div>
+      <div><div class="k">ไขมัน</div><div class="vv">${bf?hbFmt(bf.v,1)+'%':'—'}</div><div class="n">${bf&&w?'มวลไร้ไขมัน '+hbFmt(w.v*(1-bf.v/100),1)+' kg':''}</div></div>
+      <div><div class="k">รอบเอว</div><div class="vv">${lastWaist?hbFmt(lastWaist.v,0):'—'}<small style="font-size:10px; color:var(--ink-soft)"> ซม.</small></div><div class="n">${lastWaist?hbAgo(lastWaist.date):''}</div></div>
+      <div><div class="k">เอว ÷ ส่วนสูง</div><div class="vv" style="color:${whtr==null?'var(--ink)':whtr<0.5?'var(--green-deep)':'var(--coral)'}">${whtr?hbFmt(whtr,2):'—'}</div><div class="n">ควร &lt; 0.5</div></div>
+      <div><div class="k">VO₂max</div><div class="vv">${(()=>{const v=hbLatest('vo2max',365); return v?hbFmt(v.v,1):'—';})()}</div><div class="n">ml/kg/min</div></div>
+    </div></div>`;
+}
+
+/* ---- daily log form ---- */
+function hbLogForm(){
+  const b = hbBody(); const d = hbEditDate || todayISO(); const lg = b.log[d] || {};
+  const w = (state.running.wellness||{})[d] || {};
+  const f = (id, label, val, ph, step) => `<label class="hb-f"><span>${label}</span><input type="number" inputmode="decimal" step="${step||'any'}" id="hbF_${id}" value="${val!=null?escapeHtml(val):''}" placeholder="${ph||''}"></label>`;
+  const icuPh = (v, dec) => v!=null && Number.isFinite(Number(v)) ? 'icu: '+hbFmt(Number(v), dec||0) : '';
+  const rate = (k, label, faces) => `<div class="hb-rate"><span class="lb">${label}</span><div class="opts" data-k="${k}">${faces.map((fc,i)=>`<button type="button" class="${Number(lg[k])===i+1?'on':''}" onclick="hbPickRate(this,'${k}',${i+1})" title="${i+1}/5">${fc}</button>`).join('')}</div><input type="hidden" id="hbF_${k}" value="${lg[k]||''}"></div>`;
+  const hasEntry = Object.keys(lg).length > 0;
+  return `<div class="panel hb-log" style="margin-bottom:0">
+    <h3><span>${d===todayISO()?'บันทึกวันนี้':'บันทึกของ '+fmtDateShort(d)}${hasEntry?' <span class="pill pill-teal" style="margin-left:6px">มีข้อมูลแล้ว</span>':''}</span>
+      <input type="date" value="${d}" max="${todayISO()}" style="max-width:150px" onchange="hbEditDate=this.value||null; render()"></h3>
+    <div class="hb-group">ร่างกาย</div>
+    <div class="hb-fgrid">${f('weight','น้ำหนัก (kg)', lg.weight, icuPh(w.weight,1))}${f('bodyFat','ไขมัน (%)', lg.bodyFat, icuPh(w.bodyFat,1))}${f('waist','รอบเอว (ซม.)', lg.waist, '')}</div>
+    <div class="hb-group">ความดัน & ออกซิเจน</div>
+    <div class="hb-fgrid">${f('sys','ตัวบน (mmHg)', lg.sys, icuPh(w.systolic))}${f('dia','ตัวล่าง (mmHg)', lg.dia, icuPh(w.diastolic))}${f('spo2','SpO₂ (%)', lg.spo2, icuPh(w.spO2))}</div>
+    <div class="hb-group">วันนี้รู้สึกยังไง</div>
+    ${rate('energy','พลังงาน',['😫','😕','😐','🙂','⚡'])}
+    ${rate('soreness','ปวดเมื่อย',['😀','🙂','😐','😣','🥵'])}
+    ${rate('stress','ความเครียด',['😌','🙂','😐','😟','🤯'])}
+    ${rate('mood','อารมณ์',['😞','😕','😐','🙂','😄'])}
+    <details class="hb-more" ${(lg.rhr||lg.hrv||lg.sleepH||lg.vo2max)?'open':''}><summary>▸ ค่าที่ปกติดึงจาก intervals.icu — กรอกทับได้ถ้านาฬิกาไม่ได้วัด/วัดผิด</summary>
+      <div class="hb-fgrid">${f('rhr','ชีพจรขณะพัก (bpm)', lg.rhr, icuPh(w.restingHR))}${f('hrv','HRV (ms)', lg.hrv, icuPh(w.hrv||w.hrvSDNN))}${f('sleepH','นอน (ชม. เช่น 7.5)', lg.sleepH, w.sleepSecs?'icu: '+hbFmtH(w.sleepSecs/3600):'')}${f('vo2max','VO₂max', lg.vo2max, icuPh(w.vo2max,1))}</div>
+    </details>
+    <label class="hb-f" style="margin-bottom:10px"><span>โน้ต (เช่น เป็นหวัด, เจ็บน่องซ้าย, กินยา)</span><input type="text" id="hbF_note" value="${escapeHtml(lg.note||'')}" maxlength="200"></label>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+      <button class="btn" style="background:linear-gradient(135deg,var(--rose),#E0558F); box-shadow:0 4px 12px -6px rgba(236,111,160,.6)" onclick="hbSaveLog()">✓ บันทึก</button>
+      ${hasEntry ? `<button class="btn btn-ghost btn-sm" onclick="hbDelLog('${d}')">ลบบันทึกวันนี้</button>` : ''}
+      <span class="muted" id="hbLogMsg"></span>
+    </div></div>`;
+}
+function hbPickRate(btn, k, v){
+  const inp = document.getElementById('hbF_'+k); if(!inp) return;
+  const same = Number(inp.value)===v; inp.value = same ? '' : v;
+  btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  if(!same) btn.classList.add('on');
+}
+const HB_LOG_FIELDS = {weight:[20,300], bodyFat:[2,70], waist:[40,200], sys:[60,250], dia:[30,160], spo2:[70,100], rhr:[25,130], hrv:[5,300], sleepH:[0.5,16], vo2max:[15,95], energy:[1,5], soreness:[1,5], stress:[1,5], mood:[1,5]};
+function hbSaveLog(){
+  const b = hbBody(); const d = hbEditDate || todayISO(); const entry = {}; const bad = [];
+  Object.entries(HB_LOG_FIELDS).forEach(([k,[lo,hi]])=>{
+    const el = document.getElementById('hbF_'+k); if(!el) return; const raw = String(el.value).trim(); if(raw==='') return;
+    const v = hbNum(raw, lo, hi); if(v==null) bad.push(k); else entry[k] = v;
+  });
+  const note = (document.getElementById('hbF_note')||{}).value; if(note && note.trim()) entry.note = note.trim();
+  const msg = document.getElementById('hbLogMsg');
+  if(bad.length){ if(msg) msg.innerHTML = `<span style="color:var(--coral)">ค่าบางช่องดูผิดปกติ — ตรวจอีกครั้ง</span>`; return; }
+  if(Object.keys(entry).length) b.log[d] = entry; else delete b.log[d];
+  saveState(); render();
+  const m2 = document.getElementById('hbLogMsg'); if(m2) m2.innerHTML = `<span style="color:var(--green-deep)">บันทึกแล้ว ✓</span>`;
+}
+function hbDelLog(d){ if(!confirm('ลบบันทึกของ '+fmtDateShort(d)+' ?')) return; delete hbBody().log[d]; saveState(); render(); }
+function hbSetMetric(k){ hbMetric = k; render(); }
+function hbSetRange(r){ hbRange = r; render(); }
+function hbSetTab(t){ hbTab = t; render(); }
+function hbSetHeight(v){ const n = hbNum(v, 100, 230); hbBody().heightCm = n; saveState(); render(); }
+async function hbSync(){
+  if(!state.settings.intervalsApiKey){ hbSyncMsg = '<span style="color:var(--coral)">ยังไม่ได้ใส่ intervals.icu API key — ไปที่หน้า "ตั้งค่า" ก่อน</span>'; render(); return; }
+  const before = state.running.lastSync; hbSyncMsg = 'กำลัง sync…'; render();
+  await syncIntervals();
+  hbSyncMsg = state.running.lastSync !== before ? '<span style="color:var(--green-deep)">Sync สำเร็จ ✓</span>' : '<span style="color:var(--coral)">Sync ไม่สำเร็จ — ลองกด Sync ที่หน้า "กิจกรรม" เพื่อดูสาเหตุ</span>';
+  if(currentView==='health') render();
+}
+
+/* ---- log history ---- */
+function hbHistoryPanel(){
+  const b = hbBody(); const dates = Object.keys(b.log).sort().reverse().slice(0, 21);
+  if(!dates.length) return '';
+  const face = (k,v) => v ? ({energy:['😫','😕','😐','🙂','⚡'], soreness:['😀','🙂','😐','😣','🥵'], stress:['😌','🙂','😐','😟','🤯'], mood:['😞','😕','😐','🙂','😄']})[k][v-1] : '';
+  return `<div class="panel"><h3>บันทึกที่กรอกเอง (ล่าสุด ${dates.length} วัน)</h3><div class="hb-scroll"><table class="hb-table">
+    <tr><th>วันที่</th><th>น้ำหนัก</th><th>ไขมัน</th><th>เอว</th><th>ความดัน</th><th>SpO₂</th><th>ความรู้สึก</th><th>โน้ต</th><th></th></tr>
+    ${dates.map(d=>{ const l = b.log[d]; return `<tr><td>${fmtDate(d)}</td><td class="mono">${l.weight!=null?hbFmt(l.weight,1):''}</td><td class="mono">${l.bodyFat!=null?hbFmt(l.bodyFat,1)+'%':''}</td><td class="mono">${l.waist!=null?hbFmt(l.waist,0):''}</td>
+      <td class="mono">${l.sys!=null?hbFmt(l.sys,0)+'/'+(l.dia!=null?hbFmt(l.dia,0):'—'):''}</td><td class="mono">${l.spo2!=null?hbFmt(l.spo2,0)+'%':''}</td>
+      <td>${HB_RATE_KEYS.map(k=>face(k,l[k])).join(' ')}</td><td style="white-space:normal; min-width:120px; color:var(--ink-soft)">${escapeHtml(l.note||'')}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="hbEditDate='${d}'; render(); window.scrollTo({top:0, behavior:'smooth'})">✎</button> <button class="task-del" onclick="hbDelLog('${d}')">✕</button></td></tr>`; }).join('')}
+  </table></div></div>`;
+}
+
+/* ---- lab results (ผลตรวจเลือด/ตรวจสุขภาพประจำปี) ---- */
+// General adult reference ranges — labs differ; every entry stores its own lo/hi (editable when adding).
+const HB_LABS = [
+  {id:'fbs', name:'น้ำตาลในเลือด (FBS)', unit:'mg/dL', lo:70, hi:99},
+  {id:'hba1c', name:'น้ำตาลสะสม (HbA1c)', unit:'%', lo:4, hi:5.6},
+  {id:'chol', name:'คอเลสเตอรอลรวม', unit:'mg/dL', lo:null, hi:199},
+  {id:'ldl', name:'LDL (ไขมันเลว)', unit:'mg/dL', lo:null, hi:129},
+  {id:'hdl', name:'HDL (ไขมันดี)', unit:'mg/dL', lo:40, hi:null},
+  {id:'tg', name:'ไตรกลีเซอไรด์', unit:'mg/dL', lo:null, hi:149},
+  {id:'cr', name:'ครีอะตินีน (ไต)', unit:'mg/dL', lo:0.6, hi:1.3},
+  {id:'egfr', name:'eGFR (การทำงานของไต)', unit:'mL/min', lo:90, hi:null},
+  {id:'uric', name:'กรดยูริก', unit:'mg/dL', lo:2.5, hi:7.2},
+  {id:'ast', name:'SGOT / AST (ตับ)', unit:'U/L', lo:null, hi:40},
+  {id:'alt', name:'SGPT / ALT (ตับ)', unit:'U/L', lo:null, hi:41},
+  {id:'hb', name:'ฮีโมโกลบิน (Hb)', unit:'g/dL', lo:12, hi:17},
+  {id:'ferritin', name:'เฟอร์ริติน (ธาตุเหล็กสะสม)', unit:'ng/mL', lo:30, hi:300},
+  {id:'vitd', name:'วิตามินดี (25-OH)', unit:'ng/mL', lo:30, hi:100},
+  {id:'tsh', name:'TSH (ไทรอยด์)', unit:'mIU/L', lo:0.4, hi:4.0}
+];
+function hbLabStatus(e){
+  const v = Number(e.value);
+  if(e.lo!=null && v < e.lo) return {t:'ต่ำ', c:'#3E8DFF', bg:'var(--blue-pale)'};
+  if(e.hi!=null && v > e.hi) return {t:'สูง', c:'#D23F3F', bg:'var(--coral-pale)'};
+  return {t:'ปกติ', c:'#2F8F55', bg:'var(--green-pale)'};
+}
+function hbLabsPanel(){
+  const b = hbBody(); const byTest = {};
+  b.labs.forEach(e=>{ (byTest[e.name] = byTest[e.name] || []).push(e); });
+  const names = Object.keys(byTest).sort((a,c)=>{ const ia = HB_LABS.findIndex(x=>x.name===a), ic = HB_LABS.findIndex(x=>x.name===c); return (ia<0?99:ia)-(ic<0?99:ic) || a.localeCompare(c); });
+  const flagged = names.filter(n=>{ const l = byTest[n].sort((x,y)=>y.date.localeCompare(x.date))[0]; return hbLabStatus(l).t!=='ปกติ'; }).length;
+  const rows = names.map(n=>{
+    const list = byTest[n].sort((x,y)=>y.date.localeCompare(x.date)); const e = list[0], prev = list[1]; const st = hbLabStatus(e);
+    const lo = e.lo, hi = e.hi; const v = Number(e.value);
+    const sMin = lo!=null ? lo*0.6 : (hi!=null ? 0 : v*0.5), sMax = hi!=null ? hi*1.4 : (lo!=null ? lo*2.2 : v*1.5);
+    const pos = x => hbClamp((x-sMin)/(sMax-sMin)*100, 2, 98);
+    const okL = lo!=null ? pos(lo) : 0, okR = hi!=null ? pos(hi) : 100;
+    const delta = prev ? v - Number(prev.value) : null;
+    return `<div class="hb-lab-row">
+      <div class="nm">${escapeHtml(n)}<small>${fmtDateShort(e.date)}</small></div>
+      <div class="val">${hbFmt(v, v%1?1:0)}<small>${escapeHtml(e.unit||'')}</small></div>
+      <div class="rng"><div class="hb-range"><div class="ok" style="left:${okL}%; right:${100-okR}%"></div><div class="dot" style="left:${pos(v)}%; background:${st.c}"></div></div>
+        <div class="muted" style="font-size:10px; margin-top:3px">ปกติ ${lo!=null&&hi!=null?lo+'–'+hi:lo!=null?'≥ '+lo:'≤ '+hi}</div></div>
+      <div class="prev muted">${prev?`ครั้งก่อน ${hbFmt(Number(prev.value), Number(prev.value)%1?1:0)} <b style="color:var(--ink)">(${delta>=0?'+':''}${hbFmt(delta, Math.abs(delta)%1?1:0)})</b><br>${fmtDateShort(prev.date)}`:'ครั้งแรก'}</div>
+      <div><span class="pill" style="background:${st.bg}; color:${st.c}">${st.t}</span></div>
+      <details class="hb-hist"><summary>▸ ประวัติ ${list.length} ครั้ง</summary>${list.map(x=>`<div class="h"><span style="width:110px">${fmtDateShort(x.date)}</span><b class="mono">${escapeHtml(String(x.value))}</b> ${escapeHtml(x.unit||'')} <span class="pill" style="background:${hbLabStatus(x).bg}; color:${hbLabStatus(x).c}">${hbLabStatus(x).t}</span><button class="task-del" onclick="hbDelLab('${x.id}')">✕</button></div>`).join('')}</details>
+    </div>`;
+  }).join('');
+  return `<div class="panel">
+    <div class="ribbon-head" style="flex-wrap:wrap; gap:8px"><h3 style="margin:0">ผลตรวจเลือด / ตรวจสุขภาพประจำปี</h3>
+      ${names.length ? `<span>${names.length} รายการ · ${flagged ? `<b style="color:var(--coral)">${flagged} ค่านอกเกณฑ์</b>` : '<b style="color:var(--green-deep)">ปกติทั้งหมด</b>'}</span>` : ''}</div>
+    ${names.length ? `<div class="hb-lab-row hb-lab-head" style="padding-top:0"><div>รายการ</div><div>ค่าล่าสุด</div><div class="rng">เทียบเกณฑ์</div><div class="prev">ครั้งก่อน</div><div></div></div>${rows}` : '<div class="muted" style="margin-bottom:10px">ยังไม่มีผลตรวจ — เพิ่มจากใบผลตรวจสุขภาพประจำปีได้ด้านล่าง ระบบจะเทียบกับเกณฑ์และครั้งก่อนให้</div>'}
+    <div class="form-row" style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--line)">
+      <select id="hbLabTest" onchange="hbLabPreset()" style="min-width:200px">${HB_LABS.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}<option value="custom">+ อื่นๆ (ตั้งชื่อเอง)</option></select>
+      <input type="text" id="hbLabName" placeholder="ชื่อรายการ" style="display:none">
+      <input type="date" id="hbLabDate" value="${todayISO()}" style="max-width:150px">
+      <input type="number" step="any" id="hbLabVal" placeholder="ค่าที่ได้" style="max-width:110px">
+      <input type="text" id="hbLabUnit" value="${HB_LABS[0].unit}" placeholder="หน่วย" style="max-width:86px; min-width:70px">
+      <input type="number" step="any" id="hbLabLo" value="${HB_LABS[0].lo??''}" placeholder="ต่ำสุด" title="ค่าปกติต่ำสุด" style="max-width:80px; min-width:70px">
+      <input type="number" step="any" id="hbLabHi" value="${HB_LABS[0].hi??''}" placeholder="สูงสุด" title="ค่าปกติสูงสุด" style="max-width:80px; min-width:70px">
+      <button class="btn btn-sm" onclick="hbAddLab()">+ เพิ่มผล</button>
+    </div>
+    <div class="muted">เกณฑ์ที่ตั้งไว้ให้เป็นค่าอ้างอิงผู้ใหญ่ทั่วไป — ถ้าใบผลแล็บระบุช่วงปกติต่างไป ให้แก้ช่อง ต่ำสุด/สูงสุด ตามใบผลก่อนกดเพิ่ม · ไม่ใช่คำวินิจฉัย ค่าที่ผิดปกติควรปรึกษาแพทย์ · นักวิ่งระยะไกลควรดูเฟอร์ริตินและ Hb เป็นพิเศษ (ขาดธาตุเหล็กพบบ่อย)</div>
+  </div>`;
+}
+function hbLabPreset(){
+  const id = document.getElementById('hbLabTest').value; const p = HB_LABS.find(x=>x.id===id);
+  document.getElementById('hbLabName').style.display = p ? 'none' : '';
+  document.getElementById('hbLabUnit').value = p ? p.unit : '';
+  document.getElementById('hbLabLo').value = p && p.lo!=null ? p.lo : '';
+  document.getElementById('hbLabHi').value = p && p.hi!=null ? p.hi : '';
+}
+function hbAddLab(){
+  const id = document.getElementById('hbLabTest').value; const p = HB_LABS.find(x=>x.id===id);
+  const name = p ? p.name : document.getElementById('hbLabName').value.trim();
+  const value = Number(document.getElementById('hbLabVal').value);
+  const date = document.getElementById('hbLabDate').value || todayISO();
+  if(!name || document.getElementById('hbLabVal').value==='' || !Number.isFinite(value)) return;
+  const num = idd => { const r = document.getElementById(idd).value; return r==='' ? null : (Number.isFinite(Number(r)) ? Number(r) : null); };
+  hbBody().labs.push({id:uid(), name, date, value, unit:document.getElementById('hbLabUnit').value.trim(), lo:num('hbLabLo'), hi:num('hbLabHi')});
+  saveState(); render();
+}
+function hbDelLab(id){ const b = hbBody(); b.labs = b.labs.filter(x=>x.id!==id); saveState(); render(); }
+
+/* ---- page ---- */
+function renderHealthBody(){
+  const r = hbReadiness();
+  const lastSync = state.running.lastSync;
+  const hasWell = Object.keys(state.running.wellness||{}).length > 0;
+  const hero = r ? `<div class="hb-ready">
+      <div class="hb-ready-top">
+        <div class="hb-ring">${hbRing(r.score, r.color)}<div class="c"><div class="n">${r.score}</div><div class="u">/ 100</div></div></div>
+        <div style="flex:1; min-width:180px"><h2>ความพร้อมของร่างกายวันนี้</h2><div class="lab" style="color:${r.color}">${r.label}</div><div class="adv">${escapeHtml(r.adv)}</div></div>
+      </div>
+      <div class="hb-comps">${r.comps.map(c=>{ const col = c.score>=70?'#4FE3B5':c.score>=50?'#9BB8FF':c.score>=35?'#FFC36B':'#FF8FA6';
+        return `<div class="hb-comp"><div class="t"><span>${c.label}</span><b>${Math.round(c.score)}</b></div><div class="tr"><i style="width:${Math.round(c.score)}%; background:${col}"></i></div><div class="d">${escapeHtml(c.detail)}</div></div>`; }).join('')}</div>
+      ${r.partial ? `<div class="hb-ready-empty" style="font-size:11px; opacity:.7; margin-top:10px">คำนวณจากข้อมูลเท่าที่มี — HRV/ชีพจรขณะพักต้องมีข้อมูลย้อนหลัง ≥ 10 วันถึงจะนับรวม</div>` : ''}
+    </div>`
+    : `<div class="hb-ready"><div class="hb-ready-top"><div class="hb-ring">${hbRing(0,'#fff')}<div class="c"><div class="n">–</div><div class="u">/ 100</div></div></div>
+        <div style="flex:1; min-width:180px"><h2>ความพร้อมของร่างกายวันนี้</h2><div class="lab">ยังไม่มีข้อมูล</div><div class="adv">ต้องมี HRV / ชีพจรขณะพัก / การนอน จาก intervals.icu อย่างน้อย 10 วัน หรือบันทึกความรู้สึกวันนี้ทางขวา</div></div></div>
+        <div class="hb-ready-empty"><button class="btn btn-sm" style="background:rgba(255,255,255,.16); box-shadow:none" onclick="hbSync()">⟳ Sync intervals.icu</button> <span style="font-size:11.5px; opacity:.8; margin-left:6px">${hbSyncMsg}</span></div></div>`;
+  return `
+  <div class="hb-hero">${hero}${hbLogForm()}</div>
+  <div class="hb-tiles">${HB_TILE_ORDER.filter(k=>k!=='resp' && k!=='steps' || hbLatest(k,60)).map(hbTile).join('')}</div>
+  ${hbTrendPanel()}
+  <div class="hb-two">${hbSleepPanel()}${hbBodyPanel()}</div>
+  ${hbLabsPanel()}
+  ${hbHistoryPanel()}
+  <div class="panel"><h3>แหล่งข้อมูล</h3><div class="hb-src">
+    <b>ดึงอัตโนมัติจาก intervals.icu</b> (ทุกครั้งที่ sync ในหน้า "กิจกรรม" หรือเปิดแอปเมื่อ sync ล่าสุดเกิน 3 ชม.): HRV, ชีพจรขณะพัก, ชั่วโมง/คะแนนการนอน, SpO₂, อัตราหายใจ, VO₂max, ก้าวเดิน และน้ำหนัก/ไขมัน/ความดัน ถ้าอุปกรณ์หรือแอปของคุณส่งค่าเหล่านี้เข้า intervals.icu · ความล้าจากการซ้อม (TSB) ใช้ตัวเดียวกับหน้า "กิจกรรม"<br>
+    <b>กรอกเอง</b>: น้ำหนัก ไขมัน รอบเอว ความดัน SpO₂ ความรู้สึกรายวัน และผลตรวจเลือด — ค่าที่กรอกเองในวันเดียวกันจะใช้แทนค่าจาก intervals.icu<br>
+    Sync ล่าสุด: ${lastSync ? (()=>{ const x = new Date(lastSync); return fmtDate(x.getFullYear()+'-'+pad2(x.getMonth()+1)+'-'+pad2(x.getDate()))+' '+pad2(x.getHours())+':'+pad2(x.getMinutes()); })() : 'ยังไม่เคย'} ${hasWell?'· มีข้อมูลรายวัน '+Object.keys(state.running.wellness).length+' วัน':''}
+    <button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="hbSync()">⟳ Sync ตอนนี้</button> <span>${hbSyncMsg}</span><br>
+    ข้อมูลทั้งหมดเป็นการติดตามแนวโน้มส่วนตัว ไม่ใช่การวินิจฉัยทางการแพทย์</div></div>`;
+}
+
 /* ---------- Health view (สุขภาพ) ---------- */
 // Which reminder (if any) is open for editing — same "reuse the add form" pattern as
 // editingSubId/editingAexpId above. Reminder ids are unique across all members, so this alone
@@ -4376,11 +5023,20 @@ function findHealthReminder(rid){
   return null;
 }
 function renderHealth(){
+  const pending = allHealthReminders().map(x=>healthStatusMeta(x.due)).filter(st=>st.status==='overdue' || st.status==='soon').length;
+  return `
+  <div class="section-title">สุขภาพ</div>
+  <div class="section-sub">${hbTab==='body' ? 'ภาพรวมร่างกายและการฟื้นตัว — HRV ชีพจรขณะพัก การนอน ดึงจาก intervals.icu อัตโนมัติ ส่วนน้ำหนัก ความดัน ผลตรวจเลือด กรอกเองได้' : 'ติดตามนัดหมาย/เตือนสุขภาพของทุกคนในบ้าน รวมถึงสัตว์เลี้ยง — ครบกำหนดแล้วจะไปโผล่ในกระดิ่งแจ้งเตือนและปฏิทินหน้า "วันนี้" ด้วย'}</div>
+  <div class="hb-tabs">
+    <button class="hb-tab ${hbTab==='body'?'on':''}" onclick="hbSetTab('body')">♥ ร่างกาย & การฟื้นตัว</button>
+    <button class="hb-tab ${hbTab==='reminders'?'on':''}" onclick="hbSetTab('reminders')">🗓 นัด/เตือนสุขภาพ${pending?` <span class="cnt">${pending}</span>`:''}</button>
+  </div>
+  ${hbTab==='body' ? renderHealthBody() : renderHealthReminders()}`;
+}
+function renderHealthReminders(){
   const members = state.health.members || [];
   const nearest = allHealthReminders().map(x=>({...x, st:healthStatusMeta(x.due)})).slice(0,6);
   return `
-  <div class="section-title">สุขภาพ</div>
-  <div class="section-sub">ติดตามนัดหมาย/เตือนสุขภาพของทุกคนในบ้าน รวมถึงสัตว์เลี้ยง — ตั้งรอบแจ้งเตือนซ้ำได้ตามที่ต้องการ ระบุวันที่ทำล่าสุดได้ (ไม่บังคับ) เพื่อให้นับรอบถัดไปถูกต้องตั้งแต่แรก ครบกำหนดแล้วจะไปโผล่ในกระดิ่งแจ้งเตือนและปฏิทินหน้า "วันนี้" ด้วย</div>
 
   <div class="panel">
     <h3>ใกล้ถึงกำหนดที่สุด</h3>
