@@ -4512,7 +4512,9 @@ function hbBody(){
 const HB_METRICS = {
   hrv:       {label:'HRV', unit:'ms', icon:'∿', color:'#5A4CC4', better:'up', dec:0, icu:w=>w.hrv, man:'hrv', min:5, max:300, base:true},
   rhr:       {label:'ชีพจรขณะพัก', unit:'bpm', icon:'♥', color:'#FF6B8A', better:'down', dec:0, icu:w=>w.restingHR, man:'rhr', min:25, max:130, base:true},
-  sleep:     {label:'การนอน', unit:'ชม.', icon:'☾', color:'#5B6EF5', better:'up', dec:1, icu:w=>w.sleepSecs ? w.sleepSecs/3600 : null, man:'sleepH', min:0.5, max:16},
+  sleep:     {label:'การนอน', unit:'ชม.', icon:'☾', color:'#5B6EF5', better:'up', dec:1, icu:w=>w.sleepSecs ? w.sleepSecs/3600 : null, man:'sleepH', min:0.5, max:24,
+              // Suunto sometimes sends a whole day/2 nights as one 'sleep' (seen: 12h55m, 19h12m, 21h28m) — keep it visible but out of averages/readiness
+              suspect:v=>v>12 || v<2},
   sleepScore:{label:'คะแนนการนอน', unit:'/100', icon:'★', color:'#8B7FD1', better:'up', dec:0, icu:w=>w.sleepScore, man:null, min:1, max:100},
   weight:    {label:'น้ำหนัก', unit:'kg', icon:'⚖', color:'#22C3A6', better:null, dec:1, icu:w=>w.weight, man:'weight', min:20, max:300},
   bodyFat:   {label:'ไขมันร่างกาย', unit:'%', icon:'◔', color:'#F5A623', better:'down', dec:1, icu:w=>w.bodyFat, man:'bodyFat', min:2, max:70},
@@ -4520,6 +4522,7 @@ const HB_METRICS = {
   spo2:      {label:'SpO₂', unit:'%', icon:'◉', color:'#2BB6C9', better:'up', dec:0, icu:w=>w.spO2, man:'spo2', min:70, max:100},
   resp:      {label:'อัตราหายใจ', unit:'/นาที', icon:'≋', color:'#3E8DFF', better:null, dec:1, icu:w=>w.respiration, man:null, min:4, max:40},
   vo2max:    {label:'VO₂max', unit:'', icon:'▲', color:'#EC6FA0', better:'up', dec:1, icu:w=>w.vo2max, man:'vo2max', min:15, max:95},
+  sleepHR:   {label:'HR ขณะหลับ', unit:'bpm', icon:'♡', color:'#C2477E', better:'down', dec:0, icu:w=>w.avgSleepingHR, man:null, min:25, max:130},
   steps:     {label:'ก้าวเดิน', unit:'ก้าว', icon:'⋯', color:'#5CB85C', better:'up', dec:0, icu:w=>w.steps, man:null, min:1, max:150000}
 };
 const HB_DIA = {icu:w=>w.diastolic, man:'dia', min:30, max:160};
@@ -4530,12 +4533,12 @@ function hbVal(key, d, spec){
   const log = hbBody().log[d];
   if(m.man && log){ const v = hbNum(log[m.man], m.min, m.max); if(v!=null) return {v, src:'manual'}; }
   const w = (state.running.wellness||{})[d];
-  if(w && m.icu){ const v = hbNum(m.icu(w), m.min, m.max); if(v!=null) return {v, src:'icu'}; }
+  if(w && m.icu){ const v = hbNum(m.icu(w), m.min, m.max); if(v!=null) return {v, src:'icu', suspect: !!(m.suspect && m.suspect(v))}; }
   return null;
 }
 function hbSeries(key, fromIso, toIso, spec){
   const out = []; let d = fromIso, g = 0;
-  while(d <= toIso && g++ < 800){ const r = hbVal(key, d, spec); out.push({date:d, v:r?r.v:null, src:r?r.src:null}); d = addDays(d,1); }
+  while(d <= toIso && g++ < 800){ const r = hbVal(key, d, spec); out.push({date:d, v:r?r.v:null, src:r?r.src:null, suspect:!!(r&&r.suspect)}); d = addDays(d,1); }
   return out;
 }
 function hbLatest(key, maxAge, spec){
@@ -4544,7 +4547,7 @@ function hbLatest(key, maxAge, spec){
   return null;
 }
 function hbStats(key, endIso, days, skip){
-  const v = []; for(let i=(skip||0);i<days+(skip||0);i++){ const r = hbVal(key, addDays(endIso,-i)); if(r) v.push(r.v); }
+  const v = []; for(let i=(skip||0);i<days+(skip||0);i++){ const r = hbVal(key, addDays(endIso,-i)); if(r && !r.suspect) v.push(r.v); }
   if(!v.length) return null;
   const mean = v.reduce((a,b)=>a+b,0)/v.length;
   const sd = v.length>1 ? Math.sqrt(v.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(v.length-1)) : 0;
@@ -4571,7 +4574,7 @@ function hbReadiness(){
   };
   zComp('hrv','HRV', false);
   zComp('rhr','ชีพจรขณะพัก', true);
-  const sl = hbLatest('sleep', 1), ss = hbLatest('sleepScore', 1);
+  let sl = hbLatest('sleep', 1); const ss = hbLatest('sleepScore', 1); if(sl && sl.suspect) sl = null;
   if(sl || ss){
     let s = sl ? hbClamp((sl.v-4.5)/(8-4.5)*100, 0, 100) : null;
     if(ss) s = s==null ? ss.v : (s*0.6 + ss.v*0.4);
@@ -4606,7 +4609,7 @@ function hbReadiness(){
 
 /* ---- small SVG helpers ---- */
 function hbSpark(key, color){
-  const t = todayISO(); const s = hbSeries(key, addDays(t,-29), t).filter(p=>p.v!=null);
+  const t = todayISO(); const s = hbSeries(key, addDays(t,-29), t).filter(p=>p.v!=null && !p.suspect);
   if(s.length < 2) return '<svg viewBox="0 0 120 30"></svg>';
   const vs = s.map(p=>p.v); let lo = Math.min(...vs), hi = Math.max(...vs); if(hi-lo < 1e-6){ lo-=1; hi+=1; }
   const X = d => 2 + (29 - dayDiff(d,t))/29*116, Y = v => 27 - (v-lo)/(hi-lo)*23;
@@ -4638,7 +4641,8 @@ function hbTile(key){
       vHtml = `<div class="v">${hbFmt(cur.v,0)}<span style="color:var(--ink-soft); font-weight:500">/</span>${dia?hbFmt(dia.v,0):'—'}<small>${m.unit}</small></div>`;
       const st = hbBpClass(cur.v, dia?dia.v:null); sub = `<span style="color:${st.color}; font-weight:600">${st.label}</span>`;
     } else if(key==='sleep'){
-      vHtml = `<div class="v">${hbFmtH(cur.v)}<small>ชม.</small></div>`;
+      vHtml = `<div class="v"${cur.suspect?' style="color:#C99A1A"':''}>${hbFmtH(cur.v)}<small>ชม.</small></div>`;
+      if(cur.suspect) sub += `<span style="color:#C99A1A; font-weight:600" title="Suunto ส่งค่านี้มา แต่ยาว/สั้นผิดปกติ — กรอกทับได้ในกล่องบันทึก">⚠ ค่าน่าสงสัย</span>`;
     } else vHtml = `<div class="v">${hbFmt(cur.v, m.dec)}<small>${m.unit}</small></div>`;
     const base = hbStats(key, cur.date, 28, 1);
     if(key!=='bp' && base && base.n>=4){
@@ -4677,7 +4681,7 @@ function hbTrendChart(){
   const W = 760, H = 230, pl = 40, pr = 16, pt = 14, pb = 26;
   const n = s.length, xw = (W-pl-pr)/Math.max(1,n-1); const X = i => pl + i*xw;
   // rolling 7-day mean + rolling 60-day normal band (HRV/RHR)
-  const roll = s.map((p,i)=>{ const w = s.slice(Math.max(0,i-6), i+1).filter(q=>q.v!=null); return w.length>=2 ? w.reduce((a,q)=>a+q.v,0)/w.length : null; });
+  const roll = s.map((p,i)=>{ const w = s.slice(Math.max(0,i-6), i+1).filter(q=>q.v!=null && !q.suspect); return w.length>=2 ? w.reduce((a,q)=>a+q.v,0)/w.length : null; });
   const band = m.base ? s.map(p=>{ const st = hbStats(key, p.date, 60, 1); return st && st.n>=14 ? [st.mean-st.sd, st.mean+st.sd] : null; }) : null;
   let all = pts.map(p=>p.v); if(dia) all = all.concat(dia.filter(p=>p.v!=null).map(p=>p.v));
   if(band) band.forEach(b=>{ if(b){ all.push(b[0], b[1]); } });
@@ -4702,7 +4706,7 @@ function hbTrendChart(){
   let refSvg = '';
   if(key==='sleep') refSvg = `<rect x="${pl}" width="${W-pl-pr}" y="${Y(9).toFixed(1)}" height="${(Y(7)-Y(9)).toFixed(1)}" fill="#5B6EF5" opacity=".08"/><text x="${W-pr-4}" y="${(Y(9)+12).toFixed(1)}" text-anchor="end" class="tr-ax" style="fill:#5B6EF5">เป้า 7–9 ชม.</text>`;
   if(key==='bp') refSvg = [[120,'120'],[80,'80']].map(([v])=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#C97B4A" stroke-dasharray="4 4" opacity=".55"/>`).join('');
-  const dots = (series, col) => series.map((p,i)=>p.v==null?'':`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${n>120?1.8:2.6}" fill="${p.src==='manual'?'#fff':col}" stroke="${col}" stroke-width="${p.src==='manual'?1.6:0}" opacity="${roll && key!=='bp' && key!=='weight'?.55:1}"/>`).join('');
+  const dots = (series, col) => series.map((p,i)=>p.v==null?'':`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${n>120?1.8:2.6}" fill="${p.suspect?'#E8C46A':p.src==='manual'?'#fff':col}" stroke="${col}" stroke-width="${p.src==='manual'?1.6:0}" opacity="${roll && key!=='bp' && key!=='weight'?.55:1}"/>`).join('');
   const linePath = arr => { let d = '', pen = false; arr.forEach((v,i)=>{ if(v==null){ pen=false; return; } d += (pen?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '; pen = true; }); return d; };
   const mainLine = key==='bp' || key==='weight' ? linePath(s.map(p=>p.v)) : linePath(roll);
   const diaLine = dia ? `<path d="${linePath(dia.map(p=>p.v))}" fill="none" stroke="#E0A87F" stroke-width="2"/>${dots(dia,'#E0A87F')}` : '';
@@ -4710,7 +4714,7 @@ function hbTrendChart(){
     const d = new Date(p.date+'T00:00:00');
     let tip = `<b>${thaiDays[d.getDay()]} ${d.getDate()} ${thaiMonths[d.getMonth()]}</b><br>`;
     if(key==='bp') tip += p.v!=null ? `${hbFmt(p.v,0)}/${dia[i].v!=null?hbFmt(dia[i].v,0):'—'} mmHg` : 'ไม่มีข้อมูล';
-    else tip += p.v!=null ? `${m.label} <b>${key==='sleep'?hbFmtH(p.v)+' ชม.':hbFmt(p.v,m.dec)+' '+m.unit}</b>${p.src==='manual'?' (กรอกเอง)':''}` : 'ไม่มีข้อมูล';
+    else tip += p.v!=null ? `${m.label} <b>${key==='sleep'?hbFmtH(p.v)+' ชม.':hbFmt(p.v,m.dec)+' '+m.unit}</b>${p.src==='manual'?' (กรอกเอง)':''}${p.suspect?'<br>⚠ ค่าผิดปกติจาก Suunto — ไม่นับในค่าเฉลี่ย':''}` : 'ไม่มีข้อมูล';
     if(roll[i]!=null && key!=='bp') tip += `<br>เฉลี่ย 7 วัน ${key==='sleep'?hbFmtH(roll[i]):hbFmt(roll[i],m.dec)}`;
     if(band && band[i]) tip += `<br>ช่วงปกติ ${hbFmt(band[i][0],0)}–${hbFmt(band[i][1],0)}`;
     return `<rect class="tr-hov" x="${(X(i)-xw/2).toFixed(1)}" y="${pt}" width="${Math.max(2,xw).toFixed(1)}" height="${H-pt-pb}" data-tip="${tipAttr(tip)}"/>`;
@@ -4734,10 +4738,10 @@ function hbTrendPanel(){
       <h3 style="margin:0">แนวโน้ม · ${escapeHtml(m.label)}</h3>
       <div class="hb-seg">${[30,90,180,365].map(r=>`<button class="${hbRange===r?'on':''}" onclick="hbSetRange(${r})">${r===365?'1 ปี':r+' วัน'}</button>`).join('')}</div>
     </div>
-    <div class="hb-chips">${HB_TILE_ORDER.map(k=>`<button class="hb-chip ${hbMetric===k?'on':''}" onclick="hbSetMetric('${k}')"><i style="background:${HB_METRICS[k].color}"></i>${HB_METRICS[k].label}</button>`).join('')}</div>
+    <div class="hb-chips">${HB_TILE_ORDER.filter(k=>k===hbMetric || ['hrv','rhr','sleep','weight','bp'].includes(k) || hbLatest(k,365)).map(k=>`<button class="hb-chip ${hbMetric===k?'on':''}" onclick="hbSetMetric('${k}')"><i style="background:${HB_METRICS[k].color}"></i>${HB_METRICS[k].label}</button>`).join('')}</div>
     ${st ? `<div class="hb-stats">
       <div>เฉลี่ยช่วงนี้<b>${fmtv(st.mean)} <small style="font-size:10px;color:var(--ink-soft)">${hbMetric==='sleep'?'ชม.':m.unit}</small></b></div>
-      <div>ต่ำสุด–สูงสุด<b>${fmtv(Math.min(...hbSeries(hbMetric, addDays(t,-(hbRange-1)), t).filter(p=>p.v!=null).map(p=>p.v)))}–${fmtv(Math.max(...hbSeries(hbMetric, addDays(t,-(hbRange-1)), t).filter(p=>p.v!=null).map(p=>p.v)))}</b></div>
+      <div>ต่ำสุด–สูงสุด<b>${fmtv(Math.min(...hbSeries(hbMetric, addDays(t,-(hbRange-1)), t).filter(p=>p.v!=null && !p.suspect).map(p=>p.v)))}–${fmtv(Math.max(...hbSeries(hbMetric, addDays(t,-(hbRange-1)), t).filter(p=>p.v!=null && !p.suspect).map(p=>p.v)))}</b></div>
       ${first && last && first.date!==last.date ? `<div>เปลี่ยนแปลง<b>${(last.v-first.v)>=0?'+':'−'}${fmtv(Math.abs(last.v-first.v))}</b></div>` : ''}
       <div>จำนวนวันที่มีข้อมูล<b>${st.n}</b></div></div>` : ''}
     <div class="tr-legend" style="margin-top:8px">${legend}</div>
@@ -4749,14 +4753,14 @@ function hbMetricNote(k){
   return ({
     hrv:'HRV ดูแนวโน้มเทียบกับช่วงปกติของตัวเองเท่านั้น (คนละคนเทียบกันไม่ได้) — ต่ำกว่าแถบหลายวันติด = ร่างกายเครียด/ฟื้นตัวไม่ทัน, สูงขึ้นช้าๆ ระยะยาว = ฟิตขึ้น',
     rhr:'ชีพจรขณะพักสูงกว่าปกติ ≥5 bpm หลายเช้าติดกัน มักมาก่อนอาการป่วย/ซ้อมเกิน — ลดความหนักก่อน',
-    sleep:'นักวิ่งระยะไกลควรนอน 7–9 ชม. ช่วงซ้อมหนัก/ก่อนแข่งเพิ่มอีกได้ — ค่าจากนาฬิกาอาจคลาดเคลื่อน 20–40 นาที',
+    sleep:'ค่ามาจาก Suunto ผ่าน intervals.icu ลงวันที่ตื่นนอน (เช่น นอนคืนวันอาทิตย์ → ลงวันจันทร์) · จุดสีเหลือง = ค่ายาว/สั้นผิดปกติ (>12 หรือ <2 ชม.) ไม่นับในค่าเฉลี่ย — กรอกทับได้ · นักวิ่งระยะไกลควรนอน 7–9 ชม.',
     sleepScore:'คะแนนการนอนคำนวณโดยอุปกรณ์/แอปต้นทาง (Suunto ฯลฯ) ส่งผ่าน intervals.icu',
     weight:'ชั่งตอนเช้าหลังเข้าห้องน้ำ ก่อนกิน/ดื่ม จะเทียบกันได้แม่นที่สุด — ดูเส้นแนวโน้ม ไม่ใช่วันต่อวัน (ผันผวนได้ ±1 kg จากน้ำ)',
     bodyFat:'ค่าจากเครื่องชั่งวัดไขมัน (BIA) ผันผวนตามความชุ่มชื้น — ใช้ดูแนวโน้มมากกว่าค่าสัมบูรณ์',
     bp:'เกณฑ์ ACC/AHA: <120/<80 ปกติ · 120–129/<80 สูงเล็กน้อย · 130–139 หรือ 80–89 สูงระดับ 1 · ≥140 หรือ ≥90 สูงระดับ 2 — วัดหลังนั่งพัก 5 นาที',
     spo2:'ปกติ 95–100% · ต่ำกว่า 94% ซ้ำๆ ขณะพักควรปรึกษาแพทย์ (บนที่สูงจะต่ำลงได้ตามปกติ)',
     resp:'อัตราการหายใจขณะหลับ — เพิ่มขึ้นผิดปกติมักเกิดก่อน/ระหว่างป่วย',
-    vo2max:'VO₂max ประมาณการจากนาฬิกา/intervals.icu — ใช้ดูทิศทาง ไม่ใช่ค่าจากห้องแล็บ',
+    vo2max:'Suunto ไม่ส่ง VO₂max เข้า intervals.icu — ดูค่าในแอป Suunto แล้วกรอกเองในกล่องบันทึก (▸ ค่าที่ปกติดึงจาก intervals.icu) เดือนละครั้งก็พอ',
     steps:'ก้าวเดินรวมทั้งวัน (ถ้าอุปกรณ์ส่งเข้า intervals.icu)'
   })[k] || '';
 }
@@ -4764,29 +4768,31 @@ function hbMetricNote(k){
 /* ---- sleep nights + body composition ---- */
 function hbSleepPanel(){
   const t = todayISO(); const s = hbSeries('sleep', addDays(t,-13), t);
-  const have = s.filter(p=>p.v!=null);
-  if(!have.length) return `<div class="panel"><h3>การนอน 14 คืนล่าสุด</h3><div class="muted">ยังไม่มีข้อมูลการนอน — sync intervals.icu (ถ้านาฬิกาส่งข้อมูลการนอน) หรือกรอก "นอนกี่ชั่วโมง" เองในกล่องบันทึกวันนี้</div></div>`;
+  const have = s.filter(p=>p.v!=null && !p.suspect); const sus = s.filter(p=>p.suspect);
+  if(!have.length && !sus.length) return `<div class="panel"><h3>การนอน 14 คืนล่าสุด</h3><div class="muted">ยังไม่มีข้อมูลการนอน — sync intervals.icu (ถ้านาฬิกาส่งข้อมูลการนอน) หรือกรอก "นอนกี่ชั่วโมง" เองในกล่องบันทึกวันนี้</div></div>`;
   const W = 360, H = 150, pl = 6, pr = 6, pt = 14, pb = 22; const bw = (W-pl-pr)/14;
-  const max = Math.max(10, ...have.map(p=>p.v));
+  const max = Math.max(10, ...have.map(p=>p.v)); const avgHR = hbStats('sleepHR', t, 14, 0);
   const Y = v => pt + (H-pt-pb)*(1-v/max);
-  const avg = have.reduce((a,p)=>a+p.v,0)/have.length;
+  const avg = have.length ? have.reduce((a,p)=>a+p.v,0)/have.length : null;
   const debt = s.reduce((a,p)=>a + (p.v!=null ? Math.max(0, 7.5-p.v) : 0), 0);
   const bars = s.map((p,i)=>{
     const d = new Date(p.date+'T00:00:00'); const x = pl + i*bw + bw*0.18, w = bw*0.64;
-    const col = p.v==null ? '#EBEEF5' : p.v>=7 ? '#5B6EF5' : p.v>=6 ? '#F5A623' : '#FF6B8A';
-    const h = p.v==null ? 4 : (H-pb) - Y(p.v);
-    const y = p.v==null ? H-pb-4 : Y(p.v);
-    const tip = `<b>คืนก่อน ${thaiDays[d.getDay()]} ${d.getDate()} ${thaiMonths[d.getMonth()]}</b><br>${p.v!=null ? hbFmtH(p.v)+' ชม.' : 'ไม่มีข้อมูล'}`;
+    const col = p.v==null ? '#EBEEF5' : p.suspect ? '#E8C46A' : p.v>=7 ? '#5B6EF5' : p.v>=6 ? '#F5A623' : '#FF6B8A';
+    const vv = p.v==null ? null : Math.min(p.v, max);
+    const h = vv==null ? 4 : (H-pb) - Y(vv);
+    const y = vv==null ? H-pb-4 : Y(vv);
+    const pd = new Date(addDays(p.date,-1)+'T00:00:00');
+    const tip = `<b>คืน ${thaiDays[pd.getDay()]} ${pd.getDate()} → ตื่น ${thaiDays[d.getDay()]} ${d.getDate()} ${thaiMonths[d.getMonth()]}</b><br>${p.v!=null ? hbFmtH(p.v)+' ชม.' : 'ไม่มีข้อมูล'}${p.suspect?'<br>⚠ ยาว/สั้นผิดปกติ (Suunto น่าจะรวมงีบกลางวันหรือหลายช่วงเข้าด้วยกัน) — ไม่นับในค่าเฉลี่ย กรอกทับได้':''}`;
     return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(2,h).toFixed(1)}" rx="4" fill="${col}"/>
       <text x="${(x+w/2).toFixed(1)}" y="${H-7}" text-anchor="middle" class="tr-ax">${thaiDays[d.getDay()].replace('.','')}</text>
       <rect class="tr-hov" x="${(pl+i*bw).toFixed(1)}" y="${pt}" width="${bw.toFixed(1)}" height="${H-pt-pb}" data-tip="${tipAttr(tip)}"/>`;
   }).join('');
-  return `<div class="panel"><div class="ribbon-head"><h3 style="margin:0">การนอน 14 คืนล่าสุด</h3><span>เฉลี่ย <b class="mono" style="color:var(--ink)">${hbFmtH(avg)}</b> ชม.</span></div>
+  return `<div class="panel"><div class="ribbon-head"><h3 style="margin:0">การนอน 14 คืนล่าสุด</h3><span>เฉลี่ย <b class="mono" style="color:var(--ink)">${hbFmtH(avg)}</b> ชม.${sus.length?` · <span style="color:#C99A1A">⚠ ${sus.length} คืนค่าผิดปกติ (ไม่นับ)</span>`:''}</span></div>
     <svg viewBox="0 0 ${W} ${H}" class="tr-svg"><line x1="${pl}" x2="${W-pr}" y1="${Y(7).toFixed(1)}" y2="${Y(7).toFixed(1)}" stroke="#5B6EF5" stroke-dasharray="4 4" opacity=".6"/>
     <text x="${W-pr}" y="${(Y(7)-4).toFixed(1)}" text-anchor="end" class="tr-ax" style="fill:#5B6EF5">7 ชม.</text>${bars}</svg>
     <div class="hb-kv"><div><div class="k">คืนที่ ≥ 7 ชม.</div><div class="vv">${have.filter(p=>p.v>=7).length}/${have.length}</div></div>
       <div><div class="k">นอนสะสมขาด*</div><div class="vv" style="color:${debt>7?'var(--coral)':'var(--ink)'}">${hbFmtH(debt)}</div><div class="n">เทียบเป้า 7:30/คืน</div></div>
-      <div><div class="k">สั้นสุด</div><div class="vv">${hbFmtH(Math.min(...have.map(p=>p.v)))}</div></div></div>
+      <div><div class="k">HR ขณะหลับ (เฉลี่ย)</div><div class="vv">${avgHR?hbFmt(avgHR.mean,0):'—'}</div><div class="n">bpm · สั้นสุด ${have.length?hbFmtH(Math.min(...have.map(p=>p.v))):'—'}</div></div></div>
   </div>`;
 }
 function hbBodyPanel(){
@@ -4997,7 +5003,7 @@ function renderHealthBody(){
         <div class="hb-ready-empty"><button class="btn btn-sm" style="background:rgba(255,255,255,.16); box-shadow:none" onclick="hbSync()">⟳ Sync intervals.icu</button> <span style="font-size:11.5px; opacity:.8; margin-left:6px">${hbSyncMsg}</span></div></div>`;
   return `
   <div class="hb-hero">${hero}${hbLogForm()}</div>
-  <div class="hb-tiles">${HB_TILE_ORDER.filter(k=>k!=='resp' && k!=='steps' || hbLatest(k,60)).map(hbTile).join('')}</div>
+  <div class="hb-tiles">${HB_TILE_ORDER.filter(k=>['hrv','rhr','sleep','weight','bp'].includes(k) || hbLatest(k,60)).map(hbTile).join('')}</div>
   ${hbTrendPanel()}
   <div class="hb-two">${hbSleepPanel()}${hbBodyPanel()}</div>
   ${hbLabsPanel()}
