@@ -193,6 +193,73 @@ a{color:inherit;}
 .modal-head h3{font-size:16.5px; font-weight:700;}
 .modal-close{background:none; border:none; font-size:18px; color:var(--ink-soft); cursor:pointer; line-height:1; padding:2px;}
 .modal-close:hover{color:var(--ink);}
+
+/* ----- Activity detail popup + Performance (4 พ.ย. 69) ----- */
+.act-row{cursor:pointer;}
+.act-row:hover td{background:#F7F8FD;}
+.act-link{font-weight:600;}
+.act-row:hover .act-link{color:var(--indigo);}
+.act-box{max-width:880px; padding:22px 24px;}
+.act-head{display:flex; gap:12px; align-items:flex-start; margin-bottom:12px;}
+.act-ic{width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;}
+.act-title{font-size:17px; font-weight:700; line-height:1.25;}
+.act-grade{min-width:40px; height:40px; padding:0 8px; border-radius:12px; color:#fff; font-weight:800; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.act-nav{display:flex; gap:4px; align-items:center; flex-shrink:0;}
+.act-hm{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:12px;}
+.act-hm>div{background:#F6F7FC; border-radius:12px; padding:9px 10px;}
+.act-hm small{display:block; font-size:11px; color:var(--ink-soft);}
+.act-hm>div>b{display:block; font-size:18px; font-weight:700; line-height:1.3;}
+.act-hm i{font-style:normal; font-size:11px; color:var(--ink-soft);}
+.act-two{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;}
+.act-pt{border:1px solid var(--line); border-left:3px solid var(--c); border-radius:12px; padding:10px 12px;}
+.act-pt small{display:block; font-size:11px; color:var(--ink-soft);}
+.act-pt>b{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:13.5px; margin:2px 0;}
+.act-pt>span{font-size:11.5px; color:var(--ink-soft);}
+.act-sec{border-top:1px solid var(--line); padding-top:12px; margin-top:12px;}
+.act-sh{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;}
+.act-h{font-size:13.5px; font-weight:700; margin:0 0 8px;}
+.act-ph{background:#F6F7FC; border-radius:12px; padding:22px; text-align:center; color:var(--ink-soft); font-size:12.5px;}
+.act-zbar{display:flex; height:12px; border-radius:99px; overflow:hidden; gap:2px; background:#EEF0F6;}
+.act-zbar i{display:block; height:100%;}
+.act-zleg{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:8px; font-size:11.5px;}
+.act-zleg>div{display:flex; flex-direction:column; gap:1px;}
+.act-zleg .dot{display:inline-block; width:8px; height:8px; border-radius:3px; margin-right:5px;}
+.act-zleg b{font-size:15px;}
+.act-zleg .muted{font-size:10.5px;}
+.act-tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px;}
+.act-tile{background:#F6F7FC; border-radius:12px; padding:9px 12px; border-top:2px solid var(--c);}
+.act-tile small{display:block; font-size:11px; color:var(--ink-soft);}
+.act-tile>b{display:block; font-size:16px; font-weight:700;}
+.act-tile>span{display:block; font-size:10.5px; color:var(--ink-soft); margin-top:1px;}
+.act-notes{display:flex; flex-direction:column;}
+.act-note{display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);}
+.act-note:last-child{border-bottom:none;}
+.act-note .ic{width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0;}
+.act-note>div>b{display:block; font-size:13px;}
+.act-note>div>span{display:block; font-size:12px; color:var(--ink-soft); margin-top:1px;}
+.act-scroll{overflow-x:auto;}
+.act-laps{font-size:12px; min-width:560px;}
+.act-laps tr.work td{background:#FFF6EE;}
+.act-lap{display:inline-block; padding:2px 8px; border-radius:99px; background:#EEF0F6; font-size:11px; font-weight:600;}
+.act-laps tr.work .act-lap{background:#E3F5EA; color:#2F8F55;}
+.act-memo{background:#F6F7FC; border-radius:10px; padding:8px 12px; font-size:12.5px;}
+.perf-kick{font-size:10.5px; letter-spacing:.12em; font-weight:700; color:var(--indigo);}
+.perf-tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px;}
+.perf-tile{background:#F6F7FC; border-radius:14px; padding:11px 14px;}
+.perf-tile small{display:block; font-size:11px; color:var(--ink-soft);}
+.perf-tile>b{display:block; font-size:24px; font-weight:700; line-height:1.25;}
+.perf-st{font-size:11.5px; font-weight:600;}
+@media (max-width:760px){
+  .act-overlay{padding:0; align-items:flex-end;}
+  .act-box{max-height:94vh; border-radius:20px 20px 0 0; padding:16px 14px calc(16px + env(safe-area-inset-bottom));}
+  .act-hm{grid-template-columns:repeat(3,1fr);}
+  .act-two{grid-template-columns:1fr;}
+  .act-zleg{grid-template-columns:repeat(3,1fr);}
+  .act-tiles{grid-template-columns:repeat(2,1fr);}
+  .perf-tiles{grid-template-columns:repeat(2,1fr);}
+  .act-head{flex-wrap:wrap;}
+  .act-nav{margin-left:auto;}
+}
 .chip-toggle{display:flex; gap:6px; flex-wrap:wrap; margin:12px 0 14px;}
 .chip{font-size:11px; padding:5px 11px; border-radius:99px; border:1px solid var(--line); background:var(--bg); color:var(--ink-soft); cursor:pointer; font-weight:600; font-family:inherit; transition:background .15s ease, color .15s ease, border-color .15s ease;}
 .chip.on{border-color:transparent; color:#fff;}
@@ -2605,16 +2672,20 @@ function computeFitness(endIso){
   if(!keys.length) return {days:[], byDate:{}};
   const end = endIso && endIso > today ? endIso : today;
   const avg28 = avgDailyLoad(today, 28);
+  // วันข้างหน้า: ใช้ Load ของแผนซ้อมใน intervals.icu (เหมือน LINE Coaching) ถึงวันสุดท้ายที่มีแผน หลังจากนั้นใช้ค่าประมาณตามเฟส
+  const planLoad = {}; let lastPlan = null;
+  trPlans().filter(e=>e.cat==='WORKOUT' && e.date>today).forEach(e=>{ planLoad[e.date] = (planLoad[e.date]||0) + (Number(e.load) || (e.min ? Math.round(e.min*0.95) : 0)); if(!lastPlan || e.date>lastPlan) lastPlan = e.date; });
   let ctl = 0, atl = 0, d = keys[0];
   const days = [], byDate = {};
   let guard = 0;
   while(d <= end && guard++ < 2000){
     const projected = d > today;
-    const load = projected ? avg28 * (TR_PHASE_LOAD[phaseAt(d).key] ?? 1) : (loads[d]||0);
+    const planned = projected && lastPlan && d <= lastPlan;
+    const load = projected ? (planned ? (planLoad[d]||0) : avg28 * (TR_PHASE_LOAD[phaseAt(d).key] ?? 1)) : (loads[d]||0);
     ctl += (load-ctl)*FIT_K_CTL; atl += (load-atl)*FIT_K_ATL;
     const w = well[d];
     if(!projected && w && Number.isFinite(w.ctl) && Number.isFinite(w.atl)){ ctl = w.ctl; atl = w.atl; }
-    const row = {date:d, load, ctl, atl, tsb:ctl-atl, projected};
+    const row = {date:d, load, ctl, atl, tsb:ctl-atl, projected, planned};
     days.push(row); byDate[d] = row;
     d = addDays(d,1);
   }
@@ -2623,14 +2694,16 @@ function computeFitness(endIso){
 function fitnessNow(){
   const today = todayISO();
   const tgt = targetRaceFrom(addDays(today,1));
-  const end = tgt && dayDiff(today, tgt.date) <= 150 ? tgt.date : today;
+  let end = tgt && dayDiff(today, tgt.date) <= 150 ? tgt.date : today;
+  if(trPlans().some(e=>e.cat==='WORKOUT' && e.date>today) && end < addDays(today,28)) end = addDays(today,28);
   const fit = computeFitness(end);
   const cur = fit.byDate[today] || {ctl:0, atl:0, tsb:0};
   const wk = fit.byDate[addDays(today,-7)] || {ctl:0};
   const ramp = cur.ctl - wk.ctl;
   const acwr = cur.ctl > 0 ? cur.atl/cur.ctl : 0;
   const estShare = (()=>{ const r = state.running.activities.filter(a=>a.date>=addDays(today,-42)); if(!r.length) return 0; return r.filter(a=>!activityHasRealLoad(a)).length/r.length; })();
-  return {fit, cur, ramp, acwr, tgt, phase:phaseAt(today), estShare, hasWellness: Object.keys(state.running.wellness||{}).length>0};
+  const planDays = trPlans().filter(e=>e.cat==='WORKOUT' && e.date>today).length;
+  return {fit, cur, ramp, acwr, tgt, phase:phaseAt(today), estShare, planDays, hasWellness: Object.keys(state.running.wellness||{}).length>0};
 }
 function tsbStatus(tsb, phaseKey){
   if(phaseKey==='taper' || phaseKey==='race'){
@@ -2868,28 +2941,33 @@ function renderRaceHub(info){
 function renderFormTiles(info){
   const c = info.cur, pk = info.phase.key;
   const ts = tsbStatus(c.tsb, pk), rs = rampStatus(info.ramp, pk), as = acwrStatus(info.acwr, pk);
-  const tile = (label, val, color, st, sub) => `<div class="tr-tile" style="border-top:3px solid ${TR_ST[st.level].c}">
-      <div class="card-sub">${label}</div>
-      <div class="big-stat mono" style="color:${color}">${val}</div>
-      <div>${trChip(st.level, st.text)}</div>
-      <div class="muted" style="margin-top:6px">${sub}</div></div>`;
-  const srcNote = info.hasWellness ? 'ค่า CTL/ATL ตรงกับ intervals.icu (ดึงจาก wellness)'
-    : info.estShare > 0.5 ? 'โหลดส่วนใหญ่เป็นค่าประมาณจากเวลา/ความชัน — กด Sync ใหม่เพื่อดึง Training Load จริง' : 'คำนวณจาก Training Load ของแต่ละกิจกรรม';
+  const v = vo2Estimate();
+  const vLevel = v && v.d28!=null ? (v.d28>=0.3?'good':v.d28<=-0.3?'warn':'info') : 'info';
+  const tile = (label, val, color, chip, sub, tip) => `<div class="perf-tile"${tip?` data-tip="${tipAttr(tip)}"`:''}>
+      <small>${label}</small>
+      <b class="mono" style="color:${color}">${val}</b>
+      <div class="perf-st">${chip}</div>${sub?`<div class="muted" style="font-size:11px; margin-top:2px">${sub}</div>`:''}</div>`;
+  const dot = (lv, t) => `<span style="color:${TR_ST[lv].c}"><b>${TR_ST[lv].icon}</b> ${escapeHtml(t)}</span>`;
+  const srcNote = (info.hasWellness ? 'CTL/ATL ตรงกับ intervals.icu (wellness)' : info.estShare > 0.5 ? 'โหลดส่วนใหญ่เป็นค่าประมาณ — กด Sync ใหม่เพื่อดึง Training Load จริง' : 'คำนวณจาก Training Load ของแต่ละกิจกรรม')
+    + (info.planDays ? ' · เส้นประ = คาดการณ์จากแผนใน intervals.icu ('+info.planDays+' เซสชัน)' : ' · เส้นประ = คาดการณ์จากโหลดเฉลี่ย 28 วันตามเฟส (ยังไม่มีแผนใน intervals.icu)');
   return `
   <div class="panel">
-    <div class="ribbon-head" style="margin-bottom:12px; flex-wrap:wrap; row-gap:8px">
-      <h3>ฟอร์มตอนนี้</h3>
+    <div class="ribbon-head" style="margin-bottom:6px; flex-wrap:wrap; row-gap:8px">
+      <div><div class="perf-kick">PERFORMANCE</div><h3 style="margin:0">Fitness · Fatigue · Form</h3></div>
       <div style="display:flex; gap:6px">
         ${[42,90,180].map(n=>`<button class="btn ${trFitRange===n?'':'btn-ghost'} btn-sm" onclick="setFitRange(${n})">${n===42?'6 สัปดาห์':n===90?'3 เดือน':'6 เดือน'}</button>`).join('')}
       </div>
     </div>
-    <div class="tr-tiles">
-      ${tile('Fitness (CTL)', c.ctl.toFixed(0), '#2F6FD6', rs, `เปลี่ยน ${fmtSigned(info.ramp,1)} ใน 7 วัน (ramp rate)`)}
-      ${tile('Fatigue (ATL)', c.atl.toFixed(0), '#C2477E', as, `ATL/CTL = ${info.acwr?info.acwr.toFixed(2):'—'}`)}
-      ${tile('Form (TSB)', fmtSigned(c.tsb), '#1D2233', ts, `เฟส ${TR_PHASES[pk].label} — เกณฑ์สีปรับตามเฟส`)}
+    ${renderPerfChart(info)}
+    <div class="perf-tiles">
+      ${tile('Fitness · CTL', c.ctl.toFixed(1), '#2F6FD6', dot(rs.level, 'ramp '+fmtSigned(info.ramp,1)+'/สป.'), rs.text)}
+      ${tile('Fatigue · ATL', c.atl.toFixed(1), '#C2477E', dot(as.level, 'ATL/CTL '+(info.acwr?info.acwr.toFixed(2):'—')), as.text)}
+      ${tile('Form · TSB', fmtSigned(c.tsb,1), TR_ST[ts.level].c, dot(ts.level, ts.text), 'เฟส '+TR_PHASES[pk].label+' — เกณฑ์ปรับตามเฟส')}
+      ${tile('VO₂max · ประมาณ', v ? v.v.toFixed(1) : '—', '#7C5CD6', v ? dot(vLevel, v.d28!=null ? fmtSigned(v.d28,1)+' / 4 สป.' : v.n+' รัน') : '<span class="muted">ข้อมูลไม่พอ</span>',
+        v ? (v.n+' รันใน 6 สัปดาห์'+(v.watch?' · นาฬิกา '+v.watch:'')) : 'ต้องมีวิ่ง ≥3 ครั้ง (20 นาที+, มี HR) ใน 6 สัปดาห์',
+        v ? 'ประมาณจาก HR เทียบความเร็ววิ่ง (ACSM ÷ %HRR) กลุ่มบน 40% ของรันใน 42 วัน · HRmax '+v.hrmax : '')}
     </div>
-    <div style="margin-top:14px">${renderFitnessChart(info)}</div>
-    <div class="muted" style="margin-top:6px">${srcNote}</div>
+    <div class="muted" style="margin-top:8px">${srcNote}</div>
   </div>`;
 }
 
@@ -3336,6 +3414,7 @@ function saveActNote(id){
   a.userRpe = parseFloat(v('rpe')) || null; a.feelUser = parseInt(v('feel'),10) || null;
   a.painArea = v('pain').trim(); a.note = v('note').trim(); a.sessionType = v('stype') || null;
   editingActNoteId = null; saveState(); render();
+  if(actDetailId === id){ actDetailEdit = false; refreshActDetail(); }
 }
 const FEEL_EMOJI = {1:'😫',2:'😕',3:'😐',4:'🙂',5:'😄'};
 function actNoteLine(a){
@@ -3402,21 +3481,14 @@ function activityZoneMinutes(a){
   return out;
 }
 const SESSION_NAME_RX = [[/interval|vo2|repeat|อินเทอร์วัล/i,'interval'],[/tempo|threshold|เทมโป/i,'tempo'],[/steady/i,'steady'],[/recovery|ฟื้น|easy/i,'recovery'],[/endurance|long run|ยาว/i,'endurance']];
-// ประเภทเซสชัน (เหมือน grind.run): ผู้ใช้เลือกเอง > ชื่อกิจกรรม > เวลาในโซน > HR เฉลี่ย
+// ประเภทเซสชัน: ผู้ใช้เลือกเอง > เวลาในโซน (จริง/ประมาณจาก HR) > ชื่อกิจกรรม
 function sessionType(a){
   if(a.sessionType) return a.sessionType;
   if(!isRunAct(a) && a.type!=='ride') return null;
+  // ลำดับเดียวกับ LINE Coaching: เวลาในโซนจริง → ประมาณจาก HR เฉลี่ย → ชื่อกิจกรรม
+  const zr = activityZoneEst(a);
+  if(zr) return classifyZoneMix(zr.zm);
   for(const [rx,k] of SESSION_NAME_RX) if(rx.test(a.name||'')) return k;
-  const zm = activityZoneMinutes(a);
-  if(zm){
-    const tot = zm.reduce((s,v)=>s+v,0) || 1;
-    if(zm[4] >= 6) return 'interval';
-    if(zm[3] >= 12 || zm[3]/tot >= 0.15) return 'tempo';
-    if(zm[2] >= 20 || zm[2]/tot >= 0.2) return 'steady';
-    if((zm[1]+zm[2]+zm[3]+zm[4])/tot >= 0.45) return 'endurance';
-    return 'recovery';
-  }
-  if(a.avg_hr){ const i = zoneIndexOfHr(a.avg_hr, zoneBoundsFor(a)); return HR_ZONE_META[Math.max(0,i)].key; }
   return null;
 }
 function zoneMeta(key){ return HR_ZONE_META.find(z=>z.key===key) || null; }
@@ -3881,6 +3953,480 @@ function renderPeriodReview(isWeek, weekDays, ym, info){
   </div>`;
 }
 
+/* =====================================================================================
+   รายละเอียดกิจกรรม (ป๊อปอัพ) + Performance — ใช้สูตรเดียวกับ LINE Coaching / RunCoach
+   (reviewSession_, sessionType_, zoneMin_, fitness_ + แผนจาก intervals.icu, vo2Est_)
+   ===================================================================================== */
+const SESSION_KIND = {
+  recovery:{label:'Recovery Run', icon:'🩶', color:'#9AA6B8'}, endurance:{label:'Endurance', icon:'🟢', color:'#3E8DFF'},
+  long:{label:'Long Run', icon:'🔵', color:'#2F6FD6'}, steady:{label:'Steady State', icon:'🟩', color:'#22B39A'},
+  tempo:{label:'Tempo / Threshold', icon:'🔥', color:'#F5A623'}, interval:{label:'Interval', icon:'💥', color:'#FF6B8A'},
+  race:{label:'Race', icon:'🏅', color:'#C2385A'}, cross:{label:'Cross-training', icon:'🚴', color:'#8B7FD1'},
+  strength:{label:'Strength', icon:'💪', color:'#64748B'}, rest:{label:'พัก', icon:'🛌', color:'#9AA6B8'}
+};
+function kindMeta(k){ return SESSION_KIND[k] || {label:k||'—', icon:'•', color:'#8891A5'}; }
+function intentFromName(n){
+  n = String(n||'');
+  if(/interval|vo2|repeat|อินเทอร์วัล|hill rep/i.test(n)) return 'interval';
+  if(/tempo|threshold|เทมโป|cruise/i.test(n)) return 'tempo';
+  if(/steady|marathon pace/i.test(n)) return 'steady';
+  if(/long|ยาว/i.test(n)) return 'long';
+  if(/recovery|ฟื้น|easy|shake/i.test(n)) return 'recovery';
+  if(/endurance|aerobic|base|z2/i.test(n)) return 'endurance';
+  if(/race|แข่ง/i.test(n)) return 'race';
+  if(/rest|พัก/i.test(n)) return 'rest';
+  if(/strength|weight|gym|เวท/i.test(n)) return 'strength';
+  return null;
+}
+const isEasyKind = k => k==='recovery' || k==='endurance' || k==='long';
+const isHardKind = k => k==='tempo' || k==='interval';
+function zoneLows(bounds){ return bounds.map((z,i)=>i===0?0:z.min); }
+
+// เวลาในโซน: zone times จริงจาก intervals.icu → ถ้าไม่มีประมาณจาก HR เฉลี่ย/สูงสุด (กระจายแบบระฆังคว่ำ เหมือน zoneMin_)
+function activityZoneEst(a){
+  const real = activityZoneMinutes(a);
+  if(real) return {zm:real, src:'icu'};
+  const avg = Number(a.avg_hr)||0, min = Number(a.moving_time_min)||0;
+  if(!avg || !min) return null;
+  const mx = Number(a.max_hr) > avg ? Number(a.max_hr) : avg+20, sd = Math.max(4, Math.min(14, (mx-avg)/2.5));
+  const bounds = zoneBoundsFor(a), out = [0,0,0,0,0]; let W = 0; const w = [];
+  for(let hr=Math.round(avg-3*sd); hr<=Math.min(mx, Math.round(avg+3*sd)); hr++){ const x = Math.exp(-0.5*Math.pow((hr-avg)/sd,2)); w.push([hr,x]); W += x; }
+  w.forEach(p=>{ out[Math.max(0, zoneIndexOfHr(p[0], bounds))] += min*p[1]/W; });
+  return {zm:out, src:'est'};
+}
+function classifyZoneMix(zm){
+  const tot = zm.reduce((s,v)=>s+v,0) || 1;
+  if(zm[4] >= 6) return 'interval';
+  if(zm[3] >= 12 || zm[3]/tot >= 0.15) return 'tempo';
+  if(zm[2] >= 20 || zm[2]/tot >= 0.2) return 'steady';
+  if((zm[1]+zm[2]+zm[3]+zm[4])/tot >= 0.45) return 'endurance';
+  return 'recovery';
+}
+// ประเภทที่โชว์ในรายละเอียด (เพิ่ม Long Run / Race / Cross / Strength แบบ LINE Coaching)
+function sessionKind(a){
+  if(!isRunAct(a)) return a.type==='weights' ? 'strength' : 'cross';
+  if(!a.sessionType && sortedRaces().some(r=>r.date===a.date) && (Number(a.moving_time_min)||0) >= 40) return 'race';
+  const k = sessionType(a) || 'endurance';
+  if(!a.sessionType && (k==='endurance' || k==='recovery' || k==='steady') && ((Number(a.moving_time_min)||0) >= 100 || (Number(a.distance_km)||0) >= 18)) return 'long';
+  return k;
+}
+
+/* ----- แผนซ้อมจาก intervals.icu (sync มาเก็บใน state.running.plans) ----- */
+function trPlans(){ return Array.isArray(state.running.plans) ? state.running.plans : []; }
+function plansOn(iso){ return trPlans().filter(p=>p.date===iso && p.cat==='WORKOUT'); }
+function planIntent(p){ return intentFromName(p.name) || intentFromName(p.desc) || 'endurance'; }
+function pairPlan(a){
+  const plans = plansOn(a.date); if(!plans.length) return null;
+  if(a.paired){ const p = plans.find(e=>String(e.id)===String(a.paired)); if(p) return p; }
+  if(isRunAct(a)){
+    const runs = state.running.activities.filter(x=>x.date===a.date && isRunAct(x)).sort((x,y)=>(Number(y.moving_time_min)||0)-(Number(x.moving_time_min)||0));
+    const runPlans = plans.filter(e=>!/strength|weight/i.test((e.type||'')+(e.name||'')));
+    return runPlans[runs.indexOf(a)] || null;
+  }
+  return plans.find(e=>/strength|weight|ride/i.test((e.type||'')+(e.name||''))) || null;
+}
+// แยกขั้นจากคำอธิบาย workout ของ intervals.icu เช่น "- 20m Z2" / "3x" + "- 5m 160-168bpm"
+function parsePlanSteps(desc){
+  const lines = String(desc||'').split(/\r?\n/), out = []; let rep = null;
+  const flush = ()=>{ if(rep){ for(let i=0;i<rep.n;i++) rep.steps.forEach(s=>out.push(s)); rep = null; } };
+  lines.forEach(raw=>{
+    const t = raw.trim();
+    const rm = t.match(/^(?:.*?\s)?(\d{1,2})\s*x\s*$/i);
+    if(rm){ flush(); rep = {n:+rm[1], steps:[]}; return; }
+    if(!/^[-•*]/.test(t)){ if(!t) flush(); return; }
+    const s = t.replace(/^[-•*]\s*/,'');
+    let min = 0; const hm = s.match(/(\d+(?:\.\d+)?)\s*h(?:\s*(\d+)\s*m)?/i), mm = s.match(/(\d+(?:\.\d+)?)\s*m(?:in)?\b(?!\s*\/)/i), sm = s.match(/(\d+)\s*s\b/i);
+    if(hm) min = Number(hm[1])*60 + (Number(hm[2])||0); else if(mm) min = Number(mm[1]); if(sm && !hm && !mm) min = Number(sm[1])/60;
+    const km = (s.match(/(\d+(?:\.\d+)?)\s*km/i)||[])[1];
+    const bpm = s.match(/(\d{2,3})\s*-\s*(\d{2,3})\s*bpm/i), zn = s.match(/\bZ([1-5])\b/i);
+    const kind = intentFromName(s);
+    const zb = hrZones().run;
+    let target = '';
+    if(bpm) target = bpm[1]+'–'+bpm[2]+' bpm';
+    else if(zn){ const z = zb[Number(zn[1])-1]; target = HR_ZONE_META[Number(zn[1])-1].label+' · '+z.min+'–'+z.max+' bpm'; }
+    const label = zn || bpm && !kind ? '' : (kind && kind!=='rest' ? kindMeta(kind).label : s.replace(/\d+(?:\.\d+)?\s*(h|m|s|km|min)\b/ig,'').trim().slice(0,24));
+    const step = {min, km:km?Number(km):null, txt:[min?(min>=1?Math.round(min)+"'":Math.round(min*60)+'"'):(km?km+' กม.':''), label, target].filter(Boolean).join(' · ')};
+    (rep ? rep.steps : out).push(step);
+  });
+  flush();
+  return out;
+}
+
+/* ----- intervals.icu: ดึงรายละเอียดกิจกรรม (laps + streams) แบบ lazy + แคชในเครื่อง ----- */
+const ACT_DETAIL_LS = 'milkLifeOS_actDetail';
+let actDetailCache = (()=>{ try{ return JSON.parse(localStorage.getItem(ACT_DETAIL_LS)||'{}') || {}; }catch(e){ return {}; } })();
+const actDetailBusy = {};
+function saveActDetailCache(){
+  try{
+    const ids = Object.keys(actDetailCache).sort((a,b)=>(actDetailCache[b].at||0)-(actDetailCache[a].at||0));
+    ids.slice(40).forEach(k=>delete actDetailCache[k]);
+    localStorage.setItem(ACT_DETAIL_LS, JSON.stringify(actDetailCache));
+  }catch(e){ /* quota — แคชแค่ในหน่วยความจำ */ }
+}
+function icuActId(a){ return a && String(a.id||'').indexOf('intervals-')===0 ? String(a.id).slice(10) : null; }
+async function icuGetJson(path){
+  const key = state.settings.intervalsApiKey; if(!key) throw new Error('ยังไม่ได้ใส่ API key');
+  const res = await fetch('https://intervals.icu/api/v1'+path, { headers:{ 'Authorization':'Basic '+btoa('API_KEY:'+key) } });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return res.json();
+}
+function compactExtra(x, runLike){
+  let cad = Number(x.average_cadence)||null; if(cad && runLike && cad < 120) cad *= 2;
+  return { start:String(x.start_date_local||'').slice(11,16)||null, avg_speed:Number(x.average_speed)||null, gap:Number(x.gap||x.icu_gap)||null,
+    cad:cad?Math.round(cad):null, ef:Number(x.icu_efficiency_factor)||null, dec:x.decoupling!=null?Number(x.decoupling):null,
+    intensity:Number(x.icu_intensity)||null, cal:Number(x.calories)||null, paired:x.paired_event_id||null,
+    desc:x.description?String(x.description).slice(0,300):'' };
+}
+async function loadActDetail(a, force){
+  const id = icuActId(a); if(!id || actDetailBusy[a.id]) return;
+  if(!force && actDetailCache[a.id] && actDetailCache[a.id].v===1) return;
+  actDetailBusy[a.id] = true;
+  const det = {v:1, at:Date.now(), laps:null, st:null, ext:null, err:null};
+  try{
+    const r = await icuGetJson('/activity/'+encodeURIComponent(id)+'?intervals=true');
+    det.ext = compactExtra(r||{}, isRunAct(a));
+    det.laps = ((r && r.icu_intervals)||[]).map(v=>({ type:v.type||'', label:v.label||'', min:Math.round((v.moving_time||v.elapsed_time||0)/6)/10,
+      km:Math.round((v.distance||0)/10)/100, hr:Math.round(v.average_heartrate||0)||null, maxHr:Math.round(v.max_heartrate||0)||null,
+      spd:v.average_speed || (v.distance && v.moving_time ? v.distance/v.moving_time : null), elev:Math.round(v.total_elevation_gain||0) })).filter(v=>v.min>0.15);
+  }catch(e){ det.err = e.message; }
+  try{
+    const r = await icuGetJson('/activity/'+encodeURIComponent(id)+'/streams.json?types=time,heartrate,velocity_smooth,altitude,distance');
+    const S = Array.isArray(r) ? r : Object.values(r||{});
+    const get = t => ((S.find(s=>s && s.type===t)||{}).data) || [];
+    const time = get('time'), hr = get('heartrate'), v = get('velocity_smooth'), alt = get('altitude'), dist = get('distance');
+    if(time.length){
+      const hist = {};
+      for(let i=0;i<hr.length;i++){ const h = hr[i]; if(!(h>40 && h<230)) continue; let dt = i>0 && time[i]-time[i-1]>0 ? time[i]-time[i-1] : 1; if(dt>30) dt = 1; const b = Math.round(h); hist[b] = (hist[b]||0)+dt; }
+      const n = time.length, step = Math.max(1, Math.ceil(n/320)), pts = [];
+      for(let i=0;i<n;i+=step){
+        const j = Math.min(n-1, i+step-1); let hs=0,hc=0,vs=0,vc=0;
+        for(let k=i;k<=j;k++){ if(hr[k]>40){hs+=hr[k];hc++;} if(v[k]>0.3){vs+=v[k];vc++;} }
+        pts.push([Math.round(time[i]/6)/10, hc?Math.round(hs/hc):null, vc?Math.round(1000/(vs/vc)):null, alt[i]!=null?Math.round(alt[i]):null, dist[i]!=null?Math.round(dist[i]/10)/100:null]);
+      }
+      det.st = {hist, pts};
+    }
+  }catch(e){ if(!det.err) det.err = e.message; }
+  delete actDetailBusy[a.id];
+  if(det.ext){ Object.keys(det.ext).forEach(k=>{ if(det.ext[k]!=null && det.ext[k]!=='' && a[k]==null) a[k] = det.ext[k]; }); saveState(); }
+  actDetailCache[a.id] = det; saveActDetailCache();
+  if(actDetailId === a.id) refreshActDetail();
+}
+
+/* ----- รีวิวรายกิจกรรม (port ของ reviewSession_ ใน Code.gs) ----- */
+function fmtPaceSec(sec){ if(!sec || !isFinite(sec)) return '—'; let m = Math.floor(sec/60), s = Math.round(sec%60); if(s===60){m++; s=0;} return m+':'+pad2(s); }
+function zoneRangeTxt(bounds, i){ return i===0 ? '< '+bounds[1].min : i===4 ? '≥ '+bounds[4].min : bounds[i].min+'–'+bounds[i].max; }
+function reviewActivity(a){
+  const det = actDetailCache[a.id] || {};
+  const notes = [], push = (level, t, d) => notes.push({level, t, d});
+  const bounds = zoneBoundsFor(a), run = isRunAct(a);
+  const km = Number(a.distance_km)||0, min = Number(a.moving_time_min)||0, elev = Number(a.elevation_gain_m)||0;
+  let zr = activityZoneEst(a), zm = zr ? zr.zm : null, zSrc = zr ? zr.src : null;
+  if(det.st && det.st.hist && Object.keys(det.st.hist).length){ zm = [0,0,0,0,0]; Object.keys(det.st.hist).forEach(h=>{ zm[Math.max(0, zoneIndexOfHr(+h, bounds))] += det.st.hist[h]/60; }); zSrc = 'stream'; }
+  const zt = zm ? zm.reduce((s,v)=>s+v,0) : 0;
+  const light = zt ? (zm[0]+zm[1])/zt : null, hard = zt ? (zm[3]+zm[4])/zt : null;
+  let actual = sessionKind(a);
+  // มี HR รายวินาทีแล้ว → จัดประเภทจากโซนจริงของ stream (แม่นกว่า zone times/HR เฉลี่ย)
+  if(zSrc==='stream' && run && !a.sessionType && actual!=='race' && zt){ actual = classifyZoneMix(zm);
+    if((actual==='endurance' || actual==='recovery' || actual==='steady') && (min >= 100 || km >= 18)) actual = 'long'; }
+  const plan = pairPlan(a), intent = plan ? planIntent(plan) : null;
+  const rpe = Number(a.userRpe || a.icu_rpe) || null;
+  let score = 100, match = null;
+  // 1) เจตนาของแผน vs ที่ทำจริง
+  if(run && plan){
+    const easyTop = bounds[2].min;
+    if(isEasyKind(intent)){
+      if((hard!=null && hard>0.15) || (a.avg_hr && a.avg_hr > easyTop+2)){ match='harder'; score-=25;
+        push('warn','วันเบาแต่วิ่งแรงเกินโซน', (hard!=null?'เวลาใน Tempo/Interval '+Math.round(hard*100)+'%':'')+(a.avg_hr?' · HR เฉลี่ย '+Math.round(a.avg_hr):'')+' — วันเบาควรคุม HR ไม่เกิน '+easyTop+' bpm เพื่อให้ร่างกายฟื้นและสร้างฐานแอโรบิก'); }
+      else { match='ok'; push('good','คุมโซนวันเบาได้ดี','เบา (Recovery+Endurance) '+(light!=null?Math.round(light*100)+'%':'—')+' ตรงเจตนาของแผน '+kindMeta(intent).label); }
+    } else if(intent==='steady'){
+      const st = zt ? zm[2]/zt : 0;
+      if(st>=0.25 || actual==='steady'){ match='ok'; push('good','Steady ได้ตามเป้า','เวลาในโซน Steady '+Math.round(zm?zm[2]:0)+' นาที ('+Math.round(st*100)+'%)'); }
+      else if(hard>0.2){ match='harder'; score-=15; push('warn','Steady กลายเป็น Tempo','Tempo/Interval '+Math.round(hard*100)+'% — Steady ควรอยู่ '+zoneRangeTxt(bounds,2)+' bpm (หายใจหนักแต่ยังพูดเป็นประโยคสั้นได้)'); }
+      else { match='easier'; score-=15; push('warn','ความเข้มต่ำกว่าเป้า Steady','Steady แค่ '+Math.round(zm?zm[2]:0)+' นาที — ช่วงหลักควรอยู่ '+zoneRangeTxt(bounds,2)+' bpm'); }
+    } else if(isHardKind(intent) && zm){
+      const need = intent==='interval' ? 6 : 12, got = intent==='interval' ? zm[4]+zm[3]*0.5 : zm[3]+zm[4]+zm[2]*0.3;
+      if(got>=need){ match='ok'; push('good',(intent==='interval'?'Interval':'Tempo')+' ถึงความเข้มเป้าหมาย','เวลาใน '+(intent==='interval'?'Interval '+Math.round(zm[4]):'Tempo+ '+Math.round(zm[3]+zm[4]))+' นาที'); }
+      else { match='easier'; score-=20; push('warn','ความเข้มไม่ถึงเป้าของเซสชันหนัก','เวลาในโซน '+(intent==='interval'?'Interval (≥'+bounds[4].min+')':'Tempo ('+zoneRangeTxt(bounds,3)+')')+' แค่ '+Math.round(intent==='interval'?zm[4]:zm[3]+zm[4])+' นาที — HR นาฬิกาข้อมือมักตามไม่ทันเซ็ตสั้น ให้ดูเพซ/RPE ประกอบ ถ้ารู้สึกไม่ไหวจริงอาจล้าสะสม'); }
+    }
+  } else if(run && !plan && trPlans().length) push('info','ไม่มีแผนวันนี้','เป็นการซ้อมเพิ่มนอกแผน ('+kindMeta(actual).label+') — ถ้าเป็นวันพักตามแผน ควรเบาจริงไม่เกิน 30–45 นาที');
+  // 2) เวลาเทียบแผน
+  let durRatio = null, loadRatio = null;
+  if(plan && plan.min && min){ durRatio = min/plan.min;
+    if(durRatio < 0.75){ score -= durRatio<0.5?20:10; push('warn','สั้นกว่าแผน '+Math.round((1-durRatio)*100)+'%', fmtHM(min)+' จากแผน '+fmtHM(plan.min)+' — ถ้าตั้งใจตัดเพราะล้า/เจ็บ ให้จดในบันทึกด้านล่าง'); }
+    else if(durRatio > 1.25){ score -= 10; push('warn','ยาวกว่าแผน '+Math.round((durRatio-1)*100)+'%', fmtHM(min)+' จากแผน '+fmtHM(plan.min)+' — ซ้อมเกินแผนบ่อยๆ ทำให้ล้าสะสมโดยไม่รู้ตัว'); }
+    else push('good','เวลาซ้อมตรงแผน', fmtHM(min)+' / แผน '+fmtHM(plan.min)+' ('+Math.round(durRatio*100)+'%)'); }
+  const load = activityLoad(a);
+  if(plan && plan.load) loadRatio = load/plan.load;
+  // 3) Aerobic decoupling
+  const dec = a.dec!=null ? Number(a.dec) : null;
+  if(run && dec!=null && min>=45 && !isHardKind(actual)){
+    if(dec<=5) push('good','Decoupling '+dec.toFixed(1)+'%','HR ไม่ไหลขึ้นตามเวลา — ความทนแอโรบิก (durability) ดี');
+    else if(dec<=10){ score-=3; push('warn','Decoupling '+dec.toFixed(1)+'%','HR เริ่มไหลช่วงท้าย — ยังพอรับได้ (5–10%) ถ้าอากาศร้อนให้ดื่มน้ำ+เกลือแร่มากขึ้น'); }
+    else { score-=10; push('bad','Decoupling สูง '+dec.toFixed(1)+'%','HR ไหลขึ้นมาก (>10%) — ความทนแอโรบิกยังไม่พอสำหรับเวลานี้ หรือร้อน/ขาดน้ำ/ล้าสะสม ควรลดเพซช่วงแรก'); }
+  }
+  // 4) Efficiency Factor เทียบค่ากลาง 42 วัน (วิ่งถนนเบาๆ)
+  let efCmp = null; const ef = Number(a.ef)||null;
+  if(run && ef && a.type!=='run_trail' && isEasyKind(actual)){
+    const base = state.running.activities.filter(x=>x!==a && isRunAct(x) && x.type!=='run_trail' && x.ef && x.date<a.date && x.date>=addDays(a.date,-42) && isEasyKind(sessionKind(x))).map(x=>Number(x.ef)).sort((p,q)=>p-q);
+    if(base.length>=4){ const med = base[Math.floor(base.length/2)], ch = (ef/med-1)*100; efCmp = {base:med, ch};
+      if(ch>=4) push('good','Efficiency Factor +'+ch.toFixed(1)+'%','วิ่งได้เร็วขึ้นที่ HR เท่าเดิม เทียบค่ากลาง 6 สัปดาห์ ('+med.toFixed(2)+') — ฟิตแอโรบิกดีขึ้น');
+      else if(ch<=-5) push('warn','Efficiency Factor '+ch.toFixed(1)+'%','ช้าลงที่ HR เท่าเดิม — อาจล้า นอนน้อย ร้อน หรือเส้นทางยากกว่าปกติ'); }
+  }
+  // 5) Laps / intervals
+  let reps = null; const laps = det.laps || null;
+  if(run && laps && laps.length){
+    const work = laps.filter(l=>/work/i.test(l.type));
+    if(work.length>=3 && (isHardKind(actual) || isHardKind(intent))){
+      const pace = work.map(l=>l.spd?1000/l.spd:null).filter(Boolean);
+      if(pace.length>=3){
+        const mean = pace.reduce((s,v)=>s+v,0)/pace.length, sd = Math.sqrt(pace.reduce((s,v)=>s+(v-mean)*(v-mean),0)/pace.length), cv = sd/mean*100;
+        const f2 = (pace[0]+pace[1])/2, l2 = (pace[pace.length-1]+pace[pace.length-2])/2, fade = (l2/f2-1)*100;
+        reps = {n:work.length, pace:mean, cv, fade, hr:Math.round(work.reduce((s,l)=>s+(l.hr||0),0)/work.length)};
+        if(cv>6 || fade>5){ score-=8; push('warn','เซ็ตไม่สม่ำเสมอ', work.length+' เซ็ต เพซเฉลี่ย '+fmtPaceSec(mean)+'/กม. · แกว่ง '+cv.toFixed(1)+'% · ช่วงท้าย'+(fade>0?'ช้าลง ':'เร็วขึ้น ')+Math.abs(fade).toFixed(1)+'% — ออกตัวเซ็ตแรกเร็วไป ลองคุมให้ทุกเซ็ตเท่ากัน'); }
+        else push('good','เซ็ตสม่ำเสมอดีมาก', work.length+' เซ็ต เพซเฉลี่ย '+fmtPaceSec(mean)+'/กม. แกว่งแค่ '+cv.toFixed(1)+'% · HR เฉลี่ยในเซ็ต '+reps.hr);
+      }
+    }
+  }
+  // 6) โหลดสูงผิดปกติ
+  const prevMax = state.running.activities.filter(x=>x!==a && x.date<a.date && x.date>=addDays(a.date,-28)).reduce((m,x)=>Math.max(m, activityLoad(x)), 0);
+  if(prevMax && load > prevMax*1.3 && load >= 80) push('warn','เซสชันหนักที่สุดในรอบ 4 สัปดาห์','Load '+Math.round(load)+' (สูงสุดเดิม '+Math.round(prevMax)+') — พรุ่งนี้ควรเป็นวันเบา/พัก นอน 8 ชม. และเติมคาร์บ+โปรตีนภายใน 30–60 นาที');
+  // 7) เทรล / 8) cadence / 9) long run
+  if(run && km>=3 && elev/km>=30) push('info','เทรล/ขึ้นเขา '+Math.round(elev)+' ม. ('+Math.round(elev/km)+' ม./กม.)','เพซไม่สะท้อนความหนัก ให้ดู HR/RPE แทน และฝึก power hike ช่วงชัน');
+  const cad = Number(a.cad)||null;
+  if(run && cad && a.type!=='run_trail' && cad<160 && min>=20) push('info','Cadence '+cad+' spm','ค่อนข้างต่ำ ลองก้าวสั้นถี่ขึ้น 5% (≈'+Math.round(cad*1.05)+') ช่วยลดแรงกระแทกเข่า/สะโพก');
+  if(run && min>=110) push('info','Long run '+fmtHM(min),'ซ้อมกินคาร์บ 40–60 ก./ชม. (ultra ไต่ไป 60–90) + น้ำ 400–700 มล./ชม. ด้วยเจล/อาหารที่จะใช้จริงวันแข่ง');
+  // 10) RPE / อาการ
+  if(rpe){ if(rpe>=7 && isEasyKind(intent||actual)){ score-=5; push('warn','RPE '+rpe+' ในวันเบา','รู้สึกหนักทั้งที่เป็นวันเบา — สัญญาณล้าสะสม นอน/กิน/ความเครียดเป็นยังไงบ้าง?'); }
+    else push('info','RPE '+rpe+'/10', rpe>=8?'หนักมาก — ให้ความสำคัญกับการฟื้นตัวคืนนี้':'บันทึกแล้ว'); }
+  if(a.painArea){ score-=15; push('bad','แจ้งอาการ: '+a.painArea,'ถ้าเจ็บแปลบ/บวม/เดินกะเผลก ให้หยุดวิ่งและพัก ถ้ายังเจ็บเกิน 3–5 วันควรพบแพทย์/นักกายภาพ'); }
+  score = Math.max(30, Math.min(100, Math.round(score)));
+  const ord = {bad:0, warn:1, good:2, info:3};
+  notes.sort((p,q)=>ord[p.level]-ord[q.level]);
+  const spd = Number(a.avg_speed) || (km && min ? km*1000/(min*60) : null);
+  return { run, km, min, elev, load, actual, plan, intent, match, durRatio, loadRatio, zm, zSrc, zt, light, hard, rpe, ef, efCmp, dec, cad, laps, reps, notes, score,
+    grade: score>=90?'A':score>=80?'B+':score>=70?'B':score>=60?'C':'D', pace: run && km && min ? min*60/km : null, spd,
+    pctLthr: a.avg_hr ? Math.round(a.avg_hr/(a.type==='ride' ? (hrZones().bikeLthr||hrZones().lthr) : hrZones().lthr)*100) : null, st: det.st || null, det };
+}
+function gradeColor(g){ return /^A/.test(g) ? '#2F8F55' : /^B/.test(g) ? '#2F6FD6' : g==='C' ? '#B87800' : '#D23F3F'; }
+
+/* ----- กราฟ HR / เพซ / ความสูง พร้อมแถบโซน ----- */
+function renderActStreamChart(a, rv){
+  const pts = rv.st && rv.st.pts; if(!pts || pts.length<3) return '';
+  const bounds = zoneBoundsFor(a), useDist = rv.run && pts.some(p=>p[4]!=null && p[4]>0);
+  const narrow = typeof window!=='undefined' && window.innerWidth < 700;
+  const W = narrow ? 440 : 760, H = narrow ? 260 : 230, pl = 34, pr = 46, pt = 10, pb = 24;
+  const xs = pts.map(p=>useDist ? (p[4]||0) : p[0]);
+  const x0 = xs[0], x1 = xs[xs.length-1] || 1;
+  const X = v => pl + (W-pl-pr) * (v-x0)/Math.max(1e-6, x1-x0);
+  const hrs = pts.map(p=>p[1]).filter(Boolean);
+  const hrLo = Math.max(60, Math.min(...hrs, bounds[1].min) - 8), hrHi = Math.min(220, Math.max(...hrs, bounds[3].max) + 6);
+  const Yh = v => pt + (H-pt-pb) * (1 - (v-hrLo)/(hrHi-hrLo));
+  const paces = pts.map(p=>p[2]).filter(v=>v && v<900).sort((p,q)=>p-q);
+  const pLo = paces.length ? paces[Math.floor(paces.length*0.03)] : 240, pHi = paces.length ? paces[Math.floor(paces.length*0.97)] : 600;
+  const pMin = Math.max(120, pLo - 15), pMax = pHi + 20;
+  const Yp = v => pt + (H-pt-pb) * ((Math.max(pMin, Math.min(pMax, v))-pMin)/(pMax-pMin));
+  const alts = pts.map(p=>p[3]).filter(v=>v!=null);
+  const aLo = alts.length ? Math.min(...alts) : 0, aHi = alts.length ? Math.max(...alts) : 1;
+  const Ya = v => H-pb - (H-pt-pb) * 0.85 * (v-aLo)/Math.max(1, aHi-aLo);
+  const bands = HR_ZONE_META.map((z,i)=>{ const lo = i===0 ? hrLo : bounds[i].min, hi = i===4 ? hrHi : bounds[i].max+1;
+    const a1 = Math.max(lo, hrLo), b1 = Math.min(hi, hrHi); if(b1<=a1) return '';
+    return `<rect x="${pl}" width="${W-pl-pr}" y="${Yh(b1)}" height="${Yh(a1)-Yh(b1)}" fill="${z.color}" opacity="${i===0?0.05:0.09}"/>`
+      + (i>0 ? `<line x1="${pl}" x2="${W-pr}" y1="${Yh(bounds[i].min)}" y2="${Yh(bounds[i].min)}" stroke="${z.color}" stroke-dasharray="3 3" opacity=".7"/>` : '')
+      + (Yh(a1)-Yh(b1) > 10 ? `<text x="${W-pr-4}" y="${Yh(b1)+10}" text-anchor="end" class="tr-ax" style="fill:${z.color}; font-weight:600">${z.label} ${zoneRangeTxt(bounds,i)}</text>` : ''); }).join('');
+  let altPath = '';
+  if(alts.length > 2){ const seg = pts.map((p,i)=>p[3]!=null ? [X(xs[i]), Ya(p[3])] : null).filter(Boolean);
+    altPath = `<path d="M${seg[0][0]} ${H-pb} ${seg.map(s=>'L'+s[0].toFixed(1)+' '+s[1].toFixed(1)).join(' ')} L${seg[seg.length-1][0]} ${H-pb} Z" fill="#B9C0CF" opacity=".28"/>`; }
+  const pathOf = (idx, Yf, ok) => { let d = '', pen = false; pts.forEach((p,i)=>{ const v = p[idx]; if(v==null || (ok && !ok(v))){ pen = false; return; } d += (pen?'L':'M')+X(xs[i]).toFixed(1)+' '+Yf(v).toFixed(1)+' '; pen = true; }); return d; };
+  const hrPath = `<path d="${pathOf(1, Yh)}" fill="none" stroke="#E5484D" stroke-width="1.6" stroke-linejoin="round"/>`;
+  const pPath = rv.run ? `<path d="${pathOf(2, Yp, v=>v<900)}" fill="none" stroke="#5B6EF5" stroke-width="1.4" stroke-linejoin="round" opacity=".9"/>` : '';
+  const yt = []; for(let v=Math.ceil(hrLo/20)*20; v<=hrHi; v+=20) yt.push(`<text x="${pl-6}" y="${Yh(v)+3}" text-anchor="end" class="tr-ax">${v}</text>`);
+  const pt2 = rv.run ? [pMin, (pMin+pMax)/2, pMax].map(v=>`<text x="${W-pr+4}" y="${Yp(v)+3}" class="tr-ax" style="fill:#5B6EF5">${fmtPaceSec(v)}</text>`).join('') : '';
+  const xt = []; const step = (x1-x0) > 30 ? (useDist?5:15) : (x1-x0) > 12 ? (useDist?2:10) : (useDist?1:5);
+  for(let v=Math.ceil(x0/step)*step; v<=x1; v+=step) xt.push(`<text x="${X(v)}" y="${H-6}" text-anchor="middle" class="tr-ax">${useDist? v.toFixed(v%1?1:0) : Math.round(v)+"'"}</text>`);
+  const n = pts.length, cw = (W-pl-pr)/n;
+  const hov = pts.map((p,i)=>`<rect class="tr-hov" x="${X(xs[i])-cw/2}" y="${pt}" width="${Math.max(2,cw)}" height="${H-pt-pb}" data-tip="${tipAttr(`<b>${useDist?(p[4]||0).toFixed(2)+' กม.':''} ${Math.floor(p[0])}'</b><br>HR <b>${p[1]||'—'}</b>${rv.run&&p[2]&&p[2]<900?'<br>เพซ <b>'+fmtPaceSec(p[2])+'</b>/กม.':''}${p[3]!=null?'<br>ความสูง '+p[3]+' ม.':''}`)}"/>`).join('');
+  return `<div class="tr-legend" style="justify-content:flex-end"><span><i style="background:#E5484D"></i>HR</span>${rv.run?'<span><i style="background:#5B6EF5"></i>เพซ</span>':''}<span><i style="background:#B9C0CF; height:8px"></i>ความสูง</span></div>
+  <svg viewBox="0 0 ${W} ${H}" class="tr-svg" role="img" aria-label="กราฟ HR เพซ ความสูง">${bands}${altPath}${pPath}${hrPath}${yt.join('')}${pt2}${xt.join('')}
+    <text x="${(W)/2}" y="${H+4}" text-anchor="middle" class="tr-ax">${useDist?'กม.':'นาที'}</text>${hov}</svg>`;
+}
+
+/* ----- ป๊อปอัพรายละเอียดกิจกรรม ----- */
+let actDetailId = null, actDetailEdit = false;
+function actEnsureOverlay(){
+  let ov = document.getElementById('actOverlay');
+  if(!ov){
+    ov = document.createElement('div'); ov.className = 'modal-overlay act-overlay'; ov.id = 'actOverlay'; ov.style.display = 'none';
+    ov.onclick = e=>{ if(e.target===ov) closeActDetail(); };
+    ov.innerHTML = '<div class="modal-box act-box" id="actBox"></div>';
+    document.body.appendChild(ov);
+  }
+  return ov;
+}
+function openActDetail(id){
+  const a = state.running.activities.find(x=>x.id===id); if(!a) return;
+  actDetailId = id; actDetailEdit = false;
+  const ov = actEnsureOverlay(); ov.style.display = 'flex'; document.body.style.overflow = 'hidden';
+  refreshActDetail();
+  const box = document.getElementById('actBox'); if(box) box.scrollTop = 0;
+  if(icuActId(a) && state.settings.intervalsApiKey) loadActDetail(a);
+}
+function closeActDetail(){ actDetailId = null; const ov = document.getElementById('actOverlay'); if(ov) ov.style.display = 'none'; document.body.style.overflow = ''; }
+function actDetailNav(dir){
+  const list = [...state.running.activities].sort((p,q)=>(String(q.date)+(q.start||'')).localeCompare(String(p.date)+(p.start||'')));
+  const i = list.findIndex(x=>x.id===actDetailId); const nx = list[i+dir]; if(nx) openActDetail(nx.id);
+}
+function refreshActDetail(){
+  const box = document.getElementById('actBox'); if(!box || !actDetailId) return;
+  const a = state.running.activities.find(x=>x.id===actDetailId); if(!a){ closeActDetail(); return; }
+  const keep = box.scrollTop; box.innerHTML = actDetailHtml(a); box.scrollTop = keep;
+}
+function toggleActEdit(){ actDetailEdit = !actDetailEdit; if(actDetailEdit && editingActNoteId){ editingActNoteId = null; render(); } refreshActDetail(); }
+if(typeof document !== 'undefined') document.addEventListener('keydown', e=>{ if(actDetailId && e.key==='Escape') closeActDetail(); else if(actDetailId && !actDetailEdit && (e.key==='ArrowLeft' || e.key==='ArrowRight') && !/INPUT|SELECT|TEXTAREA/.test((e.target||{}).tagName||'')) actDetailNav(e.key==='ArrowLeft'?1:-1); });
+function actDetailHtml(a){
+  const rv = reviewActivity(a), meta = activityTypeMeta(a.type), km = kindMeta(rv.actual), bounds = zoneBoundsFor(a);
+  const busy = !!actDetailBusy[a.id], det = rv.det, canFetch = !!(icuActId(a) && state.settings.intervalsApiKey);
+  const d = new Date(a.date+'T00:00:00');
+  const sub = [fmtDate(a.date)+' '+(d.getFullYear()+543), a.start||'', rv.km ? rv.km.toFixed(2)+' กม.' : '', rv.min ? fmtDur(rv.min)+' ชม.' : '', rv.elev ? '↑'+Math.round(rv.elev)+' ม.' : ''].filter(Boolean).join(' · ');
+  const hm = (lbl, val, unit) => `<div><small>${lbl}</small><b class="mono">${val}</b><i>${unit||''}</i></div>`;
+  const hero = `<div class="act-hm">
+    ${hm('ระยะ', rv.run||rv.km ? (rv.km||0).toFixed(2) : '—', 'กม.')}
+    ${hm('เวลา', rv.min ? fmtDur(rv.min) : '—', 'ชม.')}
+    ${rv.run ? hm('เพซ', fmtPaceSec(rv.pace), '/กม.') : hm('ความเร็ว', rv.spd ? (rv.spd*3.6).toFixed(1) : '—', 'กม./ชม.')}
+    ${hm('HR เฉลี่ย', a.avg_hr ? Math.round(a.avg_hr) : '—', rv.pctLthr ? rv.pctLthr+'% LTHR' : (a.max_hr?'สูงสุด '+Math.round(a.max_hr):''))}
+    ${hm('ความสูง', Math.round(rv.elev||0).toLocaleString('th-TH'), 'ม.')}
+    ${hm('Load', Math.round(rv.load)+(activityHasRealLoad(a)?'':'*'), rv.rpe ? 'RPE '+rv.rpe : '')}
+  </div>`;
+  const plan = rv.plan ? `<div class="act-two">
+      <div class="act-pt" style="--c:#5B6EF5"><small>แผน</small><b>${escapeHtml(rv.plan.name||'—')}</b><span>${escapeHtml(kindMeta(rv.intent).label)}${rv.plan.min?' · '+fmtHM(rv.plan.min):''}${rv.plan.load?' · Load '+rv.plan.load:''}</span></div>
+      <div class="act-pt" style="--c:${rv.match==='ok'?'#2F8F55':'#B87800'}"><small>ทำจริง</small><b>${escapeHtml(km.label)} ${rv.match==='ok'?trChip('good','ตรงเจตนา'):rv.match==='harder'?trChip('warn','แรงกว่าแผน'):rv.match==='easier'?trChip('warn','เบากว่าแผน'):''}</b><span>${rv.durRatio!=null?'เวลา '+Math.round(rv.durRatio*100)+'% ของแผน':''}${rv.loadRatio!=null?' · Load '+Math.round(rv.loadRatio*100)+'%':''}</span></div></div>` : '';
+  const chart = rv.st ? renderActStreamChart(a, rv)
+    : canFetch ? `<div class="act-ph">${busy?'⏳ กำลังดึงกราฟ HR/เพซ/ความสูง และ Laps จาก intervals.icu…':det.err?'ดึงข้อมูลไม่สำเร็จ ('+escapeHtml(det.err)+') <button class="btn btn-ghost btn-sm" onclick="loadActDetail(state.running.activities.find(x=>x.id===\''+a.id+'\'),true)">ลองใหม่</button>':'ไม่มีข้อมูลกราฟรายวินาทีสำหรับกิจกรรมนี้'}</div>`
+    : `<div class="act-ph">${icuActId(a)?'ใส่ intervals.icu API key ที่หน้า "ตั้งค่า" เพื่อดูกราฟและ Laps':'บันทึกเอง — ไม่มีกราฟรายวินาที/Laps'}</div>`;
+  const zt = rv.zt || 0;
+  const zones = rv.zm ? `<div class="act-zbar">${rv.zm.map((v,i)=>v>0?`<i style="flex:${v}; background:${HR_ZONE_META[i].color}" data-tip="${tipAttr(HR_ZONE_META[i].label+' '+Math.round(100*v/zt)+'% · '+fmtHM(v))}"></i>`:'').join('')}</div>
+    <div class="act-zleg">${HR_ZONE_META.map((z,i)=>`<div><span class="dot" style="background:${z.color}"></span>${z.label}<b class="mono">${Math.round(100*(rv.zm[i]||0)/(zt||1))}%</b><span class="muted">${fmtDur(rv.zm[i]||0)} · ${zoneRangeTxt(bounds,i)}</span></div>`).join('')}</div>`
+    : '<div class="muted">ไม่มีข้อมูล HR</div>';
+  const ex = [];
+  if(rv.ef) ex.push(['Efficiency', rv.ef.toFixed(2)+(rv.efCmp?' ('+fmtSigned(rv.efCmp.ch,1)+'%)':''), rv.efCmp?(rv.efCmp.ch>=2?'good':rv.efCmp.ch<=-4?'warn':'info'):'info', rv.efCmp?'เทียบค่ากลาง 6 สัปดาห์ '+rv.efCmp.base.toFixed(2):'ความเร็ว ÷ HR']);
+  if(rv.cad) ex.push(['Cadence', rv.cad+' spm', rv.cad>=165?'good':'info', rv.cad<160?'ลองก้าวถี่ขึ้น ~5%':'']);
+  if(rv.light!=null) ex.push(['เบา / หนัก', Math.round(rv.light*100)+'% / '+Math.round(rv.hard*100)+'%', 'info', 'Recovery+Endurance / Tempo+Interval']);
+  if(rv.dec!=null) ex.push(['Decoupling', rv.dec.toFixed(1)+'%', rv.dec<=5?'good':rv.dec<=10?'warn':'bad', 'HR ไหลเทียบเพซ (Pa:HR)']);
+  if(rv.rpe) ex.push(['RPE', rv.rpe+'/10', rv.rpe>=8?'warn':'info', a.feelUser?FEEL_EMOJI[a.feelUser]+' ความรู้สึก '+a.feelUser+'/5':'']);
+  if(a.painArea) ex.push(['อาการ', a.painArea, 'bad', '']);
+  const tiles = ex.length ? `<div class="act-tiles">${ex.map(e=>`<div class="act-tile" style="--c:${TR_ST[e[2]].c}"><small>${escapeHtml(e[0])}</small><b class="mono" style="color:${e[2]==='info'?'var(--ink)':TR_ST[e[2]].c}">${escapeHtml(e[1])}</b>${e[3]?`<span>${escapeHtml(e[3])}</span>`:''}</div>`).join('')}</div>` : '';
+  const notes = rv.notes.length ? `<div class="act-notes">${rv.notes.map(n=>`<div class="act-note"><span class="ic" style="background:${TR_ST[n.level].bg}; color:${TR_ST[n.level].c}">${n.level==='good'?'✓':n.level==='bad'?'!':n.level==='warn'?'▲':'i'}</span><div><b>${escapeHtml(n.t)}</b><span>${escapeHtml(n.d)}</span></div></div>`).join('')}</div>` : '<div class="muted">ยังไม่มีข้อสังเกต — ใส่ HR/RPE เพิ่มเพื่อให้วิเคราะห์ได้ละเอียดขึ้น</div>';
+  let lapsHtml = '';
+  if(rv.laps && rv.laps.length > 1){
+    const steps = rv.plan ? parsePlanSteps(rv.plan.desc) : [];
+    const useSteps = steps.length && Math.abs(steps.length - rv.laps.length) <= 1;
+    lapsHtml = `<h4 class="act-h">Laps / Intervals ${rv.reps?`<span class="muted" style="font-weight:400">${rv.reps.n} เซ็ต · เพซเฉลี่ย ${fmtPaceSec(rv.reps.pace)} · แกว่ง ${rv.reps.cv.toFixed(1)}%</span>`:''}</h4>
+    <div class="act-scroll"><table class="table act-laps"><tr><th>#</th><th>ช่วง</th><th>เวลา</th><th>ระยะ</th><th>${rv.run?'เพซ':'ความเร็ว'}</th><th>HR</th><th>${useSteps?'แผน':'โซน'}</th><th style="text-align:right">ขึ้น (ม.)</th></tr>
+    ${rv.laps.map((l,j)=>{ const work = /work/i.test(l.type); const zi = l.hr ? Math.max(0, zoneIndexOfHr(l.hr, bounds)) : -1; const zc = zi>=0 ? HR_ZONE_META[zi] : null;
+      const lbl = l.label || (work?'Work':/warm/i.test(l.type)?'Warm-up':/cool/i.test(l.type)?'Cool-down':/rest|recover/i.test(l.type)?'Rest':(l.type||'-'));
+      return `<tr class="${work?'work':''}"><td>${j+1}</td><td><span class="act-lap">${escapeHtml(lbl)}</span></td><td class="mono">${l.min>=1?fmtDur(l.min).replace(/^0:/,'')+"'":Math.round(l.min*60)+'"'}</td><td class="mono">${l.km?l.km.toFixed(2):'—'}</td>
+      <td class="mono" style="color:${work?'#D9822B':'inherit'}; font-weight:${work?700:400}">${l.spd?(rv.run?fmtPaceSec(1000/l.spd):(l.spd*3.6).toFixed(1)):'—'}</td><td class="mono" style="color:${zc?zc.color:'inherit'}; font-weight:600">${l.hr||'—'}</td>
+      <td class="muted">${useSteps ? escapeHtml((steps[j]||{}).txt||'') : (zc?zc.label+' · '+zoneRangeTxt(bounds,zi)+' bpm':'')}</td><td class="mono" style="text-align:right">${l.elev||''}</td></tr>`; }).join('')}</table></div>`;
+  }
+  const zoneSrc = rv.zSrc==='stream' ? 'จาก HR วินาทีต่อวินาที' : rv.zSrc==='icu' ? 'จาก intervals.icu' : rv.zSrc==='est' ? 'ประมาณจาก HR เฉลี่ย' : '';
+  const editRow = actDetailEdit ? `<div class="form-row tr-edit" style="margin:8px 0 0">
+    <select id="an_rpe"><option value="">RPE (ความเหนื่อย)</option>${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${Number(a.userRpe)===n?'selected':''} value="${n}">RPE ${n}${n<=3?' เบา':n<=6?' ปานกลาง':n<=8?' หนัก':' สุดๆ'}</option>`).join('')}</select>
+    <select id="an_feel"><option value="">ความรู้สึก</option>${[1,2,3,4,5].map(n=>`<option ${Number(a.feelUser)===n?'selected':''} value="${n}">${FEEL_EMOJI[n]} ${n}</option>`).join('')}</select>
+    <select id="an_stype"><option value="">ประเภทซ้อม (อัตโนมัติ)</option>${HR_ZONE_META.map(z=>`<option value="${z.key}" ${a.sessionType===z.key?'selected':''}>${z.label}</option>`).join('')}</select>
+    <input type="text" id="an_pain" value="${escapeHtml(a.painArea||'')}" placeholder="จุดที่เจ็บ เช่น เข่าซ้าย">
+    <input type="text" id="an_note" value="${escapeHtml(a.note||'')}" placeholder="บันทึก (สิ่งที่เจอ/อาหาร/อุปกรณ์)">
+    <button class="btn btn-sm" onclick="saveActNote('${a.id}')">บันทึก</button></div>`
+    : (a.note ? `<div class="act-memo">📝 ${escapeHtml(a.note)}</div>` : '');
+  return `
+  <div class="act-head">
+    <div class="act-ic" style="background:${km.color}22">${km.icon}</div>
+    <div style="flex:1; min-width:0">
+      <div class="act-title">${escapeHtml(a.name||'กิจกรรม')}</div>
+      <div class="muted">${escapeHtml(sub)}</div>
+      <div style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap"><span class="tag" style="background:${meta.color}; color:#fff">${meta.label}</span><span class="tr-stag" style="background:${km.color}">${escapeHtml(km.label)}${a.sessionType?' ✓':''}</span></div>
+    </div>
+    ${rv.actual==='strength' ? '' : `<div class="act-grade" style="background:${gradeColor(rv.grade)}" data-tip="${tipAttr('คะแนนเซสชัน '+rv.score+'/100 — หักจากความต่างกับแผน, decoupling, เซ็ตไม่สม่ำเสมอ, RPE, อาการเจ็บ')}">${rv.grade}</div>`}
+    <div class="act-nav"><button class="btn btn-ghost btn-sm" onclick="actDetailNav(1)" title="กิจกรรมก่อนหน้า">‹</button><button class="btn btn-ghost btn-sm" onclick="actDetailNav(-1)" title="กิจกรรมถัดไป">›</button><button class="modal-close" onclick="closeActDetail()">✕</button></div>
+  </div>
+  ${hero}
+  ${plan}
+  <div class="act-sec">${chart}</div>
+  <div class="act-sec"><div class="act-sh"><h4 class="act-h" style="margin:0">เวลาในโซน HR</h4><span class="muted">${zoneSrc}</span></div>${zones}</div>
+  ${tiles}
+  <div class="act-sec"><h4 class="act-h">คอมเมนต์รายเซสชัน</h4>${notes}</div>
+  ${lapsHtml ? `<div class="act-sec">${lapsHtml}</div>` : (busy && canFetch ? '<div class="act-sec muted">⏳ กำลังโหลด Laps…</div>' : '')}
+  <div class="act-sec"><div class="act-sh"><h4 class="act-h" style="margin:0">บันทึกของฉัน</h4><button class="btn btn-ghost btn-sm" onclick="toggleActEdit()">${actDetailEdit?'ปิด':'📝 RPE / อาการ / โน้ต'}</button></div>${editRow}</div>
+  <div class="muted" style="margin-top:10px; font-size:11px">วิเคราะห์ด้วยเกณฑ์เดียวกับ LINE Coaching · โซน HR ของเรา (LTHR ${a.type==='ride'?(hrZones().bikeLthr||hrZones().lthr):hrZones().lthr})${canFetch?` · <a href="#" onclick="loadActDetail(state.running.activities.find(x=>x.id==='${a.id}'),true);refreshActDetail();return false">ดึงข้อมูลใหม่</a>`:''}${icuActId(a)?` · <a href="https://intervals.icu/activities/${icuActId(a)}" target="_blank" rel="noopener">เปิดใน intervals.icu ↗</a>`:''}</div>`;
+}
+
+/* ----- VO₂max ประมาณการ (เหมือน vo2Est_ ใน Code.gs / vo2Estimate ใน RunCoach) ----- */
+function vo2Estimate(){
+  const acts = state.running.activities, well = state.running.wellness || {}, today = todayISO();
+  let obs = 0; acts.forEach(a=>{ const m = Number(a.max_hr)||0; if(m && m < 225 && m > obs) obs = m; });
+  const hrmax = Math.max(Number(hrZones().run[4].max)||0, obs) || 190;
+  const rv = []; for(let i=0;i<60;i++){ const w = well[addDays(today,-i)]; const x = w && Number(w.restingHR); if(x>30 && x<100) rv.push(x); }
+  const rhrDef = rv.length ? rv.reduce((s,v)=>s+v,0)/rv.length : 60;
+  const pts = [];
+  acts.forEach(a=>{
+    const km = Number(a.distance_km)||0, min = Number(a.moving_time_min)||0, hr = Number(a.avg_hr)||0;
+    if(!isRunAct(a) || !hr || min<20 || km<3) return;
+    const spd = Number(a.avg_speed) || km*1000/(min*60); if(!spd) return;
+    const elev = Number(a.elevation_gain_m)||0; if(elev/km > 40) return;
+    const w = well[a.date]||{}, rhr = (w.restingHR>30 && w.restingHR<100) ? w.restingHR : rhrDef;
+    if(hrmax - rhr < 60) return;
+    const hrr = (hr-rhr)/(hrmax-rhr); if(!(hrr>=0.55 && hrr<=0.95)) return;
+    const gap = Number(a.gap)||0, useGap = gap && gap > spd*0.85 && gap < spd*1.6;
+    const vo2 = 3.5 + 0.2*(useGap?gap:spd)*60 + (useGap ? 0 : 0.9*elev/min);
+    const est = 3.5 + (vo2-3.5)/hrr;
+    if(est>=25 && est<=85) pts.push({date:a.date, v:est});
+  });
+  const at = d => { const from = addDays(d,-42), xs = pts.filter(q=>q.date>from && q.date<=d).map(q=>q.v).sort((x,y)=>y-x);
+    if(xs.length<3) return null; const top = xs.slice(0, Math.max(2, Math.ceil(xs.length*0.4))); return top.reduce((t,x)=>t+x,0)/top.length; };
+  const cur = at(today); if(cur==null) return null;
+  const prev = at(addDays(today,-28));
+  let watch = null; for(let i=0;i<30;i++){ const w = well[addDays(today,-i)]; if(w && w.vo2max){ watch = Math.round(w.vo2max*10)/10; break; } }
+  return {v:Math.round(cur*10)/10, d28: prev==null ? null : Math.round((cur-prev)*10)/10, n:pts.filter(q=>q.date>addDays(today,-42)).length, hrmax, watch};
+}
+
+/* ----- Performance: กราฟเดียว CTL (พื้นที่) / ATL / TSB / Load รายวัน แบบ LINE Coaching ----- */
+function renderPerfChart(info){
+  const today = todayISO();
+  const days = info.fit.days.filter(r=>r.date >= addDays(today, -trFitRange));
+  if(days.length < 2) return '<div class="muted">ยังไม่มีข้อมูลพอจะวาดกราฟ — sync จาก intervals.icu ก่อน</div>';
+  const narrow = typeof window!=='undefined' && window.innerWidth < 700;
+  const W = narrow ? 440 : 760, H = narrow ? 280 : 250, pl = 34, pr = 34, pt = 22, pb = 24;
+  const n = days.length, xw = (W-pl-pr)/(n-1), X = i => pl + i*xw;
+  const ymax = Math.max(20, ...days.map(r=>Math.max(r.ctl, r.atl, r.tsb))) * 1.1;
+  const ymin = Math.min(0, ...days.map(r=>r.tsb)) * 1.1 - 2;
+  const Y = v => pt + (H-pt-pb) * (1 - (v-ymin)/(ymax-ymin));
+  const lmax = Math.max(1, ...days.map(r=>r.load||0)) * 3.2;
+  const Yl = v => H-pb - (H-pt-pb) * (v/lmax);
+  const todayIdx = days.findIndex(r=>r.date===today), lastReal = todayIdx > -1 ? todayIdx : n-1;
+  const pathOf = (key, from, to) => days.slice(from, to+1).map((r,j)=>(j?'L':'M')+X(from+j).toFixed(1)+' '+Y(r[key]).toFixed(1)).join(' ');
+  const yt = []; const step = (ymax-ymin) > 120 ? 40 : (ymax-ymin) > 60 ? 20 : 10;
+  for(let v=Math.ceil(ymin/step)*step; v<=ymax; v+=step) yt.push(`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v===0?'#C9CEDB':'#EBEEF5'}"/><text x="${pl-6}" y="${Y(v)+3}" text-anchor="end" class="tr-ax">${v}</text>`);
+  const bars = days.map((r,i)=>r.load>0 ? `<rect x="${X(i)-Math.max(1,xw*0.42)}" y="${Yl(r.load)}" width="${Math.max(1.5,xw*0.84)}" height="${H-pb-Yl(r.load)}" fill="${r.projected?'#5B6EF5':'#1D2233'}" opacity="${r.projected?0.16:0.12}"/>` : '').join('');
+  const area = `<path d="${pathOf('ctl',0,lastReal)} L${X(lastReal).toFixed(1)} ${Y(Math.max(0,ymin))} L${X(0)} ${Y(Math.max(0,ymin))} Z" fill="#3E8DFF" opacity=".12"/>`;
+  const fut = (key, color, w) => lastReal < n-1 ? `<path d="${pathOf(key,lastReal,n-1)}" fill="none" stroke="${color}" stroke-width="${w}" stroke-dasharray="5 4" opacity=".8"/>` : '';
+  let tsbSeg = '';
+  for(let i=1;i<n;i++){ const p = days[i-1], q = days[i]; const c = (p.tsb+q.tsb)/2 >= 0 ? '#2F8F55' : '#F97316';
+    tsbSeg += `<line x1="${X(i-1).toFixed(1)}" y1="${Y(p.tsb).toFixed(1)}" x2="${X(i).toFixed(1)}" y2="${Y(q.tsb).toFixed(1)}" stroke="${c}" stroke-width="1.5" stroke-dasharray="${i>lastReal?'2 3':'0'}" opacity="${i>lastReal?0.7:0.9}"/>`; }
+  const xt = []; const every = Math.max(1, Math.round(n/(narrow?5:8)));
+  for(let i=0;i<n;i+=every){ const d = new Date(days[i].date+'T00:00:00'); xt.push(`<text x="${X(i)}" y="${H-6}" text-anchor="middle" class="tr-ax">${d.getDate()}/${d.getMonth()+1}</text>`); }
+  const mark = (i, col, txt) => `<line x1="${X(i)}" x2="${X(i)}" y1="${pt-4}" y2="${H-pb}" stroke="${col}" stroke-dasharray="4 3"/><text x="${X(i)}" y="${pt-8}" text-anchor="middle" class="tr-ax" style="fill:${col}; font-weight:700">${txt}</text>`;
+  const marks = (todayIdx>-1 ? mark(todayIdx,'#64748B','วันนี้') : '') + sortedRaces().map(r=>{ const i = days.findIndex(d=>d.date===r.date); return i<0 ? '' : mark(i,'#F43F5E','🏁'); }).join('');
+  const L = days[lastReal];
+  const hov = days.map((r,i)=>{ const d = new Date(r.date+'T00:00:00');
+    const t = `<b>${thaiDays[d.getDay()]} ${d.getDate()} ${thaiMonths[d.getMonth()]}</b>${r.projected?(' <i>('+(r.planned?'จากแผน':'คาดการณ์')+')</i>'):''}<br>Fitness (CTL) <b>${r.ctl.toFixed(1)}</b><br>Fatigue (ATL) <b>${r.atl.toFixed(1)}</b><br>Form (TSB) <b>${fmtSigned(r.tsb,1)}</b><br>Load ${Math.round(r.load)}`;
+    return `<rect class="tr-hov" x="${X(i)-xw/2}" y="${pt}" width="${Math.max(2,xw)}" height="${H-pt-pb}" data-tip="${tipAttr(t)}"/>`; }).join('');
+  return `<div class="tr-legend" style="justify-content:flex-end">
+      <span><i style="background:#3E8DFF"></i>CTL</span><span><i style="background:#EC6FA0"></i>ATL</span><span><i style="background:linear-gradient(90deg,#2F8F55 50%,#F97316 50%)"></i>TSB</span><span><i style="background:#1D2233; opacity:.25; height:8px"></i>Load</span><span><i class="dash"></i>${info.planDays?'แผนจาก intervals.icu':'คาดการณ์'}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" class="tr-svg" role="img" aria-label="กราฟ Fitness Fatigue Form">${yt.join('')}${bars}${area}
+      <path d="${pathOf('ctl',0,lastReal)}" fill="none" stroke="#3E8DFF" stroke-width="2.6" stroke-linejoin="round"/>${fut('ctl','#3E8DFF',1.6)}
+      <path d="${pathOf('atl',0,lastReal)}" fill="none" stroke="#EC6FA0" stroke-width="1.8" stroke-linejoin="round"/>${fut('atl','#EC6FA0',1.2)}
+      ${tsbSeg}${marks}${xt.join('')}
+      <text x="${X(lastReal)+5}" y="${Y(L.ctl)+4}" class="tr-lbl" style="fill:#2F6FD6">${Math.round(L.ctl)}</text>${hov}</svg>`;
+}
+
 function renderRunning(){
   const r = state.running;
   const weekDays = currentWeekMondayToSunday();
@@ -4000,15 +4546,15 @@ function renderRunning(){
           if(a.distance_km) parts.push(a.distance_km+' กม.');
           if(a.moving_time_min) parts.push(a.moving_time_min+' นาที');
           if(a.elevation_gain_m) parts.push('↑'+Math.round(a.elevation_gain_m)+' ม.');
-          return `<tr>
+          return `<tr class="act-row" onclick="openActDetail('${a.id}')" title="ดูรายละเอียด">
           <td>${fmtDate(a.date)}</td>
-          <td>${escapeHtml(a.name)}${actNoteLine(a)}</td>
+          <td><span class="act-link">${escapeHtml(a.name)}</span>${actNoteLine(a)}</td>
           <td><span class="tag" style="background:${meta.color}; color:#fff">${meta.label}</span></td>
           <td style="text-align:right" class="mono">${parts.length ? parts.join(' · ') : '—'}</td>
-          <td style="white-space:nowrap"><button class="task-del" onclick="editActNote('${a.id}')" title="บันทึก RPE/อาการ/โน้ต">📝</button><button class="task-del" onclick="delRun('${a.id}')">✕</button></td>
+          <td style="white-space:nowrap" onclick="event.stopPropagation()"><button class="task-del" onclick="editActNote('${a.id}')" title="บันทึก RPE/อาการ/โน้ต">📝</button><button class="task-del" onclick="delRun('${a.id}')">✕</button></td>
         </tr>${editingActNoteId===a.id ? renderActNoteRow(a) : ''}`; }).join('') || `<tr><td colspan="5" class="muted">ยังไม่มีข้อมูล</td></tr>`}
       </table>
-      <div class="muted" style="margin-top:6px">Load ที่มี * = ค่าประมาณ (ยังไม่มี Training Load จาก intervals.icu) · กด 📝 เพื่อใส่ RPE/จุดที่เจ็บ/บันทึก ใช้ในการวิเคราะห์การซ้อม</div>
+      <div class="muted" style="margin-top:6px">แตะกิจกรรมเพื่อดูรายละเอียด (กราฟ HR/เพซ, โซน, คอมเมนต์, Laps) · Load ที่มี * = ค่าประมาณ (ยังไม่มี Training Load จาก intervals.icu) · กด 📝 เพื่อใส่ RPE/จุดที่เจ็บ/บันทึก ใช้ในการวิเคราะห์การซ้อม</div>
       <div class="form-row" style="margin-top:14px">
         <input type="text" id="runName" placeholder="ชื่อกิจกรรม">
         <select id="runType">${ACTIVITY_TYPES.map(t=>`<option value="${t.key}">${t.label}</option>`).join('')}</select>
@@ -4067,7 +4613,9 @@ async function syncIntervals(){
   // First sync with the training-analysis fields (load/HR) pulls 180 days so CTL (42-day
   // average) starts from a realistic base; after that 42 days is enough to refresh loads.
   const hasLoadSynced = state.running.activities.some(a=>a.id && String(a.id).indexOf('intervals-')===0 && a.load!=null);
-  const oldest = addDays(newest, hasLoadSynced ? -42 : -180);
+  // ฟิลด์รายละเอียด (EF/cadence/ความเร็ว/decoupling) เพิ่ม 4 พ.ย. 69 — ดึงย้อนหลัง 180 วันอีกครั้งเดียวให้มีค่าครบ
+  const fieldsV = state.running.syncFieldsV || 0;
+  const oldest = addDays(newest, hasLoadSynced && fieldsV >= 2 ? -42 : -180);
   const url = `https://intervals.icu/api/v1/athlete/${athlete}/activities?oldest=${oldest}&newest=${newest}`;
   try{
     const res = await fetch(url, { headers: { 'Authorization': 'Basic ' + btoa('API_KEY:' + key) } });
@@ -4121,7 +4669,9 @@ async function syncIntervals(){
         elapsed_min: act.elapsed_time ? Math.round(act.elapsed_time/60) : null,
         hr_zone_times: Array.isArray(act.icu_hr_zone_times) ? act.icu_hr_zone_times : null,
         hr_zone_bounds: Array.isArray(act.icu_hr_zones) ? act.icu_hr_zones : null,
-        icu_rpe: act.icu_rpe || act.perceived_exertion || null
+        icu_rpe: act.icu_rpe || act.perceived_exertion || null,
+        // รายละเอียดสำหรับหน้าต่างกิจกรรม/VO₂max (สูตรเดียวกับ LINE Coaching)
+        ...compactExtra(act, /run/i.test(String(act.type||'')))
       };
       const existingIdx = state.running.activities.findIndex(a=>a.id===id);
       if(existingIdx > -1){
@@ -4156,9 +4706,26 @@ async function syncIntervals(){
         });
       }
     }catch(e){ /* wellness is optional */ }
+    // แผนซ้อม (WORKOUT) + สนามจาก intervals.icu — ใช้จับคู่ แผน vs ทำจริง และคาดการณ์ฟอร์มจากแผน
+    let planCount = 0;
+    try{
+      const pres = await fetch(`https://intervals.icu/api/v1/athlete/${athlete}/events?oldest=${addDays(newest,-60)}&newest=${addDays(newest,200)}`, { headers: { 'Authorization': 'Basic ' + btoa('API_KEY:' + key) } });
+      if(pres.ok){
+        const pdata = await pres.json();
+        state.running.plans = (pdata||[]).filter(e=>e && (e.category==='WORKOUT' || /^RACE/.test(e.category||''))).map(e=>({
+          id:String(e.id), date:String(e.start_date_local||'').slice(0,10), cat:e.category||'', name:e.name||'', type:e.type||'',
+          min: e.moving_time ? Math.round(e.moving_time/60) : (e.duration ? Math.round(e.duration/60) : null),
+          load: e.icu_training_load!=null ? Math.round(Number(e.icu_training_load)) : null,
+          km: e.distance ? Math.round(e.distance/100)/10 : null, desc: e.description ? String(e.description).slice(0,800) : ''
+        })).filter(e=>e.date);
+        planCount = state.running.plans.filter(e=>e.cat==='WORKOUT' && e.date>=newest).length;
+      }
+    }catch(e){ /* plans are optional */ }
+    state.running.syncFieldsV = 2;
     state.running.lastSync = new Date().toISOString();
     saveState();
     const parts = [`เพิ่มใหม่ ${added} กิจกรรม`];
+    if(planCount) parts.push(`แผนข้างหน้า ${planCount} เซสชัน`);
     if(wellCount) parts.push(`ฟิต/ฟอร์มรายวัน ${wellCount} วัน`);
     if(updated) parts.push(`อัปเดตข้อมูล ${updated} รายการ`);
     if(skipped) parts.push(`เหมือนเดิม ${skipped} รายการ`);
