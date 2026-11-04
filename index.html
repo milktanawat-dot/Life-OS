@@ -196,6 +196,21 @@ a{color:inherit;}
 
 /* ----- Activity detail popup + Performance (4 พ.ย. 69) ----- */
 .act-row{cursor:pointer;}
+.act-strip{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;}
+.act-card{flex:0 0 180px; scroll-snap-align:start; text-align:left; font-family:inherit; color:inherit; background:#F6F7FC; border:1px solid var(--line); border-radius:14px; padding:11px 12px; cursor:pointer; display:flex; flex-direction:column; gap:3px;}
+.act-card:hover, .act-card:active{border-color:var(--indigo); background:#EEF0FD;}
+.act-card .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;}
+.act-card .ic, .act-mini .ic{width:28px; height:28px; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;}
+.act-card .d{font-size:11px; color:var(--ink-soft);}
+.act-card b{font-size:13px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.act-card .k{font-size:11px; font-weight:600;}
+.act-card .m{font-size:11px; color:var(--ink-soft);}
+.act-card .go{font-size:11px; color:var(--indigo); font-weight:600; margin-top:3px;}
+.act-mini{display:flex; gap:10px; align-items:center; padding:8px 4px; border-top:1px solid var(--line); cursor:pointer;}
+.act-mini:hover{background:#F7F8FD;}
+.act-mini b{display:block; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.act-mini>div>span{display:block; font-size:11px; color:var(--ink-soft);}
+.act-mini .go{font-size:18px; color:var(--ink-soft);}
 .act-row:hover td{background:#F7F8FD;}
 .act-link{font-weight:600;}
 .act-row:hover .act-link{color:var(--indigo);}
@@ -2138,6 +2153,7 @@ function renderToday(){
       ${nearRace ? `<div class="stat-note" style="margin-top:-6px">🏁 ${escapeHtml(nearRace.name)} — อีก ${daysUntil(nearRace.date)} วัน</div>` : ''}
       ${todayFormLine()}
       ${running.activities.length ? renderActivityBarChart(buildWeeklyActivityBuckets(currentWeekMondayToSunday())) : '<div class="muted">ยังไม่มีข้อมูล — ไป Sync ที่หน้า "กิจกรรม"</div>'}
+      ${running.activities.length ? `<div style="margin-top:10px">${recentActs(3).map(a=>actCardHtml(a,true)).join('')}</div>` : ''}
     </div>
 
     <div class="card">
@@ -2997,7 +3013,8 @@ function renderWeekPanel(){
   const strip = days.map((d,i)=>{ const acts = activitiesOn(d); const km = acts.filter(isRunAct).reduce((s,a)=>s+(Number(a.distance_km)||0),0); const ld = Math.round(loads[d]||0);
     const isFuture = d > today, isToday = d===today;
     const t = `<b>${fmtDate(d)}</b><br>${acts.length? acts.map(a=>escapeHtml(a.name)+' · '+(a.distance_km?a.distance_km+' กม.':'')+(a.moving_time_min?' '+a.moving_time_min+' นาที':'')).join('<br>') : (isFuture?'ยังไม่ถึง':'วันพัก')}<br>Load ${ld}`;
-    return `<div class="tr-day ${isToday?'today':''} ${isFuture?'future':''}" data-tip="${tipAttr(t)}">
+    const main = acts.slice().sort((p,q)=>(Number(q.moving_time_min)||0)-(Number(p.moving_time_min)||0))[0];
+    return `<div class="tr-day ${isToday?'today':''} ${isFuture?'future':''}" data-tip="${tipAttr(t)}"${main?` onclick="openActDetail('${main.id}')" style="cursor:pointer"`:''}>
       <div class="d">${weekdayShort[i]}</div>
       <div class="v mono">${acts.length ? (km?km.toFixed(1):'•') : (isFuture?'':'พัก')}</div>
       <div class="bar"><i style="height:${Math.min(100, ld/1.5)}%"></i></div></div>`; }).join('');
@@ -4006,7 +4023,10 @@ function classifyZoneMix(zm){
 function sessionKind(a){
   if(!isRunAct(a)) return a.type==='weights' ? 'strength' : 'cross';
   if(!a.sessionType && sortedRaces().some(r=>r.date===a.date) && (Number(a.moving_time_min)||0) >= 40) return 'race';
-  const k = sessionType(a) || 'endurance';
+  let k = sessionType(a) || 'endurance';
+  // ถ้าเคยเปิดดูรายละเอียดแล้ว (มี HR รายวินาทีในแคช) จัดประเภทจากโซนจริงของ stream ให้ตรงกับหน้ารายละเอียด
+  const sz = !a.sessionType && typeof streamZoneMin==='function' ? streamZoneMin(a) : null;
+  if(sz) k = classifyZoneMix(sz);
   if(!a.sessionType && (k==='endurance' || k==='recovery' || k==='steady') && ((Number(a.moving_time_min)||0) >= 100 || (Number(a.distance_km)||0) >= 18)) return 'long';
   return k;
 }
@@ -4063,6 +4083,12 @@ function saveActDetailCache(){
     localStorage.setItem(ACT_DETAIL_LS, JSON.stringify(actDetailCache));
   }catch(e){ /* quota — แคชแค่ในหน่วยความจำ */ }
 }
+function streamZoneMin(a){
+  const det = actDetailCache[a.id]; if(!det || !det.st || !det.st.hist || !Object.keys(det.st.hist).length) return null;
+  const bounds = zoneBoundsFor(a), zm = [0,0,0,0,0];
+  Object.keys(det.st.hist).forEach(h=>{ zm[Math.max(0, zoneIndexOfHr(+h, bounds))] += det.st.hist[h]/60; });
+  return zm;
+}
 function icuActId(a){ return a && String(a.id||'').indexOf('intervals-')===0 ? String(a.id).slice(10) : null; }
 async function icuGetJson(path){
   const key = state.settings.intervalsApiKey; if(!key) throw new Error('ยังไม่ได้ใส่ API key');
@@ -4109,6 +4135,7 @@ async function loadActDetail(a, force){
   delete actDetailBusy[a.id];
   if(det.ext){ Object.keys(det.ext).forEach(k=>{ if(det.ext[k]!=null && det.ext[k]!=='' && a[k]==null) a[k] = det.ext[k]; }); saveState(); }
   actDetailCache[a.id] = det; saveActDetailCache();
+  if(currentView==='running' || currentView==='today') render(); // ประเภทซ้อมบนการ์ดอาจเปลี่ยนตาม HR รายวินาที
   if(actDetailId === a.id) refreshActDetail();
 }
 
@@ -4121,13 +4148,10 @@ function reviewActivity(a){
   const bounds = zoneBoundsFor(a), run = isRunAct(a);
   const km = Number(a.distance_km)||0, min = Number(a.moving_time_min)||0, elev = Number(a.elevation_gain_m)||0;
   let zr = activityZoneEst(a), zm = zr ? zr.zm : null, zSrc = zr ? zr.src : null;
-  if(det.st && det.st.hist && Object.keys(det.st.hist).length){ zm = [0,0,0,0,0]; Object.keys(det.st.hist).forEach(h=>{ zm[Math.max(0, zoneIndexOfHr(+h, bounds))] += det.st.hist[h]/60; }); zSrc = 'stream'; }
+  const szm = streamZoneMin(a); if(szm){ zm = szm; zSrc = 'stream'; }
   const zt = zm ? zm.reduce((s,v)=>s+v,0) : 0;
   const light = zt ? (zm[0]+zm[1])/zt : null, hard = zt ? (zm[3]+zm[4])/zt : null;
-  let actual = sessionKind(a);
-  // มี HR รายวินาทีแล้ว → จัดประเภทจากโซนจริงของ stream (แม่นกว่า zone times/HR เฉลี่ย)
-  if(zSrc==='stream' && run && !a.sessionType && actual!=='race' && zt){ actual = classifyZoneMix(zm);
-    if((actual==='endurance' || actual==='recovery' || actual==='steady') && (min >= 100 || km >= 18)) actual = 'long'; }
+  const actual = sessionKind(a);
   const plan = pairPlan(a), intent = plan ? planIntent(plan) : null;
   const rpe = Number(a.userRpe || a.icu_rpe) || null;
   let score = 100, match = null;
@@ -4427,6 +4451,27 @@ function renderPerfChart(info){
       <text x="${X(lastReal)+5}" y="${Y(L.ctl)+4}" class="tr-lbl" style="fill:#2F6FD6">${Math.round(L.ctl)}</text>${hov}</svg>`;
 }
 
+/* ----- การ์ดกิจกรรมล่าสุด (แตะเพื่อเปิดรายละเอียด) — หน้า กิจกรรม + หน้า วันนี้ ----- */
+function recentActs(n){ return [...state.running.activities].sort((p,q)=>(String(q.date)+(q.start||'')).localeCompare(String(p.date)+(p.start||''))).slice(0,n); }
+function actCardHtml(a, compact){
+  const k = kindMeta(sessionKind(a)), km = Number(a.distance_km)||0, min = Number(a.moving_time_min)||0;
+  const pace = isRunAct(a) && km && min ? fmtPaceSec(min*60/km)+'/กม.' : '';
+  const line = [km?km.toFixed(1)+' กม.':'', min?fmtDur(min)+' ชม.':'', pace, a.avg_hr?'♥ '+Math.round(a.avg_hr):''].filter(Boolean).join(' · ');
+  if(compact) return `<div class="act-mini" onclick="openActDetail('${a.id}')"><span class="ic" style="background:${k.color}22">${k.icon}</span><div style="flex:1; min-width:0"><b>${escapeHtml(a.name||'กิจกรรม')}</b><span>${fmtDate(a.date)} · ${escapeHtml(line)}</span></div><span class="go">›</span></div>`;
+  return `<button class="act-card" onclick="openActDetail('${a.id}')">
+    <div class="top"><span class="ic" style="background:${k.color}22">${k.icon}</span><span class="d">${fmtDate(a.date)}</span></div>
+    <b>${escapeHtml(a.name||'กิจกรรม')}</b>
+    <span class="k" style="color:${k.color}">${escapeHtml(k.label)}</span>
+    <span class="m mono">${escapeHtml(line)||'—'}</span>
+    <span class="go">ดูรายละเอียด ›</span></button>`;
+}
+function renderRecentActStrip(){
+  const list = recentActs(10); if(!list.length) return '';
+  return `<div class="panel" style="padding-bottom:14px">
+    <div class="ribbon-head" style="margin-bottom:10px"><h3>กิจกรรมล่าสุด</h3><span class="muted">แตะการ์ดเพื่อดูกราฟ HR/เพซ · โซน · คอมเมนต์ · Laps</span></div>
+    <div class="act-strip">${list.map(a=>actCardHtml(a)).join('')}</div></div>`;
+}
+
 function renderRunning(){
   const r = state.running;
   const weekDays = currentWeekMondayToSunday();
@@ -4449,6 +4494,8 @@ function renderRunning(){
   return `
   <div class="section-title">กิจกรรม</div>
   <div class="section-sub">รวมทุกประเภท — วิ่ง ปั่นจักรยาน เวทเทรนนิ่ง และอื่นๆ · sync อัตโนมัติจาก intervals.icu หรือบันทึกเอง</div>
+
+  ${renderRecentActStrip()}
 
   ${renderRaceHub(trInfo)}
   ${renderBlockPanel(trInfo)}
