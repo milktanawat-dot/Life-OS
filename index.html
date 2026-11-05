@@ -264,16 +264,43 @@ a{color:inherit;}
 .perf-tile small{display:block; font-size:11px; color:var(--ink-soft);}
 .perf-tile>b{display:block; font-size:24px; font-weight:700; line-height:1.25;}
 .perf-st{font-size:11.5px; font-weight:600;}
+/* กราฟรายละเอียดกิจกรรม */
+.ac-svg{display:block; max-width:100%; height:auto; overflow:visible; -webkit-user-select:none; user-select:none;}
+.ac-ax{font-size:10.5px; fill:#8891A5; font-family:'Prompt',sans-serif; font-variant-numeric:tabular-nums;}
+.ac-zl{font-size:9.5px; font-weight:700; font-family:'Prompt',sans-serif; paint-order:stroke; stroke:#fff; stroke-width:3px; stroke-linejoin:round; opacity:.95;}
+.ac-tt{font-size:11.5px; font-weight:700; fill:#1D2233; font-family:'Prompt',sans-serif;}
+.ac-ts{font-weight:400; fill:#8891A5;}
+.ac-grid{stroke:#1D2233; stroke-opacity:.06; stroke-width:1;}
+.ac-read{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; min-height:30px; padding:6px 10px; margin-bottom:6px; background:#F6F7FC; border-radius:10px; font-size:12px; color:var(--ink);}
+.ac-read .ac-hint{color:var(--ink-soft); font-size:11.5px;}
+.ac-chip{display:inline-flex; align-items:center; gap:4px; font-size:12px;}
+.ac-chip b{font-variant-numeric:tabular-nums; font-size:13px;}
+.ac-chip i{font-style:normal; font-size:10px; font-weight:700; color:#fff; padding:1px 6px; border-radius:99px;}
+/* ป๊อปอัพกิจกรรม: กลางจอทั้งเดสก์ท็อปและมือถือ, หัวติดด้านบนตอนเลื่อน */
+.act-overlay{z-index:9999; height:100vh; height:100dvh; padding:max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom));}
+.act-box{max-height:calc(100vh - 28px); max-height:calc(100dvh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding-top:0;}
+.act-head{position:sticky; top:0; z-index:3; background:var(--panel); padding-top:18px; padding-bottom:10px; margin-bottom:6px; border-bottom:1px solid transparent;}
 @media (max-width:760px){
-  .act-overlay{padding:0; align-items:flex-end;}
-  .act-box{max-height:94vh; border-radius:20px 20px 0 0; padding:16px 14px calc(16px + env(safe-area-inset-bottom));}
+  .act-overlay{align-items:center;}
+  .act-box{border-radius:18px; padding:0 14px 16px;}
+  .act-head{padding-top:14px; gap:10px;}
+  .act-ic{width:38px; height:38px; font-size:18px; border-radius:12px;}
+  .act-title{font-size:15.5px;}
+  .act-grade{min-width:36px; height:36px; font-size:15px;}
+  .act-hm{gap:6px;}
+  .act-hm>div{padding:8px 9px;}
+  .act-hm>div>b{font-size:16px;}
   .act-hm{grid-template-columns:repeat(3,1fr);}
   .act-two{grid-template-columns:1fr;}
   .act-zleg{grid-template-columns:repeat(3,1fr);}
   .act-tiles{grid-template-columns:repeat(2,1fr);}
   .perf-tiles{grid-template-columns:repeat(2,1fr);}
-  .act-head{flex-wrap:wrap;}
-  .act-nav{margin-left:auto;}
+  .act-head .act-ic{display:none;}
+  .act-nav{gap:2px;}
+  .act-nav .btn{padding:5px 9px;}
+  .act-nav .modal-close{padding:6px 8px; font-size:20px;}
+  .ac-read{min-height:50px; gap:4px 8px; font-size:11.5px;}
+  .ac-chip b{font-size:12.5px;}
 }
 .chip-toggle{display:flex; gap:6px; flex-wrap:wrap; margin:12px 0 14px;}
 .chip{font-size:11px; padding:5px 11px; border-radius:99px; border:1px solid var(--line); background:var(--bg); color:var(--ink-soft); cursor:pointer; font-weight:600; font-family:inherit; transition:background .15s ease, color .15s ease, border-color .15s ease;}
@@ -479,7 +506,7 @@ a{color:inherit;}
 .hb-src b{color:var(--ink); font-weight:600;}
 /* ---------- Training analysis (กิจกรรม) ---------- */
 .tr-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:99px; white-space:nowrap;}
-.tr-tip{position:fixed; z-index:9999; pointer-events:none; background:#1D2233; color:#fff; font-size:11.5px; line-height:1.55; padding:8px 11px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); max-width:280px; display:none;}
+.tr-tip{position:fixed; z-index:10002; pointer-events:none; background:#1D2233; color:#fff; font-size:11.5px; line-height:1.55; padding:8px 11px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); max-width:280px; display:none;}
 .tr-svg{width:100%; height:auto; display:block; overflow:visible;}
 .tr-ax{font-size:10px; fill:#8891A5; font-family:'Prompt',sans-serif;}
 .tr-lbl{font-size:11px; font-weight:700; font-family:'JetBrains Mono',monospace;}
@@ -4233,46 +4260,176 @@ function reviewActivity(a){
 }
 function gradeColor(g){ return /^A/.test(g) ? '#2F8F55' : /^B/.test(g) ? '#2F6FD6' : g==='C' ? '#B87800' : '#D23F3F'; }
 
-/* ----- กราฟ HR / เพซ / ความสูง พร้อมแถบโซน ----- */
-function renderActStreamChart(a, rv){
-  const pts = rv.st && rv.st.pts; if(!pts || pts.length<3) return '';
-  const bounds = zoneBoundsFor(a), useDist = rv.run && pts.some(p=>p[4]!=null && p[4]>0);
-  const narrow = typeof window!=='undefined' && window.innerWidth < 700;
-  const W = narrow ? 440 : 760, H = narrow ? 260 : 230, pl = 34, pr = 46, pt = 10, pb = 24;
-  const xs = pts.map(p=>useDist ? (p[4]||0) : p[0]);
-  const x0 = xs[0], x1 = xs[xs.length-1] || 1;
-  const X = v => pl + (W-pl-pr) * (v-x0)/Math.max(1e-6, x1-x0);
-  const hrs = pts.map(p=>p[1]).filter(Boolean);
-  const hrLo = Math.max(60, Math.min(...hrs, bounds[1].min) - 8), hrHi = Math.min(220, Math.max(...hrs, bounds[3].max) + 6);
-  const Yh = v => pt + (H-pt-pb) * (1 - (v-hrLo)/(hrHi-hrLo));
-  const paces = pts.map(p=>p[2]).filter(v=>v && v<900).sort((p,q)=>p-q);
-  const pLo = paces.length ? paces[Math.floor(paces.length*0.03)] : 240, pHi = paces.length ? paces[Math.floor(paces.length*0.97)] : 600;
-  const pMin = Math.max(120, pLo - 15), pMax = pHi + 20;
-  const Yp = v => pt + (H-pt-pb) * ((Math.max(pMin, Math.min(pMax, v))-pMin)/(pMax-pMin));
-  const alts = pts.map(p=>p[3]).filter(v=>v!=null);
-  const aLo = alts.length ? Math.min(...alts) : 0, aHi = alts.length ? Math.max(...alts) : 1;
-  const Ya = v => H-pb - (H-pt-pb) * 0.85 * (v-aLo)/Math.max(1, aHi-aLo);
-  const bands = HR_ZONE_META.map((z,i)=>{ const lo = i===0 ? hrLo : bounds[i].min, hi = i===4 ? hrHi : bounds[i].max+1;
-    const a1 = Math.max(lo, hrLo), b1 = Math.min(hi, hrHi); if(b1<=a1) return '';
-    return `<rect x="${pl}" width="${W-pl-pr}" y="${Yh(b1)}" height="${Yh(a1)-Yh(b1)}" fill="${z.color}" opacity="${i===0?0.05:0.09}"/>`
-      + (i>0 ? `<line x1="${pl}" x2="${W-pr}" y1="${Yh(bounds[i].min)}" y2="${Yh(bounds[i].min)}" stroke="${z.color}" stroke-dasharray="3 3" opacity=".7"/>` : '')
-      + (Yh(a1)-Yh(b1) > 10 ? `<text x="${W-pr-4}" y="${Yh(b1)+10}" text-anchor="end" class="tr-ax" style="fill:${z.color}; font-weight:600">${z.label} ${zoneRangeTxt(bounds,i)}</text>` : ''); }).join('');
-  let altPath = '';
-  if(alts.length > 2){ const seg = pts.map((p,i)=>p[3]!=null ? [X(xs[i]), Ya(p[3])] : null).filter(Boolean);
-    altPath = `<path d="M${seg[0][0]} ${H-pb} ${seg.map(s=>'L'+s[0].toFixed(1)+' '+s[1].toFixed(1)).join(' ')} L${seg[seg.length-1][0]} ${H-pb} Z" fill="#B9C0CF" opacity=".28"/>`; }
-  const pathOf = (idx, Yf, ok) => { let d = '', pen = false; pts.forEach((p,i)=>{ const v = p[idx]; if(v==null || (ok && !ok(v))){ pen = false; return; } d += (pen?'L':'M')+X(xs[i]).toFixed(1)+' '+Yf(v).toFixed(1)+' '; pen = true; }); return d; };
-  const hrPath = `<path d="${pathOf(1, Yh)}" fill="none" stroke="#E5484D" stroke-width="1.6" stroke-linejoin="round"/>`;
-  const pPath = rv.run ? `<path d="${pathOf(2, Yp, v=>v<900)}" fill="none" stroke="#5B6EF5" stroke-width="1.4" stroke-linejoin="round" opacity=".9"/>` : '';
-  const yt = []; for(let v=Math.ceil(hrLo/20)*20; v<=hrHi; v+=20) yt.push(`<text x="${pl-6}" y="${Yh(v)+3}" text-anchor="end" class="tr-ax">${v}</text>`);
-  const pt2 = rv.run ? [pMin, (pMin+pMax)/2, pMax].map(v=>`<text x="${W-pr+4}" y="${Yp(v)+3}" class="tr-ax" style="fill:#5B6EF5">${fmtPaceSec(v)}</text>`).join('') : '';
-  const xt = []; const step = (x1-x0) > 30 ? (useDist?5:15) : (x1-x0) > 12 ? (useDist?2:10) : (useDist?1:5);
-  for(let v=Math.ceil(x0/step)*step; v<=x1; v+=step) xt.push(`<text x="${X(v)}" y="${H-6}" text-anchor="middle" class="tr-ax">${useDist? v.toFixed(v%1?1:0) : Math.round(v)+"'"}</text>`);
-  const n = pts.length, cw = (W-pl-pr)/n;
-  const hov = pts.map((p,i)=>`<rect class="tr-hov" x="${X(xs[i])-cw/2}" y="${pt}" width="${Math.max(2,cw)}" height="${H-pt-pb}" data-tip="${tipAttr(`<b>${useDist?(p[4]||0).toFixed(2)+' กม.':''} ${Math.floor(p[0])}'</b><br>HR <b>${p[1]||'—'}</b>${rv.run&&p[2]&&p[2]<900?'<br>เพซ <b>'+fmtPaceSec(p[2])+'</b>/กม.':''}${p[3]!=null?'<br>ความสูง '+p[3]+' ม.':''}`)}"/>`).join('');
-  return `<div class="tr-legend" style="justify-content:flex-end"><span><i style="background:#E5484D"></i>HR</span>${rv.run?'<span><i style="background:#5B6EF5"></i>เพซ</span>':''}<span><i style="background:#B9C0CF; height:8px"></i>ความสูง</span></div>
-  <svg viewBox="0 0 ${W} ${H}" class="tr-svg" role="img" aria-label="กราฟ HR เพซ ความสูง">${bands}${altPath}${pPath}${hrPath}${yt.join('')}${pt2}${xt.join('')}
-    <text x="${(W)/2}" y="${H+4}" text-anchor="middle" class="tr-ax">${useDist?'กม.':'นาที'}</text>${hov}</svg>`;
+/* ----- กราฟ HR / เพซ / ความสูง (2 แผงซ้อนกัน แกน X ร่วม, ขนาดตามความกว้างจริงของจอ) ----- */
+let actChartData = null;
+function actSmooth(arr, k){
+  const out = new Array(arr.length).fill(null), h = Math.floor(k/2);
+  for(let i=0;i<arr.length;i++){ if(arr[i]==null) continue; let s=0,c=0;
+    for(let j=Math.max(0,i-h); j<=Math.min(arr.length-1,i+h); j++) if(arr[j]!=null){ s+=arr[j]; c++; }
+    out[i] = c ? s/c : null; }
+  return out;
 }
+function actChartWidth(){
+  const box = typeof document!=='undefined' && document.getElementById('actBox');
+  let w = box && box.clientWidth ? box.clientWidth : (typeof window!=='undefined' ? Math.min(880, window.innerWidth) : 760);
+  if(box){ const cs = getComputedStyle(box); w -= (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0); }
+  return Math.round(Math.max(280, Math.min(832, w)));
+}
+function renderActStreamChart(a, rv){
+  const raw = rv.st && rv.st.pts; if(!raw || raw.length<3) return '';
+  const bounds = zoneBoundsFor(a), run = rv.run;
+  const useDist = run && raw.filter(p=>p[4]>0).length > raw.length*0.5;
+  // แกน X: ระยะทางต้องไม่ถอยหลัง/ไม่หาย (ค่าที่หายไปเคยถูกวางที่ 0 → เส้นตรงลากข้ามกราฟ)
+  const pts = []; let last = null;
+  raw.forEach(p=>{
+    let x = useDist ? p[4] : p[0];
+    if(x==null || !isFinite(x) || (useDist && x<=0 && last!=null)) x = last;
+    if(x==null) x = 0;
+    if(last!=null && x < last) x = last;
+    last = x;
+    pts.push({x, t:p[0], hr:(p[1]>40 && p[1]<230) ? p[1] : null, pace:(p[2] && p[2]<1200) ? p[2] : null, alt:p[3]});
+  });
+  // เกลี่ยเส้นให้นุ่ม: HR 3 จุด, เพซเฉลี่ยจากความเร็ว 7 จุด (ทนค่ากระโดดกว่า)
+  const hrS = actSmooth(pts.map(p=>p.hr), 3);
+  const spS = actSmooth(pts.map(p=>p.pace ? 1000/p.pace : null), 7);
+  pts.forEach((p,i)=>{ p.hrS = hrS[i] != null ? hrS[i] : null; p.paceS = p.pace && spS[i] ? 1000/spS[i] : null; });
+
+  const narrow = typeof window!=='undefined' && window.innerWidth < 700;
+  const W = actChartWidth(), pl = 36, pr = 12;
+  const hasAlt = pts.filter(p=>p.alt!=null).length > 2;
+  const hasPace = run && pts.some(p=>p.paceS);
+  const hH = narrow ? 150 : 170, gap = 30, hP = (hasPace || hasAlt) ? (narrow ? 112 : 124) : 0;
+  const t1 = 18, b1 = t1 + hH, t2 = b1 + gap, b2 = t2 + hP, H = (hP ? b2 : b1) + 22;
+  const x0 = pts[0].x, x1 = pts[pts.length-1].x || 1;
+  const X = v => pl + (W-pl-pr) * (v-x0)/Math.max(1e-6, x1-x0);
+  const xBot = hP ? b2 : b1;
+
+  // --- HR panel ---
+  const hrs = pts.map(p=>p.hrS).filter(v=>v!=null);
+  const hrLo = Math.floor((Math.max(70, Math.min(...hrs, bounds[1].min) - 6))/10)*10;
+  const hrHi = Math.ceil((Math.min(215, Math.max(...hrs, bounds[3].min) + 4))/10)*10;
+  const Yh = v => t1 + hH * (1 - (v-hrLo)/(hrHi-hrLo));
+  let lastLblY = -99;
+  const bands = HR_ZONE_META.map((z,i)=>{
+    const lo = i===0 ? hrLo : bounds[i].min, hi = i===4 ? hrHi : bounds[i+1].min;
+    const a1 = Math.max(lo, hrLo), b1z = Math.min(hi, hrHi); if(b1z<=a1) return '';
+    const yTop = Yh(b1z), yBot = Yh(a1), hgt = yBot - yTop;
+    let s = `<rect x="${pl}" width="${W-pl-pr}" y="${yTop.toFixed(1)}" height="${hgt.toFixed(1)}" fill="${z.color}" opacity="${i===0?0.06:0.11}"/>`;
+    if(i>0 && bounds[i].min>hrLo && bounds[i].min<hrHi) s += `<line x1="${pl}" x2="${W-pr}" y1="${Yh(bounds[i].min).toFixed(1)}" y2="${Yh(bounds[i].min).toFixed(1)}" stroke="${z.color}" stroke-width=".8" opacity=".55"/>`;
+    return s; }).join('');
+  // ป้ายโซนชิดขวา ไม่ให้ทับกัน (วาดทีหลังเส้นกราฟ)
+  const zLbls = HR_ZONE_META.map((z,i)=>{
+    const lo = i===0 ? hrLo : bounds[i].min, hi = i===4 ? hrHi : bounds[i+1].min;
+    const a1 = Math.max(lo, hrLo), b1z = Math.min(hi, hrHi); if(b1z<=a1) return null;
+    return {z, i, y:(Yh(a1)+Yh(b1z))/2, h:Yh(a1)-Yh(b1z)}; }).filter(Boolean).reverse()
+    .map(o=>{ if(o.h < 9 || o.y - lastLblY < 12) return ''; lastLblY = o.y;
+      return `<text x="${W-pr-5}" y="${(o.y+3.5).toFixed(1)}" text-anchor="end" class="ac-zl" style="fill:${o.z.color}">${narrow?o.z.label.replace(' State',''):o.z.label}</text>`; }).join('');
+  const pathOf = (key, Yf) => { let d = '', pen = false; pts.forEach(p=>{ const v = p[key]; if(v==null){ pen = false; return; } d += (pen?'L':'M')+X(p.x).toFixed(1)+' '+Yf(v).toFixed(1); pen = true; }); return d; };
+  const hrAvg = Number(a.avg_hr)||0;
+  const hrPath = `<path d="${pathOf('hrS', Yh)}" fill="none" stroke="#E5484D" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const hrAvgLine = hrAvg && hrAvg>hrLo && hrAvg<hrHi ? `<line x1="${pl}" x2="${W-pr}" y1="${Yh(hrAvg).toFixed(1)}" y2="${Yh(hrAvg).toFixed(1)}" stroke="#E5484D" stroke-dasharray="4 4" stroke-width="1" opacity=".55"/>` : '';
+  const yTicksH = []; const stepH = (hrHi-hrLo) > 80 ? 20 : 10;
+  for(let v=Math.ceil(hrLo/stepH)*stepH; v<=hrHi; v+=stepH) yTicksH.push(`<text x="${pl-6}" y="${(Yh(v)+3.5).toFixed(1)}" text-anchor="end" class="ac-ax">${v}</text>`);
+
+  // --- Pace + elevation panel ---
+  let paceSvg = '', altSvg = '', yTicksP = '', paceAvgLine = '', Yp = null, Ya = null, pMin = 0, pMax = 1, aLo = 0, aHi = 1;
+  if(hP){
+    const alts = pts.map(p=>p.alt).filter(v=>v!=null);
+    if(hasAlt){
+      aLo = Math.min(...alts); aHi = Math.max(...alts); const pad = Math.max(10, (aHi-aLo)*0.1);
+      Ya = v => b2 - hP * (v-(aLo-pad))/Math.max(1, (aHi+pad)-(aLo-pad));
+      const seg = pts.filter(p=>p.alt!=null);
+      altSvg = `<path d="M${X(seg[0].x).toFixed(1)} ${b2} ${seg.map(p=>'L'+X(p.x).toFixed(1)+' '+Ya(p.alt).toFixed(1)).join(' ')} L${X(seg[seg.length-1].x).toFixed(1)} ${b2} Z" fill="url(#acAltG)" stroke="#AEB6C7" stroke-width="1"/>`;
+    }
+    if(hasPace){
+      const ps = pts.map(p=>p.paceS).filter(Boolean).sort((p,q)=>p-q);
+      const pLo = ps[Math.floor(ps.length*0.02)], pHi = ps[Math.floor(ps.length*0.98)];
+      const span = Math.max(60, pHi-pLo);
+      pMin = Math.max(120, Math.floor((pLo - span*0.1)/15)*15); pMax = Math.ceil((pHi + span*0.1)/15)*15;
+      Yp = v => t2 + hP * ((Math.max(pMin, Math.min(pMax, v))-pMin)/(pMax-pMin)); // เร็วอยู่บน
+      paceSvg = `<path d="${pathOf('paceS', Yp)}" fill="none" stroke="#5B6EF5" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+      if(rv.pace && rv.pace>pMin && rv.pace<pMax) paceAvgLine = `<line x1="${pl}" x2="${W-pr}" y1="${Yp(rv.pace).toFixed(1)}" y2="${Yp(rv.pace).toFixed(1)}" stroke="#5B6EF5" stroke-dasharray="4 4" stroke-width="1" opacity=".55"/>`;
+      const nT = 3, tk = []; for(let k=0;k<=nT;k++){ const v = pMin + (pMax-pMin)*k/nT; tk.push(`<text x="${pl-6}" y="${(Yp(v)+3.5).toFixed(1)}" text-anchor="end" class="ac-ax">${fmtPaceSec(v)}</text>`); }
+      yTicksP = tk.join('');
+    } else if(hasAlt){
+      const tk = []; [aLo, aHi].forEach(v=>tk.push(`<text x="${pl-6}" y="${(Ya(v)+3.5).toFixed(1)}" text-anchor="end" class="ac-ax">${Math.round(v)}</text>`)); yTicksP = tk.join('');
+    }
+  }
+
+  // --- แกน X + เส้นกริดแนวตั้ง ---
+  const span = x1-x0, nTarget = narrow ? 5 : 8;
+  const niceSteps = useDist ? [0.5,1,2,2.5,5,10,20,25,50] : [5,10,15,20,30,60,90,120];
+  const stepX = niceSteps.find(s=>span/s <= nTarget) || niceSteps[niceSteps.length-1];
+  const xt = [], gridH = [], gridP = [];
+  for(let v=Math.ceil(x0/stepX)*stepX; v<=x1+1e-9; v+=stepX){
+    const xx = X(v).toFixed(1); if(X(v) > W-pr-34) continue; // ไม่ให้ทับหน่วย กม./นาที
+    gridH.push(`<line x1="${xx}" x2="${xx}" y1="${t1}" y2="${b1}" class="ac-grid"/>`);
+    if(hP) gridP.push(`<line x1="${xx}" x2="${xx}" y1="${t2}" y2="${b2}" class="ac-grid"/>`);
+    const lbl = useDist ? (v%1 ? v.toFixed(1) : v) : (v>=60 ? Math.floor(v/60)+':'+pad2(Math.round(v%60)) : Math.round(v)+"'");
+    xt.push(`<text x="${xx}" y="${xBot+15}" text-anchor="middle" class="ac-ax">${lbl}</text>`);
+  }
+  const unitX = `<text x="${W-pr}" y="${xBot+15}" text-anchor="end" class="ac-ax" style="font-weight:600">${useDist?'กม.':'นาที'}</text>`;
+
+  const hrMax = hrs.length ? Math.round(Math.max(...pts.map(p=>p.hr||0))) : 0;
+  const ttl1 = `<text x="${pl}" y="${t1-6}" class="ac-tt"><tspan style="fill:#E5484D">●</tspan> HR (bpm)<tspan class="ac-ts">${hrAvg?'  เฉลี่ย '+Math.round(hrAvg):''}${hrMax?' · สูงสุด '+hrMax:''}</tspan></text>`;
+  const ttl2 = hP ? `<text x="${pl}" y="${t2-6}" class="ac-tt">${hasPace?'<tspan style="fill:#5B6EF5">●</tspan> เพซ (/กม.)':''}${hasAlt?`<tspan class="ac-ts">${hasPace?'  ·  ':''}▲ ความสูง ${Math.round(aLo)}–${Math.round(aHi)} ม.</tspan>`:''}</text>` : '';
+
+  actChartData = { W, H, pl, pr, t1, b1, t2, b2, hP, useDist, run, x: pts.map(p=>X(p.x)), pts,
+    yh: pts.map(p=>p.hrS!=null?Yh(p.hrS):null), yp: Yp ? pts.map(p=>p.paceS?Yp(p.paceS):null) : null, ya: Ya ? pts.map(p=>p.alt!=null?Ya(p.alt):null) : null };
+
+  return `<div class="ac-read" id="acRead">${actChartReadout(null)}</div>
+  <svg id="acSvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="ac-svg" role="img" aria-label="กราฟ HR เพซ ความสูง">
+    <defs><linearGradient id="acAltG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#C5CBD8" stop-opacity=".55"/><stop offset="1" stop-color="#C5CBD8" stop-opacity=".12"/></linearGradient>
+      <clipPath id="acClip1"><rect x="${pl}" y="${t1}" width="${W-pl-pr}" height="${hH}"/></clipPath>${hP?`<clipPath id="acClip2"><rect x="${pl}" y="${t2}" width="${W-pl-pr}" height="${hP}"/></clipPath>`:''}</defs>
+    ${ttl1}${ttl2}
+    <g clip-path="url(#acClip1)">${bands}${gridH.join('')}${hrAvgLine}${hrPath}</g>
+    <rect x="${pl}" y="${t1}" width="${W-pl-pr}" height="${hH}" fill="none" stroke="#E3E7F0" rx="2"/>
+    ${zLbls}${yTicksH.join('')}
+    ${hP ? `<rect x="${pl}" y="${t2}" width="${W-pl-pr}" height="${hP}" fill="#FAFBFE" stroke="#E3E7F0" rx="2"/>
+    <g clip-path="url(#acClip2)">${gridP.join('')}${altSvg}${paceAvgLine}${paceSvg}</g>${yTicksP}` : ''}
+    ${xt.join('')}${unitX}
+    <g id="acHov" style="display:none; pointer-events:none">
+      <line id="acHl" y1="${t1}" y2="${xBot}" stroke="#1D2233" stroke-width="1" opacity=".35"/>
+      <circle id="acHh" r="4" fill="#E5484D" stroke="#fff" stroke-width="2"/>
+      ${Yp?'<circle id="acHp" r="4" fill="#5B6EF5" stroke="#fff" stroke-width="2"/>':''}
+      ${Ya?'<circle id="acHa" r="3.5" fill="#8891A5" stroke="#fff" stroke-width="2"/>':''}
+    </g>
+    <rect x="${pl}" y="${t1}" width="${W-pl-pr}" height="${xBot-t1}" fill="transparent" style="cursor:crosshair; touch-action:pan-y"
+      onpointermove="actChartMove(event)" onpointerdown="actChartMove(event)" onpointerleave="actChartLeave(event)"/>
+  </svg>`;
+}
+function actChartReadout(i){
+  const d = actChartData;
+  if(i==null || !d){ return `<span class="ac-hint">${typeof window!=='undefined' && window.matchMedia && window.matchMedia('(hover:none)').matches ? 'แตะ/ลากบนกราฟเพื่อดูค่าแต่ละช่วง' : 'ชี้บนกราฟเพื่อดูค่าแต่ละช่วง'} · <span style="color:#E5484D">— HR</span>${d&&d.yp?' · <span style="color:#5B6EF5">— เพซ</span>':''} · <span class="muted">┄ ค่าเฉลี่ย</span></span>`; }
+  const p = d.pts[i], t = p.t||0;
+  const tt = t>=60 ? Math.floor(t/60)+':'+pad2(Math.floor(t%60))+' ชม.' : Math.floor(t)+' นาที';
+  const zi = p.hrS!=null && actDetailId ? zoneIndexOfHr(p.hrS, zoneBoundsFor(state.running.activities.find(x=>x.id===actDetailId))) : -1;
+  const z = zi>=0 ? HR_ZONE_META[zi] : null;
+  return `${d.useDist?`<b>${p.x.toFixed(2)} กม.</b> · `:''}<span>${tt}</span>`
+    + `<span class="ac-chip" style="color:#E5484D">HR <b>${p.hrS!=null?Math.round(p.hrS):'—'}</b>${z?` <i style="background:${z.color}">${z.label}</i>`:''}</span>`
+    + (d.yp ? `<span class="ac-chip" style="color:#5B6EF5">เพซ <b>${p.paceS?fmtPaceSec(p.paceS):'—'}</b></span>` : '')
+    + (p.alt!=null ? `<span class="ac-chip" style="color:#6B7385">▲ <b>${Math.round(p.alt)}</b> ม.</span>` : '');
+}
+function actChartMove(e){
+  const d = actChartData, svg = document.getElementById('acSvg'); if(!d || !svg) return;
+  const r = svg.getBoundingClientRect(); const vx = (e.clientX - r.left) * d.W / r.width;
+  let lo = 0, hi = d.x.length-1;
+  while(hi-lo>1){ const m = (lo+hi)>>1; if(d.x[m] < vx) lo = m; else hi = m; }
+  const i = Math.abs(d.x[lo]-vx) <= Math.abs(d.x[hi]-vx) ? lo : hi;
+  const g = document.getElementById('acHov'); if(!g) return; g.style.display = '';
+  const xx = d.x[i];
+  document.getElementById('acHl').setAttribute('x1', xx); document.getElementById('acHl').setAttribute('x2', xx);
+  const set = (id, y) => { const c = document.getElementById(id); if(!c) return; if(y==null){ c.style.display='none'; return; } c.style.display=''; c.setAttribute('cx', xx); c.setAttribute('cy', y); };
+  set('acHh', d.yh[i]); if(d.yp) set('acHp', d.yp[i]); if(d.ya) set('acHa', d.yp ? null : d.ya[i]);
+  const rd = document.getElementById('acRead'); if(rd) rd.innerHTML = actChartReadout(i);
+}
+function actChartLeave(e){
+  if(e && e.pointerType && e.pointerType!=='mouse') return; // บนมือถือให้ค่าค้างไว้หลังยกนิ้ว
+  const g = document.getElementById('acHov'); if(g) g.style.display = 'none';
+  const rd = document.getElementById('acRead'); if(rd) rd.innerHTML = actChartReadout(null);
+}
+if(typeof window!=='undefined'){ let acRw = window.innerWidth, acRt = null;
+  window.addEventListener('resize', ()=>{ if(!actDetailId || Math.abs(window.innerWidth-acRw) < 2) return; acRw = window.innerWidth; clearTimeout(acRt); acRt = setTimeout(()=>refreshActDetail(), 150); }); }
 
 /* ----- ป๊อปอัพรายละเอียดกิจกรรม ----- */
 let actDetailId = null, actDetailEdit = false;
