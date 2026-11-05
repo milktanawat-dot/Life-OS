@@ -134,9 +134,13 @@
         // สำรองทรัพย์สินเดิมในเครื่องไว้ครั้งเดียว ก่อนถูกแทนที่ด้วยข้อมูล Milk Money
         if (!LS.get('mm:lifeos:assetsBackupBeforeMM')) LS.set('mm:lifeos:assetsBackupBeforeMM', { at: new Date().toISOString(), assets: st.assets || {} });
         var A = j.assets || {};
+        // พอร์ตเสริม (พอร์ตคนอื่น) ไม่ได้อยู่ใน Milk Money — เก็บของในเครื่องไว้ ไม่ให้ถูกทับ
+        // (ถ้าในเครื่องว่างเพราะเคยถูกทับไปแล้ว ดึงคืนจากสำรองก่อนเชื่อม Milk Money)
+        var others = (st.assets && st.assets.otherPortfolios) || [];
+        if (!others.length) { var bk = LS.get('mm:lifeos:assetsBackupBeforeMM'); others = (bk && bk.assets && bk.assets.otherPortfolios) || A.otherPortfolios || []; }
         st.assets = Object.assign({}, st.assets || {}, {
           portfolios: A.portfolios && A.portfolios.length ? A.portfolios : [{ id: 'P-NONE', name: 'ไม่ระบุพอร์ต', color: '#5D6680' }],
-          items: A.items || [], debts: A.debts || [], reports: A.reports || [], otherPortfolios: A.otherPortfolios || [],
+          items: A.items || [], debts: A.debts || [], reports: A.reports || [], otherPortfolios: others,
           source: 'milkmoney', mmSync: { at: new Date().toISOString(), generated: j.generated, networth: j.networth || null }
         });
         try { localStorage.setItem('milkLifeOS_v1', JSON.stringify(st)); } catch (e) { }
@@ -185,9 +189,10 @@
   function lockLifeOSAssets() {
     // เงินดึงจาก Milk Money ตรงแล้ว — ปิดการอ่านซ้ำจาก Milk Hub ในเบราว์เซอร์ (กันรายการซ้ำ/ข้อมูลเก่าทับ)
     if (typeof window.milkHubSameOriginAvailable === 'function') window.milkHubSameOriginAvailable = function () { return false; };
-    ['addAssetItem', 'addAssetPortfolio', 'addBtcAsset', 'addDebt', 'addOtherPortfolio', 'confirmDimeHoldingsImport', 'confirmDimeImport', 'confirmOtherPortfolioImport',
-      'delAssetItem', 'delAssetPortfolio', 'delAssetReport', 'delDebt', 'delOtherPortfolio', 'editItemCostBasis', 'handleConfirmationNotePdf', 'handleDimePdf', 'handleOtherPortfolioPdf',
-      'moveOtherPortfolio', 'renameAssetPortfolio', 'renameOtherPortfolio', 'setItemPortfolio', 'updateAssetItemValue', 'updateOtherPortfolioManual'].forEach(function (fn) {
+    // ล็อกเฉพาะทรัพย์สินของเราเอง — พอร์ตเสริม (คนอื่น) ยังเพิ่ม/อัปโหลด PDF Dime/แก้ไขได้ตามเดิม
+    ['addAssetItem', 'addAssetPortfolio', 'addBtcAsset', 'addDebt', 'confirmDimeHoldingsImport', 'confirmDimeImport',
+      'delAssetItem', 'delAssetPortfolio', 'delAssetReport', 'delDebt', 'editItemCostBasis', 'handleConfirmationNotePdf', 'handleDimePdf',
+      'renameAssetPortfolio', 'setItemPortfolio', 'updateAssetItemValue'].forEach(function (fn) {
       if (typeof window[fn] !== 'function') return;
       window[fn] = function () { mmToast(MM_ASSET_LOCK_MSG); if (fn === 'setItemPortfolio') lifeOSRender(); };
     });
