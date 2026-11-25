@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- redeploy cache-bust: 2026-09-14 -->
+<!-- redeploy cache-bust: 2026-11-25 -->
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -659,6 +659,146 @@ a{color:inherit;}
 .tr-ztrack{height:10px; background:var(--line); border-radius:5px; overflow:hidden;} .tr-ztrack div{height:100%; border-radius:5px;}
 .tr-ztable input{width:70px; border:1px solid var(--line); border-radius:8px; padding:5px 7px; font-family:inherit; background:#fff;}
 .tr-stag{display:inline-block; color:#fff; font-size:9.5px; font-weight:600; padding:1px 7px; border-radius:99px; margin-right:4px;}
+/* ================= Visual refresh 2026-11 (โหลดท้ายสุด ทับสไตล์เดิม) ================= */
+:root{
+  --bg:#F3F4FA; --line:#E8EBF3; --ink:#171B2C; --ink-soft:#7D86A0;
+  --radius:22px; --radius-sm:15px;
+  --shadow-card:0 1px 2px rgba(23,27,44,.04), 0 10px 30px -18px rgba(39,46,94,.22);
+  --shadow-card-hover:0 2px 6px rgba(23,27,44,.05), 0 22px 44px -20px rgba(39,46,94,.30);
+  --glass:rgba(255,255,255,.72);
+}
+html{scroll-behavior:smooth;}
+body{background:
+  radial-gradient(900px 520px at 100% -10%, rgba(139,127,209,.16), transparent 60%),
+  radial-gradient(760px 480px at -10% 30%, rgba(34,195,166,.09), transparent 60%),
+  radial-gradient(700px 520px at 60% 110%, rgba(236,111,160,.08), transparent 60%),
+  var(--bg); background-attachment:fixed; font-feature-settings:"tnum" 1;}
+::selection{background:var(--purple-pale);}
+/* sidebar: glass */
+.sidebar{background:var(--glass); backdrop-filter:saturate(1.6) blur(18px); -webkit-backdrop-filter:saturate(1.6) blur(18px); border-right:1px solid rgba(232,235,243,.9);}
+.brand span{border-radius:12px; background:conic-gradient(from 210deg, #5A4CC4, #3E8DFF, #22C3A6, #EC6FA0, #5A4CC4);}
+.nav-item{border-radius:13px; position:relative;}
+.nav-item.active{background:linear-gradient(135deg, rgba(90,76,196,.13), rgba(62,141,255,.10)); color:var(--purple-deep); box-shadow:none;}
+.nav-item.active::before{content:''; position:absolute; left:-18px; top:10px; bottom:10px; width:4px; border-radius:0 4px 4px 0; background:linear-gradient(var(--purple-deep),var(--blue));}
+.nav-item.active .icon{transform:scale(1.12);}
+/* headings */
+.greeting h1{font-size:28px; letter-spacing:-.02em; background:linear-gradient(90deg,var(--ink) 30%, var(--purple-deep)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+.section-title{font-size:24px; letter-spacing:-.02em; display:flex; align-items:center; gap:10px;}
+.section-title::before{content:''; width:8px; height:24px; border-radius:6px; background:linear-gradient(var(--purple-deep),var(--rose));}
+/* surfaces */
+.card,.panel,.ribbon{border-color:rgba(232,235,243,.95);}
+.card{border-radius:var(--radius);}
+.card:hover{transform:translateY(-3px);}
+.panel h3{font-size:15px; letter-spacing:-.005em;}
+.date-chip,.bell-btn{background:var(--glass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);}
+.btn{border-radius:12px;}
+.btn:active{transform:scale(.97);}
+#viewRoot{animation:vfade .28s ease both;}
+@keyframes vfade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+/* fix: ค่าตัวเลขด้านขวาของแถวในการ์ดแคบๆ ไม่ให้ตัดบรรทัด (เช่น ฿349/ด., วันที่, km) */
+.bar-val{width:auto; min-width:38px; white-space:nowrap;}
+.bar-label{min-width:0;}
+@media (prefers-reduced-motion:reduce){ #viewRoot{animation:none;} .card:hover{transform:none;} }
+
+/* ================= Health profiles ================= */
+.hp-bar{display:flex; gap:10px; overflow-x:auto; padding:2px 2px 12px; margin-bottom:6px; scrollbar-width:none;}
+.hp-bar::-webkit-scrollbar{display:none;}
+.hp-chip{flex-shrink:0; display:flex; align-items:center; gap:10px; border:1px solid var(--line); background:var(--panel); border-radius:16px; padding:8px 14px 8px 8px; font-family:inherit; color:var(--ink); cursor:pointer; position:relative; box-shadow:var(--shadow-sm); transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
+.hp-chip:hover{transform:translateY(-1px); box-shadow:var(--shadow-card);}
+.hp-chip .av{width:36px; height:36px; border-radius:12px; background:var(--rose-pale); display:flex; align-items:center; justify-content:center; font-size:19px;}
+.hp-chip b{display:block; font-size:13px; font-weight:600; text-align:left;}
+.hp-chip small{display:block; font-size:10.5px; color:var(--ink-soft); text-align:left;}
+.hp-chip.on{border-color:transparent; background:linear-gradient(135deg,#EC6FA0,#8B7FD1); color:#fff; box-shadow:0 10px 22px -12px rgba(236,111,160,.8);}
+.hp-chip.on .av{background:rgba(255,255,255,.22);}
+.hp-chip.on small{color:rgba(255,255,255,.8);}
+.hp-chip .dot{position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; border-radius:99px; background:var(--coral); color:#fff; font-size:10px; font-style:normal; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--bg);}
+.hp-add{border-style:dashed; color:var(--ink-soft); padding:8px 16px; font-size:12.5px; font-weight:600; box-shadow:none; background:transparent;}
+.hp-edit .hp-fgrid, .hp-fgrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px 12px;}
+@media (max-width:760px){.hp-fgrid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.hp-fgrid label{display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--ink-soft); font-weight:500; min-width:0;}
+.hp-fgrid input,.hp-fgrid select{border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--ink); min-width:0;}
+.hp-fgrid label.hp-ck{flex-direction:row; align-items:center; gap:7px; font-size:12px; color:var(--ink); grid-column:span 2;}
+.hp-hero{position:relative; overflow:hidden; border-radius:var(--radius); padding:22px; margin-bottom:16px; color:#fff;
+  background:radial-gradient(120% 160% at 0% 0%, #F08DB6 0%, #C25A9A 38%, #5A4CC4 100%); box-shadow:0 20px 44px -26px rgba(194,90,154,.9);}
+.hp-hero::after{content:''; position:absolute; right:-80px; bottom:-90px; width:260px; height:260px; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.22), transparent 70%);}
+.hp-id{display:flex; gap:16px; align-items:center; flex-wrap:wrap; position:relative; z-index:1;}
+.hp-av{width:64px; height:64px; border-radius:20px; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:34px; flex-shrink:0; box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);}
+.hp-id h2{font-size:24px; font-weight:700; letter-spacing:-.01em;}
+.hp-id h2 small{font-size:12px; font-weight:500; opacity:.8; margin-left:6px;}
+.hp-meta{font-size:12.5px; opacity:.85; margin-top:1px;}
+.hp-srcs{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+.hp-srcs span{font-size:11px; padding:3px 10px; border-radius:99px; background:rgba(255,255,255,.14); opacity:.75;}
+.hp-srcs span.on{opacity:1; background:rgba(255,255,255,.26);}
+.hp-actions{display:flex; gap:8px; flex-wrap:wrap;}
+.hp-actions .btn:first-child{background:#fff; color:#B23F80; box-shadow:none;}
+.hp-next{position:relative; z-index:1; margin-top:16px; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.2); border-radius:16px; padding:12px 14px;}
+.hp-next>div:first-child{flex:1; min-width:0;}
+.hp-next span{display:block; font-size:11px; opacity:.8;}
+.hp-next b{display:block; font-size:15px;}
+.hp-next em{display:block; font-style:normal; font-size:12px; opacity:.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.hp-next .cd{font-size:13px; font-weight:700; background:#fff; color:#B23F80; border-radius:12px; padding:8px 12px; white-space:nowrap;}
+.hp-alerts h3{margin-bottom:10px;}
+.hp-al{display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:13px; font-size:12.8px; line-height:1.55; margin-bottom:7px; background:var(--bg);}
+.hp-al i{font-style:normal; width:26px; height:26px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px; background:#fff;}
+.hp-al.bad{background:#FFECEF; color:#8C2F45;} .hp-al.warn{background:#FFF4E2; color:#7A4A0C;} .hp-al.info{background:#ECF2FF; color:#28427A;} .hp-al.ok{background:var(--teal-pale); color:#1F6153;}
+.hp-chart{width:100%; height:auto; display:block; margin:8px 0 4px;}
+.hp-appt{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line);}
+.hp-appt:last-of-type{border-bottom:none;}
+.hp-appt .dt{width:50px; flex-shrink:0; text-align:center; background:var(--coral-pale); color:#B53A56; border-radius:13px; padding:6px 0;}
+.hp-appt .dt b{display:block; font-size:19px; line-height:1.1;}
+.hp-appt .dt span{font-size:10px; font-weight:600;}
+.hp-appt .bd{flex:1; min-width:0;}
+.hp-appt .t{font-size:13.2px; font-weight:600;}
+.hp-appt .cd{font-size:11px; font-weight:700; color:var(--ink-soft); white-space:nowrap; padding-top:3px;}
+.hp-appt .cd.hot{color:var(--coral);}
+.hp-appt.dim{opacity:.6;} .hp-appt.dim .dt{background:var(--bg); color:var(--ink-soft);}
+.hp-prep{margin-top:5px; font-size:11.5px; background:#FFF4E2; color:#7A4A0C; border-radius:9px; padding:5px 9px;}
+.hp-lab{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+.hp-lab:last-child{border-bottom:none;}
+.hp-lab .t{font-size:13px; font-weight:600;}
+.hp-lab .v{font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:800; text-align:right; white-space:nowrap;}
+.hp-lab .v small{font-family:'Prompt',sans-serif; font-size:10.5px; font-weight:500; color:var(--ink-soft); margin-left:3px;}
+.hp-sub{font-size:12px; font-weight:600; margin-bottom:6px;}
+.hp-bars{position:relative; display:flex; align-items:flex-end; gap:4px; height:122px; padding-top:4px;}
+.hp-bars .b{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:3px; min-width:0;}
+.hp-bars .b i{display:block; width:100%; max-width:22px; border-radius:6px 6px 3px 3px; min-height:0;}
+.hp-bars .b span{font-size:9px; color:var(--ink-soft); height:14px;}
+.hp-bars .g{position:absolute; left:0; right:0; border-top:1.5px dashed rgba(23,27,44,.28); pointer-events:none;}
+.hp-bars .g em{position:absolute; right:0; top:-15px; font-style:normal; font-size:9.5px; color:var(--ink-soft); background:var(--panel); padding:0 4px; border-radius:4px;}
+.hp-steps{margin:8px 0 8px 18px; font-size:12.3px; line-height:1.7; color:var(--ink);}
+.hp-code{background:#151A2E; color:#D7E0FF; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.55; border-radius:12px; padding:12px 14px; overflow-x:auto; margin:6px 0 8px; white-space:pre;}
+.hp-divider{display:flex; align-items:center; gap:10px; font-size:12px; font-weight:600; color:var(--ink-soft); margin:8px 0 14px;}
+.hp-divider::before,.hp-divider::after{content:''; flex:1; height:1px; background:var(--line);}
+
+/* ================= Mobile: แถบนำทางด้านล่าง (iPhone home-screen app) ================= */
+@media (max-width:760px){
+  body{display:block;}
+  .sidebar{position:fixed; top:auto; left:0; right:0; bottom:0; width:auto; height:auto; flex-direction:row; align-items:stretch; gap:2px; padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-right:none; border-top:1px solid rgba(232,235,243,.9); overflow-x:auto; scroll-snap-type:x proximity; z-index:60; box-shadow:0 -10px 30px -20px rgba(39,46,94,.35); scrollbar-width:none;}
+  .sidebar::-webkit-scrollbar{display:none;}
+  .sidebar .brand, .sidebar .nav-spacer, .sidebar .profile-dot{display:none;}
+  .nav-item{flex:0 0 auto; width:auto; min-width:62px; height:52px; flex-direction:column; justify-content:center; gap:2px; padding:4px 8px; font-size:10.5px; scroll-snap-align:start;}
+  .nav-item .icon{font-size:17px; width:auto;}
+  .nav-item.active::before{left:22%; right:22%; top:-6px; bottom:auto; width:auto; height:3px; border-radius:0 0 3px 3px; background:linear-gradient(90deg,var(--purple-deep),var(--blue));}
+  .main{padding:calc(14px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom)); max-width:none;}
+  .topbar{margin-bottom:16px; align-items:center;}
+  .greeting h1{font-size:21px;}
+  .greeting p{font-size:12px;}
+  .date-chip{padding:7px 12px; font-size:11.5px;}
+  .grid{grid-template-columns:1fr; gap:14px;}
+  .card:hover{transform:none;}
+  .panel{padding:16px; border-radius:18px;}
+  .section-title{font-size:21px;}
+  .hp-id h2{font-size:20px;}
+  .hp-av{width:54px; height:54px; font-size:28px; border-radius:17px;}
+  .hp-actions{width:100%;}
+  .hp-actions .btn{flex:1;}
+  #mm-bridge{bottom:calc(76px + env(safe-area-inset-bottom)) !important;}
+  .grid[style*="grid-template-columns"]{grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px;}
+  .grid[style*="grid-template-columns"] .card{padding:14px; min-width:0;}
+  .grid[style*="grid-template-columns"] .big-stat{font-size:clamp(15px,4.6vw,20px); overflow-wrap:anywhere;}
+  .card-sub,.stat-note{overflow-wrap:anywhere;}
+}
 </style>
 </head>
 <body>
@@ -1980,6 +2120,9 @@ function gatherReminders(mode){
       out.push({date:due, time:'', title: member.name+': '+rem.title, category:'health', catLabel:HEALTH_CATEGORY.label, color:HEALTH_CATEGORY.color});
     }
   });
+  fhbUpcomingAll().forEach(x=>{
+    if(x.date >= t && x.date <= end){ const meta = calCategoryMeta('doctor'); out.push({date:x.date, time:x.time, title:x.title, category:'doctor', catLabel:meta.label+' · Family Health', color:meta.color}); }
+  });
   // Subscriptions and annual expenses (ค่าสมาชิก/บริการ, ค่าใช้จ่ายรายปี) are both plain
   // lists with no due date, so they're deliberately NOT wired into reminders/calendar — see
   // renderSubscriptions()/renderAnnualExpenses() instead.
@@ -2149,6 +2292,7 @@ function renderToday(){
     trips.list.forEach(tr=>tr.days.forEach(td=>{ if(td.date===d) out.push({label:'ทริป: '+(td.place||tr.name), color:'var(--purple)', gcalTitle:'ทริป: '+(td.place||tr.name)}); }));
     state.running.races.forEach(r=>{ if(r.date===d) out.push({label:'🏁 '+r.name+(r.distanceKm?(' ('+r.distanceKm+'K)'):''), color:RACE_CATEGORY.color, gcalTitle:'แข่ง: '+r.name}); });
     allHealthReminders().forEach(({member,rem,due})=>{ if(due===d) out.push({label:'✚ '+member.name+': '+rem.title, color:HEALTH_CATEGORY.color, gcalTitle:member.name+': '+rem.title}); });
+    fhbUpcomingAll().forEach(x=>{ if(x.date===d) out.push({label:'🏥 '+(x.time?x.time+' ':'')+x.title, color:calCategoryMeta('doctor').color, gcalTitle:x.title}); });
     return out;
   };
   // Which month the calendar grid shows — defaults to the current month, but calMonthShift() lets
@@ -2241,15 +2385,19 @@ function renderToday(){
 
     <div class="card">
       <div class="card-head">
-        <div class="card-title"><div class="card-icon icon-health">✚</div><div><h3>สุขภาพ</h3><div class="card-sub">${state.health.members.length} คน/สัตว์เลี้ยง</div></div></div>
+        <div class="card-title"><div class="card-icon icon-health">✚</div><div><h3>สุขภาพ</h3><div class="card-sub">${hpState().profiles.length} โปรไฟล์ · ${state.health.members.length} คน/สัตว์เลี้ยง</div></div></div>
         ${healthUpcomingList.length ? `<div class="pill ${healthUpcomingList[0].st.status==='overdue'?'pill-coral':healthUpcomingList[0].st.status==='soon'?'pill-amber':'pill-teal'}">${healthUpcomingList[0].st.status==='overdue'?'เลยกำหนด':healthUpcomingList[0].st.status==='soon'?'ใกล้ถึงกำหนด':'ปกติ'}</div>` : ''}
       </div>
       ${(()=>{ let r = null; try{ r = hbReadiness(); }catch(e){} if(!r) return '';
         const hrv = hbLatest('hrv',2), rhr = hbLatest('rhr',2), sl = hbLatest('sleep',1);
-        return `<div style="display:flex; align-items:center; gap:10px; background:var(--rose-pale); border-radius:12px; padding:9px 12px; margin-bottom:10px; cursor:pointer" onclick="hbTab='body'; nav('health')">
+        return `<div style="display:flex; align-items:center; gap:10px; background:var(--rose-pale); border-radius:12px; padding:9px 12px; margin-bottom:10px; cursor:pointer" onclick="hpSelect(hpState().profiles.find(p=>p.isSelf).id); nav('health')">
           <div class="mono" style="font-size:22px; font-weight:800; color:#B83E72">${r.score}</div>
           <div style="flex:1; min-width:0"><div style="font-size:12px; font-weight:600">ความพร้อม: ${r.label}</div>
           <div class="muted" style="font-size:10.5px">${[hrv?'HRV '+Math.round(hrv.v):'', rhr?'RHR '+Math.round(rhr.v):'', sl?'นอน '+hbFmtH(sl.v):''].filter(Boolean).join(' · ')}</div></div></div>`; })()}
+      ${(()=>{ const fa = fhbUpcomingAll().slice(0,2); const others = hpState().profiles.filter(p=>!p.isSelf);
+        const bpLines = others.map(p=>{ const b = fhbRecords(p,'bp'); const l = b[b.length-1]; if(!l) return ''; const c = hbBpClass(l.sys,l.dia);
+          return `<div class="bar-row" style="align-items:center; cursor:pointer" onclick="hpSelect('${p.id}'); nav('health')"><div class="tl-dot" style="background:${c.color}; margin-right:6px"></div><div class="bar-label" style="flex:1 1 auto; font-weight:500">${escapeHtml(p.avatar||'')} ${escapeHtml(p.name)} · ความดัน ${l.sys}/${l.dia}</div><div class="bar-val" style="font-size:11.5px; color:${c.color}">${c.label}</div></div>`; }).join('');
+        return bpLines + fa.map(x=>`<div class="bar-row" style="align-items:center; cursor:pointer" onclick="hpSelect('${x.profile.id}'); nav('health')"><div class="tl-dot" style="background:var(--coral); margin-right:6px"></div><div class="bar-label" style="flex:1 1 auto; font-weight:500">🏥 ${escapeHtml(x.profile.name)} · ${escapeHtml(x.appt.detail||x.appt.doctorType||'นัดหมอ')}</div><div class="bar-val" style="font-size:12px; color:var(--ink-soft)">${fmtDate(x.date)}</div></div>`).join(''); })()}
       ${healthUpcomingList.length ? healthUpcomingList.slice(0,4).map(({member,rem,due,st})=>`
         <div class="bar-row" style="align-items:center">
           <div class="tl-dot" style="background:${st.color}; margin-right:6px"></div>
@@ -2298,6 +2446,7 @@ function renderToday(){
         // category, plus EGAT tasks/trips/race day) — dedupe categories so a day with three
         // "other" appointments doesn't get three identical blue dots.
         const evCats = new Set(dayEv.map(ev=>calCategoryMeta(ev.category).key));
+        if(fhbUpcomingAll().some(x=>x.date===d)) evCats.add('doctor');
         evCats.forEach(key=> dots.push({color: calCategoryMeta(key).color}));
         if(dayTasks.length) dots.push({color:'var(--amber)'});
         if(dayTrips.length) dots.push({color:'var(--purple)'});
@@ -5787,6 +5936,491 @@ function renderHealthBody(){
     ข้อมูลทั้งหมดเป็นการติดตามแนวโน้มส่วนตัว ไม่ใช่การวินิจฉัยทางการแพทย์</div></div>`;
 }
 
+/* ---------- Health profiles (โปรไฟล์สุขภาพรายคน · 25 พ.ย. 69) ----------
+   state.health.profiles  — คนที่ติดตามสุขภาพ (ตัวเอง = isSelf ใช้หน้า "ร่างกาย & การฟื้นตัว" เดิม)
+     {id, name, avatar, relation, isSelf, fhbName, sex, age, heightCm,
+      goals:{steps, sleepH}, device:{brand, athleteId, apiKey, useMyKey} | null,
+      wellness:{date:{steps, sleepSecs, restingHR, …}}, wearSync}
+   state.health.fhb       — ข้อมูลจากโปรเจ็ค "สุขภาพครอบครัว" (Family Health LINE Bot)
+     {url, lastSync, source:'live'|'file', data:{records, appointments, profiles, metricRanges, labInfo, users}, meds:[]}
+   ข้อมูลทั้งหมดเก็บใน localStorage ของเครื่องนี้เท่านั้น (ไม่ได้ฝังในไฟล์ — repo เป็น public) */
+const HP_DEVICES = {
+  garmin:{label:'Garmin', icon:'⌚', via:true},
+  coros:{label:'COROS', icon:'⌚', via:true},
+  polar:{label:'Polar', icon:'⌚', via:true},
+  suunto:{label:'Suunto', icon:'⌚', via:true},
+  oura:{label:'Oura Ring', icon:'💍', via:true},
+  other:{label:'อื่นๆ (Apple Watch / Huawei / Xiaomi)', icon:'⌚', via:false}
+};
+const HP_WEAR = {
+  steps:{label:'ก้าวเดิน', unit:'ก้าว', icon:'👣', color:'#5CB85C', dec:0, get:w=>w.steps, min:1, max:150000},
+  sleep:{label:'การนอน', unit:'ชม.', icon:'☾', color:'#5B6EF5', dec:1, get:w=>w.sleepSecs? w.sleepSecs/3600 : null, min:0.5, max:16},
+  rhr:{label:'ชีพจรขณะพัก', unit:'bpm', icon:'♥', color:'#FF6B8A', dec:0, get:w=>w.restingHR, min:25, max:130},
+  hrv:{label:'HRV', unit:'ms', icon:'∿', color:'#5A4CC4', dec:0, get:w=>w.hrv, min:5, max:300},
+  spo2:{label:'SpO₂', unit:'%', icon:'◉', color:'#2BB6C9', dec:0, get:w=>w.spO2, min:70, max:100},
+  sleepScore:{label:'คะแนนการนอน', unit:'/100', icon:'★', color:'#8B7FD1', dec:0, get:w=>w.sleepScore, min:1, max:100},
+  resp:{label:'อัตราหายใจ', unit:'/นาที', icon:'≋', color:'#3E8DFF', dec:1, get:w=>w.respiration, min:4, max:40},
+  stress:{label:'ความเครียด', unit:'', icon:'⚡', color:'#F5A623', dec:0, get:w=>w.stress, min:0, max:100}
+};
+const HP_WELL_FIELDS = ['steps','sleepSecs','sleepScore','sleepQuality','restingHR','hrv','spO2','respiration','avgSleepingHR','weight','bodyFat','systolic','diastolic','stress','readiness','kcalConsumed'];
+let hpMsg = {};            // profileId|'fhb' -> html ข้อความสถานะ
+let hpEditId = null;       // โปรไฟล์ที่กำลังแก้ไข ('new' = เพิ่มใหม่)
+let hpRange = 90;          // ช่วงวันของกราฟความดัน
+
+function hpState(){
+  const h = state.health;
+  if(!Array.isArray(h.profiles) || !h.profiles.length){
+    h.profiles = [
+      {id:'self', name:'มิลค์', avatar:'🧑', relation:'ตัวเอง', isSelf:true, fhbName:'มิลค์', sex:'', age:null, heightCm:null, goals:{steps:8000, sleepH:7}, device:null, wellness:{}, wearSync:null},
+      {id:'mom', name:'แม่', avatar:'👩', relation:'แม่', isSelf:false, fhbName:'แม่มิลค์', sex:'หญิง', age:null, heightCm:null, goals:{steps:6000, sleepH:7}, device:{brand:'garmin', athleteId:'', apiKey:'', useMyKey:true}, wellness:{}, wearSync:null}
+    ];
+  }
+  h.profiles.forEach(p=>{ if(!p.goals) p.goals = {steps:6000, sleepH:7}; if(!p.wellness) p.wellness = {}; });
+  if(!h.fhb) h.fhb = {url:'', lastSync:null, source:null, data:null, meds:[]};
+  if(!h.activeProfile || !h.profiles.some(p=>p.id===h.activeProfile)) h.activeProfile = h.profiles[0].id;
+  return h;
+}
+function hpActive(){ const h = hpState(); return h.profiles.find(p=>p.id===h.activeProfile); }
+function hpSelect(id){ hpState().activeProfile = id; hpEditId = null; hbTab = 'body'; saveState(); render(); }
+
+/* ---- Family Health data helpers ---- */
+function fhbDate(s){ // 'dd/mm/yyyy' (ค.ศ. หรือ พ.ศ.) -> ISO
+  const m = String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(!m) return null;
+  let y = +m[3]; if(y > 2400) y -= 543;
+  return y+'-'+pad2(+m[2])+'-'+pad2(+m[1]);
+}
+function fhbData(){ const f = hpState().fhb; return f && f.data ? f.data : null; }
+function fhbRecords(p, type){
+  const d = fhbData(); if(!d || !p || !p.fhbName) return [];
+  return (d.records||[]).filter(r=>r.name===p.fhbName && (!type || r.type===type)).sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
+}
+function fhbAppts(p){
+  const d = fhbData(); if(!d || !p || !p.fhbName) return [];
+  const t = todayISO(), seen = new Set();
+  return (d.appointments||[]).filter(a=>a.name===p.fhbName && a.status!=='cancelled').map(a=>{
+    const iso = fhbDate(a.date);
+    return Object.assign({}, a, {iso, upcoming: !!iso && iso >= t});
+  }).filter(a=>{ if(!a.iso) return false; const k = a.iso+'|'+(a.time||'')+'|'+(a.detail||a.doctorType||''); if(seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a,b)=>String(a.iso+(a.time||'')).localeCompare(String(b.iso+(b.time||''))));
+}
+// นัดหมอที่ยังไม่ถึงของทุกโปรไฟล์ที่ผูกกับ Family Health — ใช้ใน กระดิ่ง/ปฏิทิน/วอลเปเปอร์
+function fhbUpcomingAll(){
+  const out = [];
+  try{ hpState().profiles.forEach(p=>fhbAppts(p).filter(a=>a.upcoming).forEach(a=>out.push({profile:p, appt:a, date:a.iso, time:a.time||'',
+    title:'นัดหมอ '+p.name+' · '+(a.detail||a.doctorType||'')+(a.hospital?(' @'+a.hospital):'')}))); }catch(e){}
+  return out.sort((a,b)=>String(a.date+a.time).localeCompare(String(b.date+b.time)));
+}
+function fhbRangeFor(label){
+  const d = fhbData(); if(!d || !d.metricRanges) return null;
+  return d.metricRanges[String(label||'').toLowerCase()] || null;
+}
+function fhbIngest(j, source){
+  let data = j && j.data !== undefined ? j.data : j;
+  if(typeof data === 'string') data = JSON.parse(data);
+  let meds = j && j.meds !== undefined ? j.meds : [];
+  if(typeof meds === 'string') meds = JSON.parse(meds);
+  if(meds && !Array.isArray(meds)) meds = meds.meds || [];
+  if(!data || !Array.isArray(data.records) || !Array.isArray(data.appointments)) throw new Error('รูปแบบข้อมูลไม่ใช่ของ Family Health Bot');
+  const f = hpState().fhb;
+  f.data = {records:data.records, appointments:data.appointments, profiles:data.profiles||{}, metricRanges:data.metricRanges||{}, labInfo:data.labInfo||{}, users:data.users||[]};
+  f.meds = meds || []; f.lastSync = new Date().toISOString(); f.source = source || 'live';
+  // เติมอายุ/เพศ/ส่วนสูงจากโปรไฟล์ในบอท ถ้าในนี้ยังว่าง
+  hpState().profiles.forEach(p=>{
+    const fp = p.fhbName && f.data.profiles[p.fhbName]; if(!fp) return;
+    if(!p.age && fp.age) p.age = fp.age;
+    if(!p.heightCm && fp.height) p.heightCm = fp.height;
+    if(!p.sex && fp.sex) p.sex = fp.sex;
+  });
+  saveState();
+}
+function fhbBaseUrl(u){
+  try{ const x = new URL(String(u||'').trim()); const tok = x.searchParams.get('token');
+    if(!/script\.google(usercontent)?\.com$/.test(x.hostname) || !tok) return null;
+    return x.origin + x.pathname + '?token=' + encodeURIComponent(tok); }catch(e){ return null; }
+}
+async function fhbSync(silent){
+  const f = hpState().fhb; const base = fhbBaseUrl(f.url);
+  if(!base){ hpMsg.fhb = '<span style="color:var(--coral)">ยังไม่ได้วางลิงก์เว็บ Family Health (ต้องมี ?token=…)</span>'; if(!silent) render(); return false; }
+  hpMsg.fhb = 'กำลังดึงข้อมูล…'; if(!silent) render();
+  try{
+    const res = await fetch(base + '&format=json&_=' + Date.now());
+    const txt = await res.text();
+    if(/^\s*</.test(txt)) throw new Error('NOJSON');
+    fhbIngest(JSON.parse(txt), 'live');
+    hpMsg.fhb = '<span style="color:var(--green-deep)">ดึงข้อมูลสำเร็จ ✓</span>';
+  }catch(e){
+    hpMsg.fhb = e.message==='NOJSON'
+      ? '<span style="color:var(--coral)">เว็บยังตอบกลับเป็นหน้าเว็บ ไม่ใช่ JSON — ต้องเพิ่มโค้ด 6 บรรทัดใน Code.gs แล้ว Deploy เวอร์ชันใหม่ก่อน (ดูวิธีด้านล่าง) ระหว่างนี้ใช้ "นำเข้าไฟล์" ได้</span>'
+      : '<span style="color:var(--coral)">ดึงไม่สำเร็จ: '+escapeHtml(e.message||String(e))+'</span>';
+  }
+  if(currentView==='health' || !silent) render();
+  return true;
+}
+function fhbImportFile(inp){
+  const file = inp.files && inp.files[0]; if(!file) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{ try{ fhbIngest(JSON.parse(rd.result), 'file'); hpMsg.fhb = '<span style="color:var(--green-deep)">นำเข้าไฟล์สำเร็จ ✓</span>'; }
+    catch(e){ hpMsg.fhb = '<span style="color:var(--coral)">นำเข้าไม่ได้: '+escapeHtml(e.message)+'</span>'; } render(); };
+  rd.readAsText(file);
+}
+function fhbSaveUrl(){
+  const v = (document.getElementById('fhbUrlInput')||{}).value || '';
+  if(v && !fhbBaseUrl(v)){ hpMsg.fhb = '<span style="color:var(--coral)">ลิงก์ไม่ถูกต้อง — ใช้ลิงก์ที่เปิดหน้าเว็บสุขภาพครอบครัวได้ (มี ?token=…)</span>'; render(); return; }
+  hpState().fhb.url = v.trim(); saveState(); fhbSync();
+}
+const FHB_CODE_GS = `// วางไว้บรรทัดแรกสุดในฟังก์ชัน doGet(e) ของ Code.gs
+if (e && e.parameter && e.parameter.format === 'json') {
+  var d = getDataForToken(e.parameter.token);
+  var m = '[]'; try { m = getMedicationsForToken(e.parameter.token); } catch (x) {}
+  return ContentService.createTextOutput(JSON.stringify({ data: d, meds: m }))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+function fhbCopyCode(){ try{ navigator.clipboard.writeText(FHB_CODE_GS); hpMsg.fhb = '<span style="color:var(--green-deep)">คัดลอกโค้ดแล้ว ✓</span>'; }catch(e){} render(); }
+
+/* ---- Wearable (นาฬิกา) ผ่าน intervals.icu ---- */
+function hpWearKey(p){ const d = p.device||{}; return d.useMyKey ? state.settings.intervalsApiKey : d.apiKey; }
+async function hpWearSync(pid, silent){
+  const p = hpState().profiles.find(x=>x.id===pid); if(!p || !p.device) return;
+  const d = p.device, key = hpWearKey(p), ath = String(d.athleteId||'').trim();
+  if(!HP_DEVICES[d.brand] || !HP_DEVICES[d.brand].via){ hpMsg[pid] = 'นาฬิการุ่นนี้ยังไม่มีทางเชื่อมอัตโนมัติ — ใช้การกรอกค่าเองไปก่อน'; if(!silent) render(); return; }
+  if(!key || !ath){ hpMsg[pid] = '<span style="color:var(--coral)">ยังไม่ได้ใส่ Athlete ID'+(d.useMyKey?' (และ API key ของมิลค์ในหน้า "ตั้งค่า")':' หรือ API key')+'</span>'; if(!silent) render(); return; }
+  hpMsg[pid] = 'กำลัง sync…'; if(!silent) render();
+  try{
+    const newest = todayISO(), oldest = addDays(newest, p.wearSync ? -21 : -90);
+    const res = await fetch(`https://intervals.icu/api/v1/athlete/${encodeURIComponent(ath)}/wellness?oldest=${oldest}&newest=${newest}`, {headers:{'Authorization':'Basic '+btoa('API_KEY:'+key)}});
+    if(res.status===401 || res.status===403) throw new Error(d.useMyKey ? 'บัญชีของ'+p.name+'ยังไม่ได้แชร์ให้มิลค์ (ตั้ง Coach ใน intervals.icu) หรือ Athlete ID ผิด' : 'API key / Athlete ID ไม่ถูกต้อง');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const arr = await res.json(); let n = 0;
+    (arr||[]).forEach(w=>{ const date = w.id || w.date; if(!date) return; const o = {};
+      HP_WELL_FIELDS.forEach(k=>{ if(w[k]!=null && Number.isFinite(Number(w[k]))) o[k] = Number(w[k]); });
+      if(Object.keys(o).length){ p.wellness[date] = o; n++; } });
+    p.wearSync = new Date().toISOString(); saveState();
+    hpMsg[pid] = `<span style="color:var(--green-deep)">Sync สำเร็จ ✓ (${n} วัน)</span>`;
+  }catch(e){ hpMsg[pid] = '<span style="color:var(--coral)">'+escapeHtml(e.message||String(e))+'</span>'; }
+  if(currentView==='health' || !silent) render();
+}
+function hpWearVal(p, key, date){ const m = HP_WEAR[key], w = (p.wellness||{})[date]; if(!w) return null; return hbNum(m.get(w), m.min, m.max); }
+function hpWearLatest(p, key, maxAge){ const t = todayISO(); for(let i=0;i<=(maxAge||7);i++){ const d = addDays(t,-i); const v = hpWearVal(p,key,d); if(v!=null) return {v, date:d}; } return null; }
+function hpWearAvg(p, key, days, skip){ const t = todayISO(), v = []; for(let i=(skip||0);i<days+(skip||0);i++){ const x = hpWearVal(p,key,addDays(t,-i)); if(x!=null) v.push(x); } return v.length ? {mean:v.reduce((a,b)=>a+b,0)/v.length, n:v.length} : null; }
+function hpLastWearDate(p){ const ds = Object.keys(p.wellness||{}).sort(); return ds.length ? ds[ds.length-1] : null; }
+
+/* ---- สรุป/การแจ้งเตือนสำหรับผู้ดูแล ---- */
+function hpBmi(p, w){ const h = Number(p.heightCm); return (w && h>=100 && h<=230) ? w/((h/100)*(h/100)) : null; }
+function hpBpStats(p, days){
+  const from = addDays(todayISO(), -days);
+  const bp = fhbRecords(p,'bp').filter(r=>String(r.ts).slice(0,10) >= from && r.sys);
+  if(!bp.length) return null;
+  const avg = k=> bp.reduce((a,r)=>a+Number(r[k]||0),0)/bp.length;
+  const inTarget = bp.filter(r=>r.sys<135 && r.dia<85).length;
+  return {n:bp.length, sys:avg('sys'), dia:avg('dia'), pulse: bp.some(r=>r.pulse) ? bp.filter(r=>r.pulse).reduce((a,r)=>a+r.pulse,0)/bp.filter(r=>r.pulse).length : null, pct: Math.round(inTarget/bp.length*100)};
+}
+function hpLabs(p){
+  const by = {};
+  fhbRecords(p,'custom').forEach(r=>{ const k = r.label||'อื่นๆ'; (by[k] = by[k]||[]).push(r); });
+  return Object.entries(by).map(([label, rs])=>{
+    const last = rs[rs.length-1], prev = rs.length>1 ? rs[rs.length-2] : null;
+    const rg = fhbRangeFor(label);
+    const v = Number(last.value);
+    let st = 'ok';
+    if(rg && rg.max!=null && v > rg.max) st = 'high';
+    else if(rg && rg.min!=null && v < rg.min) st = 'low';
+    const ref = (String(last.note||'').match(/ปกติ\s*([^|]+)$/)||[])[1] || (rg ? [(rg.min!=null?rg.min:''),(rg.max!=null?rg.max:'')].filter(x=>x!=='').join('–') : '');
+    return {label, last, prev, rg, st, ref:String(ref).trim(), info:(fhbData().labInfo||{})[label]||''};
+  }).sort((a,b)=>String(b.last.ts).localeCompare(String(a.last.ts)));
+}
+function hpAlerts(p){
+  const out = [], t = todayISO();
+  const bp = fhbRecords(p,'bp');
+  if(p.fhbName && fhbData()){
+    if(bp.length){
+      const last = bp[bp.length-1], ld = String(last.ts).slice(0,10), ago = dayDiff(ld, t);
+      const cls = hbBpClass(last.sys, last.dia);
+      if(last.sys>=140 || last.dia>=90) out.push({tone:'bad', ic:'⚠', text:`ความดันครั้งล่าสุด ${last.sys}/${last.dia} (${hbAgo(ld)}) อยู่ในระดับ "${cls.label}" — ให้วัดซ้ำหลังนั่งพัก 5 นาที ถ้ายังสูงหลายวันควรปรึกษาแพทย์`});
+      const s30 = hpBpStats(p, 30);
+      if(s30 && s30.n>=3 && (s30.sys>=135 || s30.dia>=85)) out.push({tone:'warn', ic:'↗', text:`ค่าเฉลี่ยความดัน 30 วัน ${Math.round(s30.sys)}/${Math.round(s30.dia)} เกินเกณฑ์วัดที่บ้าน (135/85)`});
+      if(ago > 14) out.push({tone:'info', ic:'⏱', text:`ไม่ได้วัดความดันมา ${ago} วัน — ชวน${p.name}วัดแล้วส่งรูปเข้า LINE บอท`});
+      if(last.pulse && (last.pulse>100 || last.pulse<50)) out.push({tone:'warn', ic:'♥', text:`ชีพจรครั้งล่าสุด ${last.pulse} ครั้ง/นาที ${last.pulse>100?'สูงกว่า':'ต่ำกว่า'}ช่วงปกติขณะพัก (50–100)`});
+    } else out.push({tone:'info', ic:'⏱', text:`ยังไม่มีค่าความดันของ${p.name}ในบอท`});
+    hpLabs(p).filter(l=>l.st!=='ok').forEach(l=>out.push({tone:'warn', ic:'🧪', text:`${l.label} ${l.last.value} ${l.last.unit||''} ${l.st==='high'?'สูงกว่า':'ต่ำกว่า'}เกณฑ์ (${l.ref||'-'}) · ตรวจเมื่อ ${fmtDateShort(String(l.last.ts).slice(0,10))}`}));
+    const nx = fhbAppts(p).find(a=>a.upcoming);
+    if(nx){ const dd = daysUntil(nx.iso); const prep = (nx.extra||{})['สิ่งที่ต้องปฏิบัติก่อนพบแพทย์'];
+      if(dd <= 7) out.push({tone: dd<=1?'bad':'info', ic:'🏥', text:`นัดหมอ${dd===0?'วันนี้':dd===1?'พรุ่งนี้':'อีก '+dd+' วัน'} ${nx.time||''} · ${nx.detail||nx.doctorType||''} @${nx.hospital||''}${prep?(' — '+prep):''}`}); }
+  }
+  if(p.device && p.wearSync){
+    const ld = hpLastWearDate(p);
+    if(!ld || dayDiff(ld, t) >= 2) out.push({tone:'warn', ic:'⌚', text:`ไม่มีข้อมูลจากนาฬิกามา ${ld?dayDiff(ld,t)+' วัน':'เลย'} — ${p.name}อาจไม่ได้ใส่นาฬิกา แบตหมด หรือยังไม่ได้เปิดแอปให้ sync`});
+    const st = hpWearAvg(p,'steps',7); if(st && st.n>=3 && st.mean < (p.goals.steps||6000)*0.5) out.push({tone:'info', ic:'👣', text:`ก้าวเดินเฉลี่ย 7 วัน ${hbFmt(st.mean,0)} ก้าว น้อยกว่าครึ่งของเป้า (${hbFmt(p.goals.steps,0)})`});
+    const sl = hpWearAvg(p,'sleep',7); if(sl && sl.n>=3 && sl.mean < 6) out.push({tone:'info', ic:'☾', text:`นอนเฉลี่ย 7 คืนแค่ ${hbFmtH(sl.mean)} ชม. (ผู้สูงอายุควรได้ 7–8 ชม.)`});
+    const r7 = hpWearAvg(p,'rhr',7), r30 = hpWearAvg(p,'rhr',30,7);
+    if(r7 && r30 && r7.n>=3 && r30.n>=7 && r7.mean - r30.mean >= 5) out.push({tone:'warn', ic:'♥', text:`ชีพจรขณะพักสัปดาห์นี้ ${Math.round(r7.mean)} สูงกว่าปกติของ${p.name} (${Math.round(r30.mean)}) — อาจพักผ่อนน้อย เครียด หรือเริ่มไม่สบาย`});
+    const o = hpWearLatest(p,'spo2',2); if(o && o.v < 93) out.push({tone:'warn', ic:'◉', text:`SpO₂ ล่าสุด ${o.v}% ต่ำกว่า 94%`});
+  }
+  return out;
+}
+
+/* ---- กราฟ ---- */
+function hpBpChart(p){
+  const t = todayISO(), from = addDays(t, -hpRange);
+  const bp = fhbRecords(p,'bp').filter(r=>String(r.ts).slice(0,10) >= from && r.sys);
+  if(bp.length < 2) return `<div class="muted" style="padding:28px 0; text-align:center">${bp.length? 'มีค่าความดันแค่ 1 ครั้งในช่วงนี้' : 'ยังไม่มีค่าความดันในช่วง '+hpRange+' วัน'}</div>`;
+  const mob = (window.innerWidth||1000) < 760; const W = mob ? 360 : 900, H = mob ? 200 : 230, L = 30, R = 8, T = 10, B = 22;
+  const lo = 50, hi = Math.max(170, ...bp.map(r=>r.sys+5));
+  const span = Math.max(1, dayDiff(from, t));
+  const X = iso => L + dayDiff(from, iso)/span*(W-L-R);
+  const Y = v => T + (hi-v)/(hi-lo)*(H-T-B);
+  const pts = bp.map(r=>({x:X(String(r.ts).slice(0,10)), s:Y(r.sys), d:Y(r.dia), r}));
+  const line = k => pts.map((q,i)=>(i?'L':'M')+q.x.toFixed(1)+' '+q[k].toFixed(1)).join(' ');
+  const grid = [60,80,100,120,140,160].filter(v=>v<=hi).map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+3}" text-anchor="end" font-size="9.5" fill="var(--ink-soft)">${v}</text>`).join('');
+  const months = []; for(let d = from; d <= t; d = addDays(d,1)) if(d.slice(8)==='01') months.push(d);
+  return `<svg viewBox="0 0 ${W} ${H}" class="hp-chart">
+    <rect x="${L}" y="${Y(135)}" width="${W-L-R}" height="${Y(85)-Y(135)}" fill="rgba(92,184,92,.07)"/>
+    <line x1="${L}" x2="${W-R}" y1="${Y(135)}" y2="${Y(135)}" stroke="#E07B26" stroke-dasharray="4 4" opacity=".7"/>
+    <line x1="${L}" x2="${W-R}" y1="${Y(85)}" y2="${Y(85)}" stroke="#E07B26" stroke-dasharray="4 4" opacity=".45"/>
+    ${grid}
+    ${months.map(d=>`<text x="${X(d)}" y="${H-6}" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle">${thaiMonths[+d.slice(5,7)-1]}</text>`).join('')}
+    <path d="${line('s')}" fill="none" stroke="#D2477E" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="${line('d')}" fill="none" stroke="#5A4CC4" stroke-width="2.2" stroke-linejoin="round"/>
+    ${pts.map(q=>`<g><title>${fmtDateShort(String(q.r.ts).slice(0,10))} · ${q.r.sys}/${q.r.dia}${q.r.pulse?' · ชีพจร '+q.r.pulse:''}</title><circle cx="${q.x}" cy="${q.s}" r="3.4" fill="#fff" stroke="#D2477E" stroke-width="2"/><circle cx="${q.x}" cy="${q.d}" r="3.4" fill="#fff" stroke="#5A4CC4" stroke-width="2"/></g>`).join('')}
+  </svg>`;
+}
+function hpBars(p, key, days, goal){
+  const m = HP_WEAR[key], t = todayISO(), vals = [];
+  for(let i=days-1;i>=0;i--){ const d = addDays(t,-i); vals.push({d, v:hpWearVal(p,key,d)}); }
+  if(!vals.some(x=>x.v!=null)) return `<div class="muted" style="padding:18px 0; text-align:center">ยังไม่มีข้อมูล${m.label}</div>`;
+  const mx = Math.max(goal||0, ...vals.map(x=>x.v||0)) * 1.08;
+  return `<div class="hp-bars">${vals.map(x=>{ const h = x.v!=null ? Math.max(3, x.v/mx*100) : 0; const ok = goal && x.v!=null && x.v>=goal;
+      return `<div class="b" title="${fmtDateShort(x.d)} · ${x.v!=null?(key==='sleep'?hbFmtH(x.v):hbFmt(x.v,m.dec))+' '+m.unit:'ไม่มีข้อมูล'}"><i style="height:${h.toFixed(1)}px; background:${ok?m.color:m.color+'99'}"></i><span>${+x.d.slice(8)}</span></div>`; }).join('')}
+    ${goal ? `<div class="g" style="bottom:${(18 + goal/mx*100).toFixed(1)}px"><em>เป้า ${key==='sleep'?goal+' ชม.':hbFmt(goal,0)}</em></div>` : ''}</div>`;
+}
+
+/* ---- หน้า ---- */
+function hpProfileBar(){
+  const h = hpState();
+  return `<div class="hp-bar">
+    ${h.profiles.map(p=>{ const al = p.isSelf ? 0 : hpAlerts(p).filter(a=>a.tone!=='info').length;
+      return `<button class="hp-chip ${p.id===h.activeProfile?'on':''}" onclick="hpSelect('${p.id}')"><span class="av">${escapeHtml(p.avatar||'🙂')}</span><span><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.relation||'')}</small></span>${al?`<i class="dot">${al}</i>`:''}</button>`; }).join('')}
+    <button class="hp-chip hp-add" onclick="hpEditId='new'; render()">＋ เพิ่มโปรไฟล์</button>
+  </div>`;
+}
+function hpEditor(p){
+  const isNew = !p; p = p || {name:'', avatar:'🙂', relation:'', fhbName:'', sex:'', age:'', heightCm:'', goals:{steps:6000, sleepH:7}, device:null};
+  const users = (fhbData()||{}).users || [];
+  const dv = p.device || {brand:'', athleteId:'', apiKey:'', useMyKey:true};
+  return `<div class="panel hp-edit">
+    <h3>${isNew?'เพิ่มโปรไฟล์ใหม่':'แก้ไขโปรไฟล์ · '+escapeHtml(p.name)}</h3>
+    <div class="hp-fgrid">
+      <label>ชื่อที่แสดง<input id="hpName" value="${escapeHtml(p.name)}" placeholder="เช่น แม่, พ่อ, ยาย"></label>
+      <label>อีโมจิ<input id="hpAvatar" maxlength="4" value="${escapeHtml(p.avatar||'')}"></label>
+      <label>ความสัมพันธ์<input id="hpRel" value="${escapeHtml(p.relation||'')}" placeholder="เช่น แม่"></label>
+      <label>ชื่อใน Family Health Bot<select id="hpFhb"><option value="">— ไม่เชื่อม —</option>${[...new Set([...users, p.fhbName].filter(Boolean))].map(u=>`<option ${u===p.fhbName?'selected':''}>${escapeHtml(u)}</option>`).join('')}</select></label>
+      <label>เพศ<select id="hpSex">${['','หญิง','ชาย'].map(s=>`<option ${s===p.sex?'selected':''} value="${s}">${s||'—'}</option>`).join('')}</select></label>
+      <label>อายุ (ปี)<input id="hpAge" type="number" value="${p.age||''}"></label>
+      <label>ส่วนสูง (ซม.)<input id="hpHeight" type="number" value="${p.heightCm||''}"></label>
+      <label>เป้าก้าวเดิน/วัน<input id="hpGoalSteps" type="number" value="${p.goals.steps||''}"></label>
+      <label>เป้าการนอน (ชม.)<input id="hpGoalSleep" type="number" step="0.5" value="${p.goals.sleepH||''}"></label>
+    </div>
+    ${p.isSelf ? '<div class="muted" style="margin-top:8px">ข้อมูลนาฬิกาของมิลค์ดึงจาก intervals.icu ที่ตั้งไว้ในหน้า "ตั้งค่า" อยู่แล้ว</div>' : `
+    <div class="hb-group" style="margin-top:14px">นาฬิกา / อุปกรณ์</div>
+    <div class="hp-fgrid">
+      <label>ยี่ห้อ<select id="hpDev">${['',...Object.keys(HP_DEVICES)].map(k=>`<option value="${k}" ${k===dv.brand?'selected':''}>${k?HP_DEVICES[k].label:'— ไม่มี —'}</option>`).join('')}</select></label>
+      <label>intervals.icu Athlete ID<input id="hpAth" value="${escapeHtml(dv.athleteId||'')}" placeholder="เช่น i123456"></label>
+      <label class="hp-ck"><input type="checkbox" id="hpMyKey" ${dv.useMyKey?'checked':''}> ใช้ API key ของมิลค์ (แม่แชร์บัญชีให้มิลค์เป็นโค้ช)</label>
+      <label>API key ของ${escapeHtml(p.name||'เจ้าของบัญชี')} (ถ้าไม่ได้แชร์)<input id="hpKey" type="password" value="${escapeHtml(dv.apiKey||'')}"></label>
+    </div>`}
+    <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap">
+      <button class="btn" onclick="hpSaveProfile('${isNew?'':p.id}')">✓ บันทึก</button>
+      <button class="btn btn-ghost" onclick="hpEditId=null; render()">ยกเลิก</button>
+      ${!isNew && !p.isSelf ? `<button class="btn btn-ghost" style="margin-left:auto; color:var(--coral)" onclick="hpDelProfile('${p.id}')">ลบโปรไฟล์</button>` : ''}
+    </div>
+  </div>`;
+}
+function hpSaveProfile(id){
+  const h = hpState(); const g = x=>(document.getElementById(x)||{}).value;
+  const name = (g('hpName')||'').trim(); if(!name){ alert('ใส่ชื่อก่อน'); return; }
+  let p = id ? h.profiles.find(x=>x.id===id) : null;
+  if(!p){ p = {id:uid(), isSelf:false, wellness:{}, wearSync:null, goals:{}}; h.profiles.push(p); }
+  Object.assign(p, {name, avatar:(g('hpAvatar')||'🙂').trim(), relation:(g('hpRel')||'').trim(), fhbName:g('hpFhb')||'', sex:g('hpSex')||'',
+    age: parseInt(g('hpAge'))||null, heightCm: parseFloat(g('hpHeight'))||null});
+  p.goals = {steps: parseInt(g('hpGoalSteps'))||6000, sleepH: parseFloat(g('hpGoalSleep'))||7};
+  if(!p.isSelf){
+    const brand = g('hpDev')||'';
+    p.device = brand ? {brand, athleteId:(g('hpAth')||'').trim(), apiKey:(g('hpKey')||'').trim(), useMyKey: !!(document.getElementById('hpMyKey')||{}).checked} : null;
+  }
+  h.activeProfile = p.id; hpEditId = null; saveState(); render();
+}
+function hpDelProfile(id){
+  const h = hpState(); const p = h.profiles.find(x=>x.id===id);
+  if(!p || p.isSelf || !confirm('ลบโปรไฟล์ "'+p.name+'"? (ข้อมูลใน Family Health Bot ไม่หายไปด้วย)')) return;
+  h.profiles = h.profiles.filter(x=>x.id!==id); h.activeProfile = h.profiles[0].id; hpEditId = null; saveState(); render();
+}
+async function hpSyncAll(pid){ await fhbSync(true); await hpWearSync(pid, true); render(); }
+function hpSetRange(r){ hpRange = r; render(); }
+
+function hpApptPanel(p){
+  const all = fhbAppts(p), up = all.filter(a=>a.upcoming), past = all.filter(a=>!a.upcoming).reverse();
+  const row = (a, dim)=>{ const dd = daysUntil(a.iso); const ex = a.extra||{};
+    const prep = ex['สิ่งที่ต้องปฏิบัติก่อนพบแพทย์']; const lab = ex['LAB/ตรวจอื่นๆ']; const why = ex['เหตุที่นัด'];
+    return `<div class="hp-appt ${dim?'dim':''}">
+      <div class="dt"><b>${+a.iso.slice(8)}</b><span>${thaiMonths[+a.iso.slice(5,7)-1]} ${String(+a.iso.slice(0,4)+543).slice(2)}</span></div>
+      <div class="bd"><div class="t">${escapeHtml(a.detail||a.doctorType||'นัดหมอ')}</div>
+        <div class="muted">${a.time?'🕘 '+escapeHtml(a.time)+' · ':''}${escapeHtml(a.hospital||'')}${a.building?' · '+escapeHtml(a.building):''}</div>
+        ${a.doctorName?`<div class="muted">👨‍⚕️ ${escapeHtml(a.doctorName)}</div>`:''}
+        ${!dim && (why||lab)?`<div class="muted">${why?'เหตุที่นัด: '+escapeHtml(why):''}${why&&lab?' · ':''}${lab?'ตรวจ: '+escapeHtml(lab):''}</div>`:''}
+        ${!dim && prep?`<div class="hp-prep">⚠ ${escapeHtml(prep)}</div>`:''}</div>
+      ${!dim ? `<div class="cd ${dd<=3?'hot':''}">${dd===0?'วันนี้':dd===1?'พรุ่งนี้':'อีก '+dd+' วัน'}</div>` : ''}
+    </div>`; };
+  return `<div class="panel"><h3>🏥 นัดหมอ <span class="muted" style="font-weight:400">· จาก Family Health Bot</span></h3>
+    ${up.length ? up.map(a=>row(a,false)).join('') : '<div class="muted">ไม่มีนัดที่กำลังจะถึง</div>'}
+    ${past.length ? `<details class="hb-more" style="margin-top:10px"><summary>นัดที่ผ่านมา (${past.length})</summary>${past.slice(0,12).map(a=>row(a,true)).join('')}</details>` : ''}
+    <div class="muted" style="margin-top:8px; font-size:11px">เพิ่ม/แก้/ยกเลิกนัดทำใน LINE บอทหรือเว็บสุขภาพครอบครัว — ที่นี่แสดงอย่างเดียว และนัดจะขึ้นในกระดิ่ง/ปฏิทินหน้า "วันนี้" ให้อัตโนมัติ</div></div>`;
+}
+function hpLabPanel(p){
+  const labs = hpLabs(p);
+  const w = fhbRecords(p,'weight'), s = fhbRecords(p,'sugar');
+  return `<div class="panel"><h3>🧪 ผลตรวจ & ค่าที่บันทึก</h3>
+    ${labs.length ? labs.map(l=>{ const col = l.st==='ok'?'var(--green-deep)':'#D2473F'; const diff = l.prev ? Number(l.last.value)-Number(l.prev.value) : null;
+      return `<div class="hp-lab"><div style="flex:1; min-width:0"><div class="t">${escapeHtml(l.label)}</div><div class="muted">${fmtDateShort(String(l.last.ts).slice(0,10))}${l.ref?' · เกณฑ์ '+escapeHtml(l.ref):''}${l.info?' · '+escapeHtml(l.info.split('—')[0]):''}</div></div>
+        <div class="v" style="color:${col}">${hbFmt(l.last.value, 0)}<small>${escapeHtml(l.last.unit||'')}</small>${diff!=null?`<div class="muted" style="font-size:10.5px">${diff>0?'▲':'▼'} ${hbFmt(Math.abs(diff),0)} จากครั้งก่อน</div>`:''}</div></div>`; }).join('')
+      : '<div class="muted">ยังไม่มีผลแล็บ — ถ่ายรูปใบผลตรวจส่งเข้า LINE บอทได้เลย</div>'}
+    ${s.length ? `<div class="hp-lab"><div style="flex:1"><div class="t">น้ำตาลในเลือด</div><div class="muted">${fmtDateShort(String(s[s.length-1].ts).slice(0,10))} · ${s.length} ครั้ง</div></div><div class="v">${s[s.length-1].sugar}<small>mg/dL</small></div></div>` : ''}
+    ${w.length ? `<div class="hp-lab"><div style="flex:1"><div class="t">น้ำหนัก</div><div class="muted">${fmtDateShort(String(w[w.length-1].ts).slice(0,10))}${hpBmi(p,w[w.length-1].weight)?' · BMI '+hbFmt(hpBmi(p,w[w.length-1].weight),1):''}</div></div><div class="v">${hbFmt(w[w.length-1].weight,1)}<small>kg</small></div></div>` : ''}
+  </div>`;
+}
+function hpBpPanel(p){
+  const s7 = hpBpStats(p,7), s30 = hpBpStats(p,30);
+  return `<div class="panel"><h3 style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">ความดันโลหิต <span class="hb-seg">${[30,90,180,365].map(r=>`<button class="${hpRange===r?'on':''}" onclick="hpSetRange(${r})">${r===365?'1 ปี':r+' วัน'}</button>`).join('')}</span></h3>
+    <div class="hb-stats">
+      <div>เฉลี่ย 7 วัน<b>${s7?Math.round(s7.sys)+'/'+Math.round(s7.dia):'—'}</b></div>
+      <div>เฉลี่ย 30 วัน<b>${s30?Math.round(s30.sys)+'/'+Math.round(s30.dia):'—'}</b></div>
+      <div>ชีพจรเฉลี่ย 30 วัน<b>${s30&&s30.pulse?Math.round(s30.pulse):'—'}</b></div>
+      <div>อยู่ในเกณฑ์ (&lt;135/85)<b>${s30?s30.pct+'%':'—'}</b></div>
+      <div>วัด 30 วัน<b>${s30?s30.n+' ครั้ง':'0'}</b></div>
+    </div>
+    ${hpBpChart(p)}
+    <div class="muted" style="font-size:11px"><span style="color:#D2477E">●</span> ตัวบน &nbsp;<span style="color:#5A4CC4">●</span> ตัวล่าง &nbsp;แถบเขียว/เส้นประ = เกณฑ์ความดันที่วัดเองที่บ้าน 135/85 (สมาคมความดันโลหิตสูงแห่งประเทศไทย)</div></div>`;
+}
+function hpWearPanel(p){
+  const d = p.device;
+  if(!d) return `<div class="panel"><h3>⌚ นาฬิกา</h3><div class="muted">ยังไม่ได้ผูกนาฬิกา — กด "แก้ไขโปรไฟล์" แล้วเลือกยี่ห้อ</div></div>`;
+  const dev = HP_DEVICES[d.brand] || HP_DEVICES.other;
+  const has = Object.keys(p.wellness||{}).length > 0;
+  const setup = `<details class="hb-more" ${has?'':'open'}><summary>วิธีเชื่อม ${dev.label} (ทำครั้งเดียว)</summary>
+    ${dev.via ? `<ol class="hp-steps">
+      <li>สมัคร <b>intervals.icu</b> (ฟรี) ด้วยอีเมลของ${escapeHtml(p.name)} → Settings → <b>Connections</b> → เชื่อม <b>${dev.label}</b> แล้วเปิด "Upload wellness data"</li>
+      <li>ใน intervals.icu ของ${escapeHtml(p.name)} → Settings → <b>Coach / Shared with</b> → เพิ่มบัญชีของมิลค์ (มิลค์จะดูข้อมูลได้ด้วย API key เดิมของตัวเอง ไม่ต้องรู้รหัสแม่)</li>
+      <li>คัดลอก <b>Athlete ID</b> (รูปแบบ i123456 อยู่ใน URL หรือ Settings) มาใส่ใน "แก้ไขโปรไฟล์" → กด Sync</li>
+    </ol>
+    <div class="muted" style="font-size:11px">ทำไมต้องผ่าน intervals.icu: Garmin ไม่เปิด API ให้บุคคลทั่วไป (Garmin Health API ให้เฉพาะบริษัทที่อนุมัติ) — intervals.icu ฟรีและดึง ก้าวเดิน การนอน ชีพจรขณะพัก HRV SpO₂ น้ำหนัก จากนาฬิกาให้อัตโนมัติ · ค่าไหนไม่ขึ้นแปลว่านาฬิกา/แอปไม่ได้ส่งค่านั้นมา</div>`
+      : `<div class="muted">Apple Watch / Huawei / Xiaomi ยังไม่มีบริการกลางฟรีที่ดึงเข้าเว็บได้ตรงๆ — แนะนำให้กรอกเองหรือเปลี่ยนเป็นยี่ห้อที่รองรับ</div>`}
+  </details>`;
+  if(!has) return `<div class="panel"><h3>⌚ ${dev.label} <span class="muted" style="font-weight:400">· ยังไม่มีข้อมูล</span></h3>${setup}
+    <div style="margin-top:10px"><button class="btn btn-sm" onclick="hpWearSync('${p.id}')">⟳ Sync นาฬิกา</button> <span class="muted">${hpMsg[p.id]||''}</span></div></div>`;
+  const ld = hpLastWearDate(p);
+  return `<div class="panel"><h3 style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center">⌚ ${dev.label} — 14 วันล่าสุด <span><button class="btn btn-ghost btn-sm" onclick="hpWearSync('${p.id}')">⟳ Sync</button> <span class="muted">${hpMsg[p.id]||('ล่าสุด '+hbAgo(ld))}</span></span></h3>
+    <div class="hb-two" style="gap:22px">
+      <div><div class="hp-sub">👣 ก้าวเดิน</div>${hpBars(p,'steps',14,p.goals.steps)}</div>
+      <div><div class="hp-sub">☾ การนอน</div>${hpBars(p,'sleep',14,p.goals.sleepH)}</div>
+    </div>${setup}</div>`;
+}
+function hpTiles(p){
+  const tiles = [];
+  const bp = fhbRecords(p,'bp'), last = bp[bp.length-1];
+  const tile = (ic, color, label, v, unit, sub)=>`<div class="hb-tile" style="--tc:${color}; cursor:default"><div class="hd"><div class="ic">${ic}</div>${label}</div><div class="v ${v==null?'na':''}">${v==null?'—':v}<small>${unit||''}</small></div><div class="sub">${sub||''}</div></div>`;
+  if(p.fhbName){
+    const c = last ? hbBpClass(last.sys,last.dia) : null;
+    tiles.push(tile('⊕','#C97B4A','ความดันล่าสุด', last?last.sys+'/'+last.dia:null, 'mmHg', last?`<span style="color:${c.color}; font-weight:600">${c.label}</span> · ${hbAgo(String(last.ts).slice(0,10))}`:'ยังไม่มีข้อมูล'));
+    tiles.push(tile('♥','#FF6B8A','ชีพจร (ตอนวัดความดัน)', last&&last.pulse?last.pulse:null, 'bpm', last&&last.pulse?(last.pulse>100?'สูงกว่าปกติ':last.pulse<50?'ต่ำกว่าปกติ':'ปกติ (50–100)'):''));
+    const w = fhbRecords(p,'weight'); const wl = w[w.length-1] || null;
+    const bmi = wl ? hpBmi(p, wl.weight) : null;
+    tiles.push(tile('⚖','#22C3A6','น้ำหนัก', wl?hbFmt(wl.weight,1):null, 'kg', bmi?('BMI '+hbFmt(bmi,1)+(bmi>=25?' · เกิน':bmi>=23?' · ท้วม':bmi<18.5?' · ผอม':' · ปกติ')):(wl?'ใส่ส่วนสูงเพื่อคำนวณ BMI':'ส่งน้ำหนักเข้า LINE บอทได้')));
+  }
+  if(p.device){
+    const st = hpWearLatest(p,'steps',1), sl = hpWearLatest(p,'sleep',1), rh = hpWearLatest(p,'rhr',2), o2 = hpWearLatest(p,'spo2',2);
+    const st7 = hpWearAvg(p,'steps',7);
+    tiles.push(tile('👣','#5CB85C','ก้าวเดิน'+(st&&st.date!==todayISO()?' (เมื่อวาน)':' วันนี้'), st?hbFmt(st.v,0):null, 'ก้าว', st?`${Math.round(st.v/(p.goals.steps||6000)*100)}% ของเป้า${st7?' · เฉลี่ย 7 วัน '+hbFmt(st7.mean,0):''}`:'รอ sync นาฬิกา'));
+    tiles.push(tile('☾','#5B6EF5','การนอนเมื่อคืน', sl?hbFmtH(sl.v):null, 'ชม.', sl?(sl.v>=(p.goals.sleepH||7)?'ถึงเป้า':'ต่ำกว่าเป้า '+(p.goals.sleepH||7)+' ชม.'):'รอ sync นาฬิกา'));
+    tiles.push(tile('♡','#C2477E','ชีพจรขณะพัก', rh?Math.round(rh.v):null, 'bpm', rh?hbAgo(rh.date):'จากนาฬิกา'));
+    if(o2) tiles.push(tile('◉','#2BB6C9','SpO₂', Math.round(o2.v), '%', o2.v>=95?'ปกติ':'ต่ำกว่าปกติ'));
+  }
+  return `<div class="hb-tiles">${tiles.join('')}</div>`;
+}
+function hpSourcesPanel(p){
+  const f = hpState().fhb;
+  return `<div class="panel"><h3>แหล่งข้อมูล & การเชื่อมต่อ</h3><div class="hb-src">
+    <b>1) Family Health Bot (สุขภาพครอบครัว)</b> — ความดัน ชีพจร น้ำหนัก น้ำตาล ผลแล็บ นัดหมอ ยา · ${f.lastSync?('อัปเดต '+hbAgo(f.lastSync.slice(0,10))+' '+f.lastSync.slice(11,16)+(f.source==='file'?' (จากไฟล์)':'')):'ยังไม่เคยดึง'}
+    <div class="form-row" style="margin:8px 0">
+      <input type="url" id="fhbUrlInput" placeholder="วางลิงก์เว็บสุขภาพครอบครัว (…/exec?token=…)" value="${escapeHtml(f.url||'')}" style="flex:1; min-width:220px">
+      <button class="btn btn-sm" onclick="fhbSaveUrl()">บันทึก & ดึง</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">📂 นำเข้าไฟล์ JSON<input type="file" accept=".json,application/json" style="display:none" onchange="fhbImportFile(this)"></label>
+    </div>
+    <div>${hpMsg.fhb||''}</div>
+    <details class="hb-more"><summary>ตั้งค่าครั้งเดียวใน Code.gs ให้ดึงอัตโนมัติได้</summary>
+      <ol class="hp-steps"><li>เปิด Apps Script ของบอท → ไฟล์ <b>Code.gs</b> → หา <code>function doGet(e) {</code> แล้ววางโค้ดนี้เป็นบรรทัดแรกในฟังก์ชัน</li></ol>
+      <pre class="hp-code">${escapeHtml(FHB_CODE_GS)}</pre>
+      <button class="btn btn-ghost btn-sm" onclick="fhbCopyCode()">📋 คัดลอกโค้ด</button>
+      <ol class="hp-steps" start="2"><li>Deploy → <b>Manage deployments</b> → ✎ แก้ไข → Version: <b>New version</b> → Deploy (ลิงก์เดิมใช้ต่อได้ ไม่ต้องเปลี่ยน)</li><li>กลับมากด "บันทึก & ดึง" — หลังจากนั้นเปิดหน้านี้จะดึงใหม่เองถ้าข้อมูลเก่ากว่า 3 ชม.</li></ol>
+      <div class="muted" style="font-size:11px">ปลอดภัยเท่าเดิม: ใช้ token เดียวกับหน้าเว็บ (ลิงก์นี้เก็บเฉพาะในเครื่องนี้ ไม่ได้อยู่ในไฟล์บน GitHub)</div>
+    </details>
+    ${p && !p.isSelf ? `<b>2) นาฬิกา</b> — ${p.device?(HP_DEVICES[p.device.brand]||HP_DEVICES.other).label+' ผ่าน intervals.icu · '+(p.wearSync?'sync '+hbAgo(p.wearSync.slice(0,10)):'ยังไม่เคย sync'):'ยังไม่ได้ผูก'}<br>` : ''}
+    ข้อมูลทั้งหมดเป็นการติดตามแนวโน้ม ไม่ใช่การวินิจฉัยทางการแพทย์</div></div>`;
+}
+function hpMedsPanel(p){
+  const meds = (hpState().fhb.meds||[]).filter(m=>m.name===p.fhbName);
+  if(!meds.length) return '';
+  const dayTh = {ALL:'ทุกวัน'};
+  return `<div class="panel"><h3>💊 ยาที่ต้องกิน</h3>${meds.map(m=>`<div class="hp-lab"><div style="flex:1"><div class="t">${escapeHtml(m.medName)}</div><div class="muted">${escapeHtml(dayTh[m.days]||m.days||'')}</div></div><div class="v" style="font-size:13px">${escapeHtml(String(m.times||'').split(',').join(' · '))}</div></div>`).join('')}</div>`;
+}
+// แผงข้อมูลจากบอท สำหรับโปรไฟล์ตัวเอง (ต่อท้ายหน้า "ร่างกาย & การฟื้นตัว")
+function hpSelfFhbPanels(p){
+  if(!fhbData() || !p.fhbName) return hpSourcesPanel(p);
+  return `<div class="hp-divider">จาก Family Health Bot</div>
+    ${fhbRecords(p,'bp').length ? hpBpPanel(p) : ''}
+    <div class="hb-two">${hpApptPanel(p)}${hpLabPanel(p)}</div>
+    ${hpMedsPanel(p)}${hpSourcesPanel(p)}`;
+}
+function renderHealthProfile(p){
+  const alerts = hpAlerts(p);
+  const ageLine = [p.sex, p.age?p.age+' ปี':'', p.heightCm?p.heightCm+' ซม.':''].filter(Boolean).join(' · ');
+  const f = hpState().fhb;
+  const nx = fhbAppts(p).find(a=>a.upcoming);
+  return `
+  <div class="hp-hero">
+    <div class="hp-id">
+      <div class="hp-av">${escapeHtml(p.avatar||'🙂')}</div>
+      <div style="flex:1; min-width:0">
+        <h2>${escapeHtml(p.name)} <small>${escapeHtml(p.relation||'')}</small></h2>
+        <div class="hp-meta">${ageLine||'ยังไม่ได้ใส่อายุ/ส่วนสูง'}</div>
+        <div class="hp-srcs">
+          <span class="${p.fhbName&&fhbData()?'on':''}">💬 Family Health ${p.fhbName?'· '+escapeHtml(p.fhbName):'· ไม่ได้เชื่อม'}</span>
+          <span class="${p.device&&p.wearSync?'on':''}">⌚ ${p.device?(HP_DEVICES[p.device.brand]||HP_DEVICES.other).label:'ไม่มีนาฬิกา'}</span>
+        </div>
+      </div>
+      <div class="hp-actions">
+        <button class="btn btn-sm" onclick="hpSyncAll('${p.id}')">⟳ Sync ทั้งหมด</button>
+        <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,.16); color:#fff" onclick="hpEditId='${p.id}'; render()">✎ แก้ไขโปรไฟล์</button>
+      </div>
+    </div>
+    <div class="hp-next">${nx ? `<div><span>นัดหมอถัดไป</span><b>${fmtDate(nx.iso)}${nx.time?' · '+escapeHtml(nx.time):''}</b><em>${escapeHtml(nx.detail||nx.doctorType||'')} · ${escapeHtml(nx.hospital||'')}</em></div><div class="cd">${daysUntil(nx.iso)===0?'วันนี้':'อีก '+daysUntil(nx.iso)+' วัน'}</div>` : `<div><span>นัดหมอถัดไป</span><b>${f.data?'ไม่มีนัด':'ยังไม่ได้ดึงข้อมูลจากบอท'}</b></div>`}</div>
+  </div>
+  <div class="panel hp-alerts"><h3>สิ่งที่ควรรู้ ${alerts.length?`<span class="muted" style="font-weight:400">· ${alerts.length} เรื่อง</span>`:''}</h3>
+    ${alerts.length ? alerts.map(a=>`<div class="hp-al ${a.tone}"><i>${a.ic}</i><span>${escapeHtml(a.text)}</span></div>`).join('') : `<div class="hp-al ok"><i>✓</i><span>${f.data||p.wearSync?'ทุกค่าอยู่ในเกณฑ์ ไม่มีอะไรต้องกังวล':'ยังไม่มีข้อมูล — เชื่อมแหล่งข้อมูลด้านล่างก่อน'}</span></div>`}
+  </div>
+  ${hpTiles(p)}
+  ${p.fhbName && fhbData() ? hpBpPanel(p) : ''}
+  ${p.fhbName && fhbData() ? `<div class="hb-two">${hpApptPanel(p)}${hpLabPanel(p)}</div>` : ''}
+  ${hpMedsPanel(p)}
+  ${hpWearPanel(p)}
+  ${hpSourcesPanel(p)}`;
+}
+// ดึงอัตโนมัติเมื่อเปิดหน้าสุขภาพ ถ้าข้อมูลเก่ากว่า 3 ชม.
+let hpAutoTried = false;
+function hpAutoSync(){
+  if(hpAutoTried) return; hpAutoTried = true;
+  const h = hpState(), stale = iso => !iso || (Date.now() - new Date(iso).getTime()) > 3*3600e3;
+  if(h.fhb.url && stale(h.fhb.lastSync)) setTimeout(()=>fhbSync(true), 300);
+  h.profiles.forEach(p=>{ if(p.device && p.device.athleteId && stale(p.wearSync)) setTimeout(()=>hpWearSync(p.id, true), 600); });
+}
+
 /* ---------- Health view (สุขภาพ) ---------- */
 // Which reminder (if any) is open for editing — same "reuse the add form" pattern as
 // editingSubId/editingAexpId above. Reminder ids are unique across all members, so this alone
@@ -5800,15 +6434,22 @@ function findHealthReminder(rid){
   return null;
 }
 function renderHealth(){
+  hpState(); hpAutoSync();
+  const p = hpActive();
   const pending = allHealthReminders().map(x=>healthStatusMeta(x.due)).filter(st=>st.status==='overdue' || st.status==='soon').length;
+  const sub = hbTab==='reminders' ? 'ติดตามนัดหมาย/เตือนสุขภาพของทุกคนในบ้าน รวมถึงสัตว์เลี้ยง — ครบกำหนดแล้วจะไปโผล่ในกระดิ่งแจ้งเตือนและปฏิทินหน้า "วันนี้" ด้วย'
+    : p.isSelf ? 'ภาพรวมร่างกายและการฟื้นตัว — HRV ชีพจรขณะพัก การนอน ดึงจาก intervals.icu อัตโนมัติ ส่วนน้ำหนัก ความดัน ผลตรวจเลือด กรอกเองได้'
+    : 'ดูแลสุขภาพของ'+escapeHtml(p.name)+' — ความดัน ผลแล็บ นัดหมอ จาก Family Health Bot และก้าวเดิน/การนอนจากนาฬิกา';
   return `
   <div class="section-title">สุขภาพ</div>
-  <div class="section-sub">${hbTab==='body' ? 'ภาพรวมร่างกายและการฟื้นตัว — HRV ชีพจรขณะพัก การนอน ดึงจาก intervals.icu อัตโนมัติ ส่วนน้ำหนัก ความดัน ผลตรวจเลือด กรอกเองได้' : 'ติดตามนัดหมาย/เตือนสุขภาพของทุกคนในบ้าน รวมถึงสัตว์เลี้ยง — ครบกำหนดแล้วจะไปโผล่ในกระดิ่งแจ้งเตือนและปฏิทินหน้า "วันนี้" ด้วย'}</div>
+  <div class="section-sub">${sub}</div>
+  ${hpProfileBar()}
+  ${hpEditId ? hpEditor(hpEditId==='new' ? null : hpState().profiles.find(x=>x.id===hpEditId)) : ''}
   <div class="hb-tabs">
-    <button class="hb-tab ${hbTab==='body'?'on':''}" onclick="hbSetTab('body')">♥ ร่างกาย & การฟื้นตัว</button>
+    <button class="hb-tab ${hbTab==='body'?'on':''}" onclick="hbSetTab('body')">♥ ${p.isSelf?'ร่างกาย & การฟื้นตัว':'สุขภาพ'+escapeHtml(p.name)}</button>
     <button class="hb-tab ${hbTab==='reminders'?'on':''}" onclick="hbSetTab('reminders')">🗓 นัด/เตือนสุขภาพ${pending?` <span class="cnt">${pending}</span>`:''}</button>
   </div>
-  ${hbTab==='body' ? renderHealthBody() : renderHealthReminders()}`;
+  ${hbTab==='reminders' ? renderHealthReminders() : p.isSelf ? renderHealthBody() + hpSelfFhbPanels(p) : renderHealthProfile(p)}`;
 }
 function renderHealthReminders(){
   const members = state.health.members || [];
@@ -9037,6 +9678,7 @@ function wpCollectItems(t, opt){
     }
     push({date:due, time:'', title: member.name+' · '+rem.title, cat, src:'health'});
   });
+  fhbUpcomingAll().forEach(x=>push({date:x.date, time:x.time, title:x.title, cat:'doctor', src:'fhb'}));
   (state.car.items||[]).forEach(it=>{
     const st = carItemStatus(it);
     if(st.status==='unset') return;
