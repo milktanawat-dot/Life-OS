@@ -6023,6 +6023,7 @@ function fhbIngest(j, source){
   let meds = j && j.meds !== undefined ? j.meds : [];
   if(typeof meds === 'string') meds = JSON.parse(meds);
   if(meds && !Array.isArray(meds)) meds = meds.meds || [];
+  if(data && data.error) throw new Error(data.error==='invalid_token' ? 'token ในลิงก์ไม่ถูกต้อง — คัดลอกลิงก์เว็บสุขภาพครอบครัวมาใหม่' : String(data.error));
   if(!data || !Array.isArray(data.records) || !Array.isArray(data.appointments)) throw new Error('รูปแบบข้อมูลไม่ใช่ของ Family Health Bot');
   const f = hpState().fhb;
   f.data = {records:data.records, appointments:data.appointments, profiles:data.profiles||{}, metricRanges:data.metricRanges||{}, labInfo:data.labInfo||{}, users:data.users||[]};
