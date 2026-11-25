@@ -105,6 +105,12 @@ function garminList_(x) {
   if (Array.isArray(x.hrvSummaries)) return x.hrvSummaries;
   return [];
 }
+/** เวลา local ของ Garmin (epoch ms ที่เป็นเวลาท้องถิ่น หรือสตริง ISO) → 'HH:mm' */
+function garminClock_(v) {
+  if (v === null || v === undefined || v === '') return undefined;
+  if (typeof v === 'number' || /^\d+$/.test(String(v))) return Utilities.formatDate(new Date(Number(v)), 'UTC', 'HH:mm');
+  var m = String(v).match(/T?(\d{2}):(\d{2})/); return m ? m[1] + ':' + m[2] : undefined;
+}
 function num_(v) { return (v === null || v === undefined || v === '' || isNaN(Number(v))) ? undefined : Number(v); }
 function pick_(o, path) { var p = path.split('.'); for (var i = 0; i < p.length; i++) { if (o == null) return undefined; o = o[p[i]]; } return o; }
 function first_(o, paths) { for (var i = 0; i < paths.length; i++) { var v = num_(pick_(o, paths[i])); if (v !== undefined) return v; } return undefined; }
@@ -171,8 +177,8 @@ function garminGet_(name, force) {
         set(o, 'avgSleepingHR', num_(dto.avgHeartRate));
         set(o, 'sleepSpO2', num_(dto.averageSpO2Value));
         set(o, 'sleepStress', num_(dto.avgSleepStress));
-        if (dto.sleepStartTimestampLocal) o.sleepStart = String(dto.sleepStartTimestampLocal).slice(11, 16);
-        if (dto.sleepEndTimestampLocal) o.sleepEnd = String(dto.sleepEndTimestampLocal).slice(11, 16);
+        set(o, 'sleepStart', garminClock_(dto.sleepStartTimestampLocal));
+        set(o, 'sleepEnd', garminClock_(dto.sleepEndTimestampLocal));
       });
     });
     call('hrv', function () {

@@ -6178,7 +6178,7 @@ function hpAlerts(p){
     if(bb3.length===3 && Math.max(...bb3) < 40) out.push({tone:'warn', ic:'🔋', text:`Body Battery ของ${p.name}ไม่เกิน 40 มา 3 วันติด — พักผ่อนไม่พอหรือร่างกายล้า`});
     const lw = (p.wellness||{})[hpLastWearDate(p)]||{};
     if(lw.hrAlerts > 0) out.push({tone:'bad', ic:'♥', text:`นาฬิกาแจ้งชีพจรผิดปกติ ${lw.hrAlerts} ครั้ง (${fmtDateShort(hpLastWearDate(p))}) — ถาม${p.name}ว่ามีใจสั่น/เวียนหัวไหม`});
-    const o = hpWearLatest(p,'spo2',2); if(o && o.v < 93) out.push({tone:'warn', ic:'◉', text:`SpO₂ ล่าสุด ${o.v}% ต่ำกว่า 94%`});
+    const o2a = hpWearAvg(p,'spo2',3); if(o2a && o2a.n>=2 && o2a.mean < 92) out.push({tone:'warn', ic:'◉', text:`SpO₂ เฉลี่ย 3 วัน ${Math.round(o2a.mean)}% ต่ำกว่า 92% — ค่าจากนาฬิกาคลาดเคลื่อนได้ ถ้า${p.name}เหนื่อยง่าย/หอบ ควรวัดด้วยเครื่องที่ปลายนิ้วหรือปรึกษาแพทย์`});
   }
   return out;
 }
@@ -6377,7 +6377,7 @@ function hpTiles(p){
     const stg = slw.deepSecs!=null ? ` · ลึก ${hbFmtH(slw.deepSecs/3600)}${slw.remSecs!=null?' REM '+hbFmtH(slw.remSecs/3600):''}` : '';
     tiles.push(tile('☾','#5B6EF5','การนอนเมื่อคืน', sl?hbFmtH(sl.v):null, 'ชม.', sl?((sl.v>=(p.goals.sleepH||7)?'ถึงเป้า':'ต่ำกว่าเป้า '+(p.goals.sleepH||7)+' ชม.')+(slw.sleepScore!=null?' · คะแนน '+slw.sleepScore:'')+stg+(slw.sleepStart?` · ${slw.sleepStart}–${slw.sleepEnd||''}`:'')):'รอ sync นาฬิกา'));
     tiles.push(tile('♡','#C2477E','ชีพจรขณะพัก', rh?Math.round(rh.v):null, 'bpm', rh?hbAgo(rh.date):'จากนาฬิกา'));
-    if(o2) tiles.push(tile('◉','#2BB6C9','SpO₂', Math.round(o2.v), '%', o2.v>=95?'ปกติ':'ต่ำกว่าปกติ'));
+    if(o2){ const o2w = p.wellness[o2.date]||{}; tiles.push(tile('◉','#2BB6C9','SpO₂ เฉลี่ยทั้งวัน', Math.round(o2.v), '%', (o2.v>=95?'ปกติ':o2.v>=92?'ค่อนข้างต่ำ':'ต่ำ')+(o2w.sleepSpO2!=null?' · ตอนหลับ '+o2w.sleepSpO2+'%':''))); }
     const bb = hpWearLatest(p,'bb',1), bbw = bb ? (p.wellness[bb.date]||{}) : {};
     if(bb) tiles.push(tile('🔋','#22C3A6','Body Battery', Math.round(bb.v), '/100', `ต่ำสุด ${bbw.bbMin!=null?bbw.bbMin:'—'}${bbw.bbLatest!=null?' · ตอนนี้ '+bbw.bbLatest:''} · ${bb.v>=60?'พลังงานดี':bb.v>=35?'ปานกลาง':'ต่ำ'}`));
     const ss = hpWearLatest(p,'stress',1);
