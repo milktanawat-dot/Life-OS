@@ -762,6 +762,7 @@ body{background:
 .hp-bars{position:relative; display:flex; align-items:flex-end; gap:4px; height:122px; padding-top:4px;}
 .hp-bars .b{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:3px; min-width:0;}
 .hp-bars .b i{display:block; width:100%; max-width:22px; border-radius:6px 6px 3px 3px; min-height:0;}
+.hp-bars .b em.bv{font-style:normal; font-size:8.5px; color:var(--ink-soft);}
 .hp-bars .b span{font-size:9px; color:var(--ink-soft); height:14px;}
 .hp-bars .g{position:absolute; left:0; right:0; border-top:1.5px dashed rgba(23,27,44,.28); pointer-events:none;}
 .hp-bars .g em{position:absolute; right:0; top:-15px; font-style:normal; font-size:9.5px; color:var(--ink-soft); background:var(--panel); padding:0 4px; border-radius:4px;}
@@ -5945,7 +5946,8 @@ function renderHealthBody(){
      {url, lastSync, source:'live'|'file', data:{records, appointments, profiles, metricRanges, labInfo, users}, meds:[]}
    ข้อมูลทั้งหมดเก็บใน localStorage ของเครื่องนี้เท่านั้น (ไม่ได้ฝังในไฟล์ — repo เป็น public) */
 const HP_DEVICES = {
-  garmin:{label:'Garmin', icon:'⌚', via:true},
+  garmin_direct:{label:'Garmin (คีย์ส่วนตัว · ผ่านบอท)', icon:'⌚', via:'fhb'},
+  garmin:{label:'Garmin (ผ่าน intervals.icu)', icon:'⌚', via:true},
   coros:{label:'COROS', icon:'⌚', via:true},
   polar:{label:'Polar', icon:'⌚', via:true},
   suunto:{label:'Suunto', icon:'⌚', via:true},
@@ -5960,9 +5962,10 @@ const HP_WEAR = {
   spo2:{label:'SpO₂', unit:'%', icon:'◉', color:'#2BB6C9', dec:0, get:w=>w.spO2, min:70, max:100},
   sleepScore:{label:'คะแนนการนอน', unit:'/100', icon:'★', color:'#8B7FD1', dec:0, get:w=>w.sleepScore, min:1, max:100},
   resp:{label:'อัตราหายใจ', unit:'/นาที', icon:'≋', color:'#3E8DFF', dec:1, get:w=>w.respiration, min:4, max:40},
-  stress:{label:'ความเครียด', unit:'', icon:'⚡', color:'#F5A623', dec:0, get:w=>w.stress, min:0, max:100}
+  stress:{label:'ความเครียด', unit:'/100', icon:'⚡', color:'#F5A623', dec:0, get:w=>w.stress, min:0, max:100},
+  bb:{label:'Body Battery สูงสุด', unit:'/100', icon:'🔋', color:'#22C3A6', dec:0, get:w=>w.bbMax, min:0, max:100}
 };
-const HP_WELL_FIELDS = ['steps','sleepSecs','sleepScore','sleepQuality','restingHR','hrv','spO2','respiration','avgSleepingHR','weight','bodyFat','systolic','diastolic','stress','readiness','kcalConsumed'];
+const HP_WELL_FIELDS = ['bbMax','bbMin','bbLatest','deepSecs','remSecs','lightSecs','awakeSecs','intensityMin','hrvStatus','sleepStart','sleepEnd','steps','sleepSecs','sleepScore','sleepQuality','restingHR','hrv','spO2','respiration','avgSleepingHR','weight','bodyFat','systolic','diastolic','stress','readiness','kcalConsumed'];
 let hpMsg = {};            // profileId|'fhb' -> html ข้อความสถานะ
 let hpEditId = null;       // โปรไฟล์ที่กำลังแก้ไข ('new' = เพิ่มใหม่)
 let hpRange = 90;          // ช่วงวันของกราฟความดัน
@@ -5972,7 +5975,7 @@ function hpState(){
   if(!Array.isArray(h.profiles) || !h.profiles.length){
     h.profiles = [
       {id:'self', name:'มิลค์', avatar:'🧑', relation:'ตัวเอง', isSelf:true, fhbName:'มิลค์', sex:'', age:null, heightCm:null, goals:{steps:8000, sleepH:7}, device:null, wellness:{}, wearSync:null},
-      {id:'mom', name:'แม่', avatar:'👩', relation:'แม่', isSelf:false, fhbName:'แม่มิลค์', sex:'หญิง', age:null, heightCm:null, goals:{steps:6000, sleepH:7}, device:{brand:'garmin', athleteId:'', apiKey:'', useMyKey:true}, wellness:{}, wearSync:null}
+      {id:'mom', name:'แม่', avatar:'👩', relation:'แม่', isSelf:false, fhbName:'แม่มิลค์', sex:'หญิง', age:null, heightCm:null, goals:{steps:6000, sleepH:7}, device:{brand:'garmin_direct', athleteId:'', apiKey:'', useMyKey:true}, wellness:{}, wearSync:null}
     ];
   }
   h.profiles.forEach(p=>{ if(!p.goals) p.goals = {steps:6000, sleepH:7}; if(!p.wellness) p.wellness = {}; });
@@ -6024,6 +6027,8 @@ function fhbIngest(j, source){
   const f = hpState().fhb;
   f.data = {records:data.records, appointments:data.appointments, profiles:data.profiles||{}, metricRanges:data.metricRanges||{}, labInfo:data.labInfo||{}, users:data.users||[]};
   f.meds = meds || []; f.lastSync = new Date().toISOString(); f.source = source || 'live';
+  f.garmin = (j && j.garmin && typeof j.garmin === 'object') ? j.garmin : (f.garmin || {});
+  hpApplyGarmin();
   // เติมอายุ/เพศ/ส่วนสูงจากโปรไฟล์ในบอท ถ้าในนี้ยังว่าง
   hpState().profiles.forEach(p=>{
     const fp = p.fhbName && f.data.profiles[p.fhbName]; if(!fp) return;
@@ -6038,12 +6043,12 @@ function fhbBaseUrl(u){
     if(!/script\.google(usercontent)?\.com$/.test(x.hostname) || !tok) return null;
     return x.origin + x.pathname + '?token=' + encodeURIComponent(tok); }catch(e){ return null; }
 }
-async function fhbSync(silent){
+async function fhbSync(silent, refresh){
   const f = hpState().fhb; const base = fhbBaseUrl(f.url);
   if(!base){ hpMsg.fhb = '<span style="color:var(--coral)">ยังไม่ได้วางลิงก์เว็บ Family Health (ต้องมี ?token=…)</span>'; if(!silent) render(); return false; }
   hpMsg.fhb = 'กำลังดึงข้อมูล…'; if(!silent) render();
   try{
-    const res = await fetch(base + '&format=json&_=' + Date.now());
+    const res = await fetch(base + '&format=json' + (refresh?'&refresh=1':'') + '&_=' + Date.now());
     const txt = await res.text();
     if(/^\s*</.test(txt)) throw new Error('NOJSON');
     fhbIngest(JSON.parse(txt), 'live');
@@ -6068,20 +6073,35 @@ function fhbSaveUrl(){
   if(v && !fhbBaseUrl(v)){ hpMsg.fhb = '<span style="color:var(--coral)">ลิงก์ไม่ถูกต้อง — ใช้ลิงก์ที่เปิดหน้าเว็บสุขภาพครอบครัวได้ (มี ?token=…)</span>'; render(); return; }
   hpState().fhb.url = v.trim(); saveState(); fhbSync();
 }
-const FHB_CODE_GS = `// วางไว้บรรทัดแรกสุดในฟังก์ชัน doGet(e) ของ Code.gs
-if (e && e.parameter && e.parameter.format === 'json') {
-  var d = getDataForToken(e.parameter.token);
-  var m = '[]'; try { m = getMedicationsForToken(e.parameter.token); } catch (x) {}
-  return ContentService.createTextOutput(JSON.stringify({ data: d, meds: m }))
-    .setMimeType(ContentService.MimeType.JSON);
-}`;
+const FHB_CODE_GS = `// Code.gs — บรรทัดแรกในฟังก์ชัน doGet(e)
+var lifeOs = lifeOsJson_(e); if (lifeOs) return lifeOs;
+// + เพิ่มไฟล์ LifeOS.gs (ส่งให้แยก) ในโปรเจ็คเดียวกัน`;
 function fhbCopyCode(){ try{ navigator.clipboard.writeText(FHB_CODE_GS); hpMsg.fhb = '<span style="color:var(--green-deep)">คัดลอกโค้ดแล้ว ✓</span>'; }catch(e){} render(); }
 
+/* ---- Garmin ผ่านบอท (Personal API key เก็บใน Apps Script) ---- */
+function hpApplyGarmin(){
+  const g = hpState().fhb.garmin || {};
+  hpState().profiles.forEach(p=>{
+    if(!p.device || p.device.brand!=='garmin_direct' || !p.fhbName) return;
+    const r = g[p.fhbName]; if(!r) return;
+    p.garminErrors = r.errors || [];
+    Object.entries(r.days||{}).forEach(([date, o])=>{ p.wellness[date] = Object.assign({}, o); });
+    if(Object.keys(r.days||{}).length) p.wearSync = r.fetchedAt || new Date().toISOString();
+  });
+}
 /* ---- Wearable (นาฬิกา) ผ่าน intervals.icu ---- */
 function hpWearKey(p){ const d = p.device||{}; return d.useMyKey ? state.settings.intervalsApiKey : d.apiKey; }
 async function hpWearSync(pid, silent){
   const p = hpState().profiles.find(x=>x.id===pid); if(!p || !p.device) return;
-  const d = p.device, key = hpWearKey(p), ath = String(d.athleteId||'').trim();
+  const d = p.device;
+  if(d.brand==='garmin_direct'){ hpMsg[pid] = 'กำลังดึงจาก Garmin ผ่านบอท…'; if(!silent) render(); await fhbSync(true, true);
+    const r = (hpState().fhb.garmin||{})[p.fhbName];
+    hpMsg[pid] = !hpState().fhb.url ? '<span style="color:var(--coral)">ยังไม่ได้ใส่ลิงก์เว็บสุขภาพครอบครัว</span>'
+      : !r ? '<span style="color:var(--coral)">บอทยังไม่มีคีย์ Garmin ของ'+escapeHtml(p.fhbName)+' (Script Property GARMIN_KEY_'+escapeHtml(p.fhbName)+')</span>'
+      : (r.errors||[]).length && !Object.keys(r.days||{}).length ? '<span style="color:var(--coral)">'+escapeHtml(r.errors[0])+'</span>'
+      : '<span style="color:var(--green-deep)">Sync สำเร็จ ✓ ('+Object.keys(r.days||{}).length+' วัน)</span>';
+    if(currentView==='health' || !silent) render(); return; }
+  const key = hpWearKey(p), ath = String(d.athleteId||'').trim();
   if(!HP_DEVICES[d.brand] || !HP_DEVICES[d.brand].via){ hpMsg[pid] = 'นาฬิการุ่นนี้ยังไม่มีทางเชื่อมอัตโนมัติ — ใช้การกรอกค่าเองไปก่อน'; if(!silent) render(); return; }
   if(!key || !ath){ hpMsg[pid] = '<span style="color:var(--coral)">ยังไม่ได้ใส่ Athlete ID'+(d.useMyKey?' (และ API key ของมิลค์ในหน้า "ตั้งค่า")':' หรือ API key')+'</span>'; if(!silent) render(); return; }
   hpMsg[pid] = 'กำลัง sync…'; if(!silent) render();
@@ -6153,6 +6173,10 @@ function hpAlerts(p){
     const sl = hpWearAvg(p,'sleep',7); if(sl && sl.n>=3 && sl.mean < 6) out.push({tone:'info', ic:'☾', text:`นอนเฉลี่ย 7 คืนแค่ ${hbFmtH(sl.mean)} ชม. (ผู้สูงอายุควรได้ 7–8 ชม.)`});
     const r7 = hpWearAvg(p,'rhr',7), r30 = hpWearAvg(p,'rhr',30,7);
     if(r7 && r30 && r7.n>=3 && r30.n>=7 && r7.mean - r30.mean >= 5) out.push({tone:'warn', ic:'♥', text:`ชีพจรขณะพักสัปดาห์นี้ ${Math.round(r7.mean)} สูงกว่าปกติของ${p.name} (${Math.round(r30.mean)}) — อาจพักผ่อนน้อย เครียด หรือเริ่มไม่สบาย`});
+    const bb3 = [0,1,2].map(i=>hpWearVal(p,'bb',addDays(t,-i))).filter(v=>v!=null);
+    if(bb3.length===3 && Math.max(...bb3) < 40) out.push({tone:'warn', ic:'🔋', text:`Body Battery ของ${p.name}ไม่เกิน 40 มา 3 วันติด — พักผ่อนไม่พอหรือร่างกายล้า`});
+    const lw = (p.wellness||{})[hpLastWearDate(p)]||{};
+    if(lw.hrAlerts > 0) out.push({tone:'bad', ic:'♥', text:`นาฬิกาแจ้งชีพจรผิดปกติ ${lw.hrAlerts} ครั้ง (${fmtDateShort(hpLastWearDate(p))}) — ถาม${p.name}ว่ามีใจสั่น/เวียนหัวไหม`});
     const o = hpWearLatest(p,'spo2',2); if(o && o.v < 93) out.push({tone:'warn', ic:'◉', text:`SpO₂ ล่าสุด ${o.v}% ต่ำกว่า 94%`});
   }
   return out;
@@ -6188,8 +6212,9 @@ function hpBars(p, key, days, goal){
   for(let i=days-1;i>=0;i--){ const d = addDays(t,-i); vals.push({d, v:hpWearVal(p,key,d)}); }
   if(!vals.some(x=>x.v!=null)) return `<div class="muted" style="padding:18px 0; text-align:center">ยังไม่มีข้อมูล${m.label}</div>`;
   const mx = Math.max(goal||0, ...vals.map(x=>x.v||0)) * 1.08;
-  return `<div class="hp-bars">${vals.map(x=>{ const h = x.v!=null ? Math.max(3, x.v/mx*100) : 0; const ok = goal && x.v!=null && x.v>=goal;
-      return `<div class="b" title="${fmtDateShort(x.d)} · ${x.v!=null?(key==='sleep'?hbFmtH(x.v):hbFmt(x.v,m.dec))+' '+m.unit:'ไม่มีข้อมูล'}"><i style="height:${h.toFixed(1)}px; background:${ok?m.color:m.color+'99'}"></i><span>${+x.d.slice(8)}</span></div>`; }).join('')}
+  const lo = key==='rhr' ? Math.max(0, Math.min(...vals.filter(x=>x.v!=null).map(x=>x.v)) - 6) : 0;
+  return `<div class="hp-bars">${vals.map(x=>{ const h = x.v!=null ? Math.max(3, (x.v-lo)/(mx-lo)*100) : 0; const ok = goal && x.v!=null && x.v>=goal;
+      return `<div class="b" title="${fmtDateShort(x.d)} · ${x.v!=null?(key==='sleep'?hbFmtH(x.v):hbFmt(x.v,m.dec))+' '+m.unit:'ไม่มีข้อมูล'}">${key==='rhr'&&x.v!=null?`<em class="bv">${Math.round(x.v)}</em>`:''}<i style="height:${h.toFixed(1)}px; background:${ok?m.color:m.color+'99'}"></i><span>${+x.d.slice(8)}</span></div>`; }).join('')}
     ${goal ? `<div class="g" style="bottom:${(18 + goal/mx*100).toFixed(1)}px"><em>เป้า ${key==='sleep'?goal+' ชม.':hbFmt(goal,0)}</em></div>` : ''}</div>`;
 }
 
@@ -6223,6 +6248,7 @@ function hpEditor(p){
     <div class="hb-group" style="margin-top:14px">นาฬิกา / อุปกรณ์</div>
     <div class="hp-fgrid">
       <label>ยี่ห้อ<select id="hpDev">${['',...Object.keys(HP_DEVICES)].map(k=>`<option value="${k}" ${k===dv.brand?'selected':''}>${k?HP_DEVICES[k].label:'— ไม่มี —'}</option>`).join('')}</select></label>
+      <div class="muted" style="grid-column:1/-1; font-size:11px">Garmin แบบคีย์ส่วนตัว: ไม่ต้องกรอก 2 ช่องด้านล่าง (คีย์ใส่ในบอท) · 2 ช่องนี้ใช้เฉพาะแบบผ่าน intervals.icu</div>
       <label>intervals.icu Athlete ID<input id="hpAth" value="${escapeHtml(dv.athleteId||'')}" placeholder="เช่น i123456"></label>
       <label class="hp-ck"><input type="checkbox" id="hpMyKey" ${dv.useMyKey?'checked':''}> ใช้ API key ของมิลค์ (แม่แชร์บัญชีให้มิลค์เป็นโค้ช)</label>
       <label>API key ของ${escapeHtml(p.name||'เจ้าของบัญชี')} (ถ้าไม่ได้แชร์)<input id="hpKey" type="password" value="${escapeHtml(dv.apiKey||'')}"></label>
@@ -6305,7 +6331,13 @@ function hpWearPanel(p){
   const dev = HP_DEVICES[d.brand] || HP_DEVICES.other;
   const has = Object.keys(p.wellness||{}).length > 0;
   const setup = `<details class="hb-more" ${has?'':'open'}><summary>วิธีเชื่อม ${dev.label} (ทำครั้งเดียว)</summary>
-    ${dev.via ? `<ol class="hp-steps">
+    ${dev.via==='fhb' ? `<ol class="hp-steps">
+      <li>เข้า <a href="https://connect.garmin.com/app/settings/personalApiToken" target="_blank">Garmin Connect (เว็บ)</a> ด้วย<b>บัญชีของ${escapeHtml(p.name)}</b> → การตั้งค่า → <b>คีย์ API ส่วนบุคคล</b> → สร้างคีย์ → เลือกอายุ <b>1 ปี</b> → คัดลอกคีย์ (แสดงครั้งเดียว)</li>
+      <li>Apps Script ของบอท → Project Settings → <b>Script Properties</b> → เพิ่ม <code>GARMIN_KEY_${escapeHtml(p.fhbName||'ชื่อในบอท')}</code> = คีย์</li>
+      <li>กด Sync ด้านล่าง — หลังจากนั้นดึงเองทุกครั้งที่เปิดหน้า (เก็บผลไว้ 3 ชม.)</li>
+    </ol>
+    <div class="muted" style="font-size:11px">ดึงตรงจาก Garmin Personal API: ก้าวเดิน การนอน (ลึก/REM/ตื่น) ชีพจรขณะพัก HRV ความเครียด Body Battery SpO₂ อัตราหายใจ · คีย์อยู่ในบอทเท่านั้น · คีย์หมดอายุปีละครั้ง Garmin จะอีเมลเตือนก่อน 1 สัปดาห์${(p.garminErrors||[]).length?`<br><span style="color:var(--coral)">ข้อผิดพลาดล่าสุด: ${escapeHtml(p.garminErrors.slice(0,2).join(' · '))}</span>`:''}</div>`
+      : dev.via ? `<ol class="hp-steps">
       <li>สมัคร <b>intervals.icu</b> (ฟรี) ด้วยอีเมลของ${escapeHtml(p.name)} → Settings → <b>Connections</b> → เชื่อม <b>${dev.label}</b> แล้วเปิด "Upload wellness data"</li>
       <li>ใน intervals.icu ของ${escapeHtml(p.name)} → Settings → <b>Coach / Shared with</b> → เพิ่มบัญชีของมิลค์ (มิลค์จะดูข้อมูลได้ด้วย API key เดิมของตัวเอง ไม่ต้องรู้รหัสแม่)</li>
       <li>คัดลอก <b>Athlete ID</b> (รูปแบบ i123456 อยู่ใน URL หรือ Settings) มาใส่ใน "แก้ไขโปรไฟล์" → กด Sync</li>
@@ -6320,6 +6352,8 @@ function hpWearPanel(p){
     <div class="hb-two" style="gap:22px">
       <div><div class="hp-sub">👣 ก้าวเดิน</div>${hpBars(p,'steps',14,p.goals.steps)}</div>
       <div><div class="hp-sub">☾ การนอน</div>${hpBars(p,'sleep',14,p.goals.sleepH)}</div>
+      ${hpWearLatest(p,'bb',14) ? `<div><div class="hp-sub">🔋 Body Battery สูงสุด</div>${hpBars(p,'bb',14,0)}</div>` : ''}
+      ${hpWearLatest(p,'rhr',14) ? `<div><div class="hp-sub">♡ ชีพจรขณะพัก</div>${hpBars(p,'rhr',14,0)}</div>` : ''}
     </div>${setup}</div>`;
 }
 function hpTiles(p){
@@ -6338,9 +6372,15 @@ function hpTiles(p){
     const st = hpWearLatest(p,'steps',1), sl = hpWearLatest(p,'sleep',1), rh = hpWearLatest(p,'rhr',2), o2 = hpWearLatest(p,'spo2',2);
     const st7 = hpWearAvg(p,'steps',7);
     tiles.push(tile('👣','#5CB85C','ก้าวเดิน'+(st&&st.date!==todayISO()?' (เมื่อวาน)':' วันนี้'), st?hbFmt(st.v,0):null, 'ก้าว', st?`${Math.round(st.v/(p.goals.steps||6000)*100)}% ของเป้า${st7?' · เฉลี่ย 7 วัน '+hbFmt(st7.mean,0):''}`:'รอ sync นาฬิกา'));
-    tiles.push(tile('☾','#5B6EF5','การนอนเมื่อคืน', sl?hbFmtH(sl.v):null, 'ชม.', sl?(sl.v>=(p.goals.sleepH||7)?'ถึงเป้า':'ต่ำกว่าเป้า '+(p.goals.sleepH||7)+' ชม.'):'รอ sync นาฬิกา'));
+    const slw = sl ? (p.wellness[sl.date]||{}) : {};
+    const stg = slw.deepSecs!=null ? ` · ลึก ${hbFmtH(slw.deepSecs/3600)}${slw.remSecs!=null?' REM '+hbFmtH(slw.remSecs/3600):''}` : '';
+    tiles.push(tile('☾','#5B6EF5','การนอนเมื่อคืน', sl?hbFmtH(sl.v):null, 'ชม.', sl?((sl.v>=(p.goals.sleepH||7)?'ถึงเป้า':'ต่ำกว่าเป้า '+(p.goals.sleepH||7)+' ชม.')+(slw.sleepScore!=null?' · คะแนน '+slw.sleepScore:'')+stg+(slw.sleepStart?` · ${slw.sleepStart}–${slw.sleepEnd||''}`:'')):'รอ sync นาฬิกา'));
     tiles.push(tile('♡','#C2477E','ชีพจรขณะพัก', rh?Math.round(rh.v):null, 'bpm', rh?hbAgo(rh.date):'จากนาฬิกา'));
     if(o2) tiles.push(tile('◉','#2BB6C9','SpO₂', Math.round(o2.v), '%', o2.v>=95?'ปกติ':'ต่ำกว่าปกติ'));
+    const bb = hpWearLatest(p,'bb',1), bbw = bb ? (p.wellness[bb.date]||{}) : {};
+    if(bb) tiles.push(tile('🔋','#22C3A6','Body Battery', Math.round(bb.v), '/100', `ต่ำสุด ${bbw.bbMin!=null?bbw.bbMin:'—'}${bbw.bbLatest!=null?' · ตอนนี้ '+bbw.bbLatest:''} · ${bb.v>=60?'พลังงานดี':bb.v>=35?'ปานกลาง':'ต่ำ'}`));
+    const ss = hpWearLatest(p,'stress',1);
+    if(ss) tiles.push(tile('⚡','#F5A623','ความเครียดเฉลี่ย', Math.round(ss.v), '/100', ss.v<26?'ผ่อนคลาย':ss.v<51?'ปกติ':ss.v<76?'ค่อนข้างเครียด':'เครียดสูง'));
   }
   return `<div class="hb-tiles">${tiles.join('')}</div>`;
 }
@@ -6355,7 +6395,7 @@ function hpSourcesPanel(p){
     </div>
     <div>${hpMsg.fhb||''}</div>
     <details class="hb-more"><summary>ตั้งค่าครั้งเดียวใน Code.gs ให้ดึงอัตโนมัติได้</summary>
-      <ol class="hp-steps"><li>เปิด Apps Script ของบอท → ไฟล์ <b>Code.gs</b> → หา <code>function doGet(e) {</code> แล้ววางโค้ดนี้เป็นบรรทัดแรกในฟังก์ชัน</li></ol>
+      <ol class="hp-steps"><li>เปิด Apps Script ของบอท → เพิ่มไฟล์ <b>LifeOS.gs</b> → ใน <b>Code.gs</b> หา <code>function doGet(e) {</code> แล้ววางบรรทัดนี้เป็นบรรทัดแรก</li></ol>
       <pre class="hp-code">${escapeHtml(FHB_CODE_GS)}</pre>
       <button class="btn btn-ghost btn-sm" onclick="fhbCopyCode()">📋 คัดลอกโค้ด</button>
       <ol class="hp-steps" start="2"><li>Deploy → <b>Manage deployments</b> → ✎ แก้ไข → Version: <b>New version</b> → Deploy (ลิงก์เดิมใช้ต่อได้ ไม่ต้องเปลี่ยน)</li><li>กลับมากด "บันทึก & ดึง" — หลังจากนั้นเปิดหน้านี้จะดึงใหม่เองถ้าข้อมูลเก่ากว่า 3 ชม.</li></ol>
