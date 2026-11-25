@@ -800,6 +800,42 @@ body{background:
   .grid[style*="grid-template-columns"] .big-stat{font-size:clamp(15px,4.6vw,20px); overflow-wrap:anywhere;}
   .card-sub,.stat-note{overflow-wrap:anywhere;}
 }
+
+/* ---------- Japan tax refund (ทริป) ---------- */
+.jtr{border:1px solid var(--line); border-radius:18px; padding:16px; margin:4px 0 16px; background:linear-gradient(180deg,#FFF7F5,#fff 120px);}
+.jtr-head{display:flex; justify-content:space-between; gap:10px; align-items:flex-start;}
+.jtr-title{font-size:15px; font-weight:700;} .jtr-title span{font-size:11px; font-weight:500; color:#C0392B; background:#FDECEA; padding:2px 8px; border-radius:99px; margin-left:4px;}
+.jtr-sub{font-size:12px; color:var(--ink-soft); margin-top:3px; line-height:1.5;}
+.jtr-stats{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:12px 0;}
+.jtr-stats>div{background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:9px 11px; min-width:0;}
+.jtr-stats span{display:block; font-size:10.5px; color:var(--ink-soft);} .jtr-stats b{font-family:'JetBrains Mono',monospace; font-size:17px;} .jtr-stats em{display:block; font-style:normal; font-size:10.5px; color:var(--ink-soft);}
+.jtr-steps{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px;}
+.jtr-step{border:1px solid var(--line); background:var(--panel); border-radius:13px; padding:8px; text-align:left; font-family:inherit; cursor:pointer; display:flex; flex-direction:column; gap:1px; position:relative; color:var(--ink);}
+.jtr-step i{font-style:normal; font-size:17px;} .jtr-step b{font-size:12px;} .jtr-step small{font-size:10.5px; color:var(--ink-soft);}
+.jtr-step.now{border-color:#E4572E;} .jtr-step.now small{color:#E4572E; font-weight:600;}
+.jtr-step.on{background:#1D2233; color:#fff; border-color:#1D2233;} .jtr-step.on small{color:rgba(255,255,255,.75);}
+.jtr-check{background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:10px 12px; margin-top:8px; display:flex; flex-direction:column; gap:6px;}
+.jtr-check label{font-size:12.5px; display:flex; gap:8px; align-items:flex-start; line-height:1.45; cursor:pointer;} .jtr-check label input{margin-top:3px;}
+.jtr-check label.done{color:var(--ink-soft); text-decoration:line-through;}
+.jtr-depart{border-top:1px dashed var(--line); margin-top:6px; padding-top:8px;}
+.jtr-ap{font-size:12px; background:#EEF4FF; color:#203A6B; border-radius:11px; padding:8px 10px; margin-bottom:8px; line-height:1.6;}
+.jtr-customs{font-size:13px !important; font-weight:600; background:#E9F8EF; border-radius:11px; padding:8px 10px;} .jtr-customs.done{text-decoration:none !important; color:#1E7A46 !important;}
+.jtr-warns{margin-top:10px;}
+.jtr-sec{font-size:13px; font-weight:700; margin:14px 0 8px;}
+.jtr-group{border:1px solid var(--line); border-left:4px solid var(--oc); border-radius:13px; padding:10px 12px; margin-bottom:10px; background:var(--panel);}
+.jtr-ghead{display:flex; align-items:center; gap:8px; flex-wrap:wrap;} .jtr-ghead b{color:var(--oc); font-size:13.5px;} .jtr-ghead a{margin-left:auto;}
+.jtr-how{font-size:11.5px; color:var(--ink-soft); margin:3px 0;}
+.jtr-tips{font-size:11.5px; margin:4px 0 6px 18px; color:#7A4A0C;}
+.jtr-row{display:grid; grid-template-columns:54px minmax(0,1fr) 90px 130px 140px 92px auto auto; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line);}
+.jtr-row .d{font-size:11.5px; color:var(--ink-soft);} .jtr-row .s{font-size:12.5px; min-width:0;}
+.jtr-row .t{text-align:right;} .jtr-row .t b{font-family:'JetBrains Mono',monospace; font-size:13.5px; display:block;} .jtr-row .t small{font-size:10px; color:var(--ink-soft);}
+.jtr-row select,.jtr-row input{border:1px solid var(--line); border-radius:9px; padding:6px 7px; font-size:11.5px; font-family:inherit; background:var(--bg); min-width:0; width:100%;}
+.jtr-row select.st{border-color:var(--sc); color:var(--sc); font-weight:600;}
+.jtr-add{margin-top:12px; border-top:1px solid var(--line); padding-top:6px;}
+.jtr-ta{width:100%; min-height:90px; border:1px solid var(--line); border-radius:11px; padding:8px; font-family:'JetBrains Mono',monospace; font-size:11px; margin:8px 0; background:var(--bg);}
+.jtr-hint{cursor:pointer; font-size:12.5px; background:#FFF1EC; color:#9A3412; border:1px dashed #F4A88A; border-radius:12px; padding:9px 12px; margin:2px 0 12px;}
+@media (max-width:900px){ .jtr-stats{grid-template-columns:repeat(2,minmax(0,1fr));} .jtr-stats>div:first-child{grid-column:span 2;} .jtr-steps{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .jtr-row{grid-template-columns:48px minmax(0,1fr) 80px; } .jtr-row select,.jtr-row input.fee{grid-column:span 1;} .jtr-row .st{grid-column:1 / span 2;} .jtr-row .op{grid-column:3;} .jtr-row .fee{grid-column:1 / span 2;} }
 </style>
 </head>
 <body>
@@ -6885,6 +6921,274 @@ function setTripActivityManualRate(tripId, dayIdx, actIdx, value){
   state.trips.fxCache[d.date + '_' + (a.currency||'THB')] = rate;
   saveState(); render();
 }
+/* ---------- Japan Tax Refund (ขอคืนภาษีญี่ปุ่น ระบบใหม่ "Refund Method" · 25 พ.ย. 69) ----------
+   ตั้งแต่ซื้อ 1 พ.ย. 2026: จ่ายราคารวมภาษีที่ร้าน → ศุลกากรยืนยันตอนออกนอกประเทศ (ภายใน 90 วัน,
+   ก่อนโหลดกระเป๋า) → บริษัทคืนภาษีที่ "แต่ละร้านเลือกใช้" จ่ายเงินคืนตามวิธีของเจ้านั้น (หักค่าธรรมเนียมได้)
+   tr.taxRefund = {open, airport, flightDate, flightTime, customsDone, customsDate, checks:{}, receipts:[…]}
+   receipt = {id, date, shop, total(¥ รวมภาษี), tax(¥), rate(10|8), operator, consumable, status, received, feePct, note}
+   ข้อมูลกติกาแต่ละเจ้าเป็นข้อมูล ณ 25 พ.ย. 69 — เปลี่ยนได้ ให้เช็กกับร้าน/เว็บของเจ้านั้นอีกครั้ง */
+const JTR_OPERATORS = {
+  jtax:   {name:'J-TaxRefund', color:'#E4572E', url:'https://j-taxrefund.com/', where:'UNIQLO · GU · Matsukiyo · Don Quijote ฯลฯ',
+           how:'เว็บ (ไม่ใช่แอป) — สมัครบัญชี ยืนยันพาสปอร์ต แล้วเลือกวิธีรับเงิน', claimDays:180, claimFrom:'day-after',
+           postClaim:true, tips:['ขึ้น "Passport Verification Failed" → เช็กเลขพาสปอร์ต/วันเข้าประเทศ แล้วล็อกอินบัญชีเดิม อย่าสมัครใหม่','Don Quijote ออกค่าธรรมเนียมให้ ยกเว้นเลือกรับเงินสดที่สนามบิน']},
+  smaregi:{name:'Smaregi', color:'#2E86DE', url:'', where:'ร้านที่ใช้ POS ของ Smaregi',
+           how:'สมัครผ่าน QR บนใบเสร็จ ผูกบัตรรับเงินคืน', claimDays:null, postClaim:true,
+           tips:['ชื่อ/สัญชาติ/วันเกิด กด Save แล้วแก้ไม่ได้ — เทียบกับแถบตัวอักษร 2 บรรทัดล่างหน้าพาสปอร์ตก่อนกด','ผูกบัตรแล้วยังไม่ได้เงิน! ต้องเข้าไปกด "ขอคืน" เองหลังออกจากญี่ปุ่น']},
+  jprefund:{name:'JPrefund', color:'#8E44AD', url:'https://jprefund.com/', where:'ร้านที่แนบแผ่นพับ JPrefund / Smart Detax',
+           how:'เว็บ — ลงทะเบียนด้วยวันที่ + ยอดเงิน ใช้ที่อยู่บ้าน (ไม่ใช่โรงแรม) โอนธนาคารผ่าน Wise', claimDays:200, claimFrom:'purchase',
+           postClaim:true, tips:['บางใบเสร็จไม่มีคำว่า tax refund มีแค่แผ่นพับแนบ — ลงทะเบียนด้วยวันที่+ยอดเงิน','ใบเล็กโดนค่าธรรมเนียมหนักกว่า (มีคนเล่า ¥565 เหลือ ¥470)','คืนเข้าบัตรอาจนานเกิน 1 เดือน']},
+  globalblue:{name:'Global Blue', color:'#0B3D91', url:'https://www.globalblue.com/', where:'ห้าง/แบรนด์ใหญ่ · Yodobashi',
+           how:'แอป Shop Tax Free — ผูกบัตร', claimDays:null, postClaim:false, tips:['คืนเข้าบัตรปกติ 3–5 วัน','รับเงินสดได้ที่ Yodobashi และ 6 สนามบิน']},
+  pievat: {name:'PIE VAT', color:'#16A085', url:'', where:'ร้านที่ใช้ Square',
+           how:'แอป — ลงทะเบียนวันที่ซื้อ แล้วกดถอนเงินหลังผ่านศุลกากร', claimDays:null, postClaim:true,
+           tips:['ค่าธรรมเนียม ~1.5–3.0% + 0.28–0.32% ของราคาก่อนภาษี','ปกติ ~15 วันทำการ']},
+  store:  {name:'ร้านคืนเอง', color:'#7F8C8D', url:'', where:'ห้าง/ร้านที่มีเคาน์เตอร์หรือระบบของตัวเอง',
+           how:'ทำตามวิธีที่ร้านแจ้ง', claimDays:null, postClaim:false, tips:['Takashimaya หัก 23% ของภาษี','Daimaru Matsuzakaya หักไม่เกิน 2.3% ของราคา']},
+  other:  {name:'เจ้าอื่น', color:'#95A5A6', url:'', where:'Planet · WAmazing · Ocean ฯลฯ', how:'ดูจาก QR/แผ่นพับที่ร้านให้', claimDays:null, postClaim:true, tips:[]},
+  unknown:{name:'ยังไม่รู้ว่าเจ้าไหน', color:'#C0392B', url:'', where:'', how:'ดู QR ล่างสุดของใบเสร็จ หรือแผ่นพับที่แนบ', claimDays:null, postClaim:true, tips:['QR บนสุดมักเป็นสะสมแต้ม — QR ขอคืนภาษีมักอยู่ล่างสุด ต้องคลี่ใบเสร็จให้สุด']}
+};
+const JTR_STATUS = [
+  {key:'bought', label:'ซื้อแล้ว', color:'#95A5A6'},
+  {key:'registered', label:'ลงทะเบียนกับเจ้าแล้ว', color:'#2E86DE'},
+  {key:'claimed', label:'กดขอคืนแล้ว', color:'#F39C12'},
+  {key:'paid', label:'ได้เงินแล้ว', color:'#27AE60'},
+  {key:'lost', label:'ไม่ได้คืน', color:'#C0392B'}
+];
+// สนามบินขาออก — ตำแหน่งตู้ (kiosk) ตามที่สนามบิน/ศุลกากรประกาศ; VJW = ทำผ่าน Visit Japan Web บน Wi‑Fi ศุลกากรได้
+const JTR_AIRPORTS = {
+  KIX:{name:'คันไซ (KIX)', vjw:true, kiosk:'T1 ชั้น 4 (12 ตู้ + โซน Wi‑Fi ทำผ่าน VJW + จุดตรวจศุลกากร) · T2 ล็อบบี้เช็คอิน (4 ตู้)', tip:'ศุลกากรโอซาก้าแนะนำวิธี Wi‑Fi (VJW)'},
+  NRT:{name:'นาริตะ (NRT)', vjw:true, kiosk:'T1 ชั้น 4 · T2 ชั้น 3 · T3 ชั้น 2 (ก่อนเช็คอิน)', tip:'T1 มีจุดรับเงินสด ชั้น 4 และหลังตรวจคนเข้าเมืองชั้น 3'},
+  HND:{name:'ฮาเนดะ (HND)', vjw:true, kiosk:'อาคาร 3 ล็อบบี้ขาออก ก่อนเช็คอิน', tip:''},
+  NGO:{name:'ชูบุ (NGO)', vjw:true, kiosk:'T1 ชั้น 3 · T2 ชั้น 2 ล็อบบี้ขาออก', tip:'สนามบินขอให้ทำ tax refund เป็นอย่างแรกหลังมาถึง'},
+  FUK:{name:'ฟุกุโอกะ (FUK)', vjw:true, kiosk:'ล็อบบี้ขาออกระหว่างประเทศ ก่อนเช็คอิน', tip:''},
+  CTS:{name:'ชินชิโตเซะ (CTS)', vjw:true, kiosk:'ล็อบบี้ขาออกระหว่างประเทศ ก่อนเช็คอิน', tip:''},
+  OKA:{name:'นาฮะ (OKA)', vjw:true, kiosk:'ล็อบบี้ขาออกระหว่างประเทศ ก่อนเช็คอิน', tip:''},
+  OTHER:{name:'สนามบินอื่น (เช่น ฮิโรชิม่า)', vjw:false, kiosk:'ตู้ kiosk ในล็อบบี้ขาออก ก่อนเช็คอิน', tip:'สนามบินเล็กอาจไม่มีรับเงินสด'}
+};
+const JTR_PHASES = [
+  {key:'before', icon:'🧳', title:'ก่อนบิน', items:[
+    ['vjw','ลงทะเบียน Visit Japan Web (ใช้ QR แทนพาสปอร์ตที่ร้านได้ + ทำศุลกากรออนไลน์ที่ 7 สนามบิน)'],
+    ['card','เตรียมบัตรเครดิตไว้รับเงินคืน (ชื่อตรงกับพาสปอร์ต)'],
+    ['phone','ซิม/eSIM ใช้ได้ — ต้องรับรหัสยืนยันตอนสมัครแต่ละเจ้า'],
+    ['plan','ซื้อของชิ้นใหญ่ให้ภายใน 90 วันก่อนบินกลับ']]},
+  {key:'shop', icon:'🛍', title:'ตอนช้อป', items:[
+    ['passport','ยื่นพาสปอร์ต (หรือ QR VJW) ทุกครั้งที่จ่าย — จ่ายเต็มราคารวมภาษี'],
+    ['min','ร้านเดียวกัน วันเดียวกัน ยอดก่อนภาษี ≥ ¥5,000'],
+    ['ask','ถามร้าน: ใช้เจ้าไหน / หักค่าธรรมเนียมเท่าไร / คืนทางไหน'],
+    ['photo','ถ่ายรูปใบเสร็จทั้งใบให้เห็นถึงล่างสุด (QR ขอคืนมักอยู่ล่างสุด) แล้วบันทึกลงตารางด้านล่าง'],
+    ['seal','ของกิน/เครื่องสำอาง ห้ามแกะ/ใช้ — ใช้หมดในญี่ปุ่นจะไม่ได้คืน']]},
+  {key:'register', icon:'📝', title:'สมัครแต่ละเจ้า', items:[
+    ['acct','สมัครให้ครบทุกเจ้าที่โผล่ในตาราง (1 เจ้า = 1 บัญชี)'],
+    ['mrz','ชื่อ/สัญชาติ/วันเกิด เทียบแถบตัวอักษรล่างหน้าพาสปอร์ต ก่อนกด Save'],
+    ['arrival','เช็ก "วันที่เข้าประเทศ" — บางระบบใส่เป็นวันนี้ให้เอง'],
+    ['missing','ร้านไหนไม่โผล่ในบัญชี = ใช้อีกเจ้า → สมัครเพิ่ม/ลงทะเบียนด้วยวันที่+ยอดเงิน'],
+    ['safe','กรอกเลขบัตรเฉพาะเว็บที่ไปจาก QR ของร้านเท่านั้น']]},
+  {key:'depart', icon:'🛫', title:'วันบินกลับ', items:[
+    ['pack','ของ tax‑free + ใบเสร็จ ใส่กระเป๋าถือขึ้นเครื่อง (ถ้าโดนสีแดงต้องเปิดให้ดู)'],
+    ['together','ของในใบเสร็จเดียวกันต้องอยู่ครบ — ขาดชิ้นเดียว ทั้งใบไม่ได้คืน'],
+    ['early','ถึงสนามบินเร็วกว่าปกติ ~1 ชม. — ตกเครื่องเพราะทำ tax refund ไม่มีชดเชย'],
+    ['kiosk','สแกนพาสปอร์ตที่ตู้ศุลกากร (หรือ VJW) ก่อนโหลดกระเป๋า: เขียว = จบ, แดง = ไปจุดตรวจ'],
+    ['domestic','บินในประเทศต่อ? ทำที่สนามบินสุดท้ายก่อนออกนอกญี่ปุ่น']]},
+  {key:'after', icon:'🏠', title:'หลังกลับบ้าน', items:[
+    ['claim','เข้าแต่ละเจ้าไปกด "ขอคืน" (Smaregi/PIE VAT/JPrefund/J‑TaxRefund) — ไม่กดก็ไม่ได้เงิน'],
+    ['deadline','J‑TaxRefund ภายใน 180 วัน · JPrefund ภายใน 200 วัน'],
+    ['track','เช็กเงินเข้าบัตร/บัญชี แล้วใส่ยอดที่ได้จริงในตาราง']]}
+];
+
+function jtrOf(tr){
+  if(!tr.taxRefund) tr.taxRefund = {open:false, airport:'', flightDate:'', flightTime:'', customsDone:false, customsDate:'', checks:{}, receipts:[]};
+  const x = tr.taxRefund; if(!x.checks) x.checks = {}; if(!x.receipts) x.receipts = []; return x;
+}
+function jtrIsJapan(tr){ return /ญี่ปุ่น|japan|โตเกียว|โอซาก้า|เกียวโต|ฮิโรชิม่า|ฟุกุโอกะ|hokkaido|ฮอกไกโด|tokyo|osaka|kyoto|hiroshima|fukuoka|okinawa/i.test((tr.name||'')+' '+(tr.days||[]).map(d=>d.place).join(' ')); }
+function jtrTax(r){ const t = Number(r.tax); if(t>0) return t; const tot = Number(r.total)||0, rate = Number(r.rate)||10; return Math.round(tot*rate/(100+rate)); }
+function jtrPreTax(r){ return (Number(r.total)||0) - jtrTax(r); }
+function jtrEst(r){ const fee = Number(r.feePct); return Math.round(jtrTax(r) * (fee>0 ? (1-fee/100) : 1)); }
+function jtrYen(n){ return '¥'+Math.round(Number(n)||0).toLocaleString('en-US'); }
+function jtrThb(n){ const rate = (state.trips.fxCache||{})[todayISO()+'_JPY'] || jtrLastJpyRate(); return rate ? '≈฿'+fmtMoney(Math.round(n*rate)) : ''; }
+function jtrLastJpyRate(){ const c = state.trips.fxCache||{}; const ks = Object.keys(c).filter(k=>k.endsWith('_JPY')).sort(); return ks.length ? c[ks[ks.length-1]] : null; }
+let jtrFxTried = false;
+function jtrEnsureFx(){ if(jtrFxTried || jtrLastJpyRate()) return; jtrFxTried = true; fetchTripFxRate(todayISO(),'JPY').then(()=>{ saveState(); if(currentView==='trips') render(); }).catch(()=>{}); }
+function jtrStatusMeta(k){ return JTR_STATUS.find(s=>s.key===k) || JTR_STATUS[0]; }
+function jtrDeadline(r){ return r.date ? addDays(r.date, 90) : null; }
+function jtrClaimDeadline(r){ const op = JTR_OPERATORS[r.operator]; if(!op || !op.claimDays || !r.date) return null; return addDays(r.date, op.claimDays + (op.claimFrom==='day-after'?1:0)); }
+// ยอดก่อนภาษีรวมต่อ (ร้าน+วัน) — ต่ำกว่า ¥5,000 ขอคืนไม่ได้
+function jtrMinCheck(x){
+  const sums = {}; x.receipts.forEach(r=>{ const k = (r.shop||'').trim().toLowerCase()+'|'+r.date; sums[k] = (sums[k]||0) + jtrPreTax(r); });
+  return sums;
+}
+function jtrWarnings(tr){
+  const x = jtrOf(tr), w = [], sums = jtrMinCheck(x), t = todayISO();
+  x.receipts.forEach(r=>{
+    const k = (r.shop||'').trim().toLowerCase()+'|'+r.date;
+    if(r.shop && sums[k] < 5000) w.push({tone:'warn', text:`${r.shop} (${fmtDateShort(r.date)}) ยอดก่อนภาษีรวม ${jtrYen(sums[k])} ไม่ถึง ¥5,000 — ร้านเดียวกันวันเดียวกันต้องถึงขั้นต่ำ`});
+    const dl = jtrDeadline(r);
+    if(dl && x.flightDate && x.flightDate > dl) w.push({tone:'bad', text:`${r.shop||'ใบเสร็จ'} ซื้อ ${fmtDateShort(r.date)} — วันบินกลับเกิน 90 วัน (ต้องผ่านศุลกากรภายใน ${fmtDateShort(dl)})`});
+    if(r.operator==='unknown' || !r.operator) w.push({tone:'info', text:`${r.shop||'ใบเสร็จ'}: ยังไม่ได้ระบุว่าใช้เจ้าไหน — ดู QR ล่างสุดของใบเสร็จ/แผ่นพับ`});
+    const cd = jtrClaimDeadline(r);
+    if(cd && x.customsDone && !['claimed','paid','lost'].includes(r.status) && dayDiff(t, cd) <= 30) w.push({tone:'bad', text:`${r.shop}: ต้องกดขอคืนกับ ${JTR_OPERATORS[r.operator].name} ภายใน ${fmtDateShort(cd)}`});
+  });
+  if(x.customsDone){
+    const pend = x.receipts.filter(r=>!['claimed','paid','lost'].includes(r.status) && (JTR_OPERATORS[r.operator]||{}).postClaim);
+    if(pend.length) w.push({tone:'bad', text:`ผ่านศุลกากรแล้ว แต่ยังมี ${pend.length} ใบที่ต้องเข้าไปกดขอคืนเอง (${[...new Set(pend.map(r=>JTR_OPERATORS[r.operator].name))].join(', ')})`});
+  }
+  return w;
+}
+function jtrCurrentPhase(tr){
+  const x = jtrOf(tr), t = todayISO(), start = (tr.days[0]||{}).date || tr.startDate;
+  if(x.customsDone) return 'after';
+  if(x.flightDate && x.flightDate <= addDays(t,1)) return 'depart';
+  if(start && t < start) return 'before';
+  return x.receipts.length ? 'register' : 'shop';
+}
+let jtrPhaseOpen = {};   // tripId -> phase key ที่เปิดดูอยู่
+let jtrAiOpen = {};      // tripId -> เปิดกล่องนำเข้าจาก Claude
+let jtrMsg = {};
+
+function renderJtrPanel(tr){
+  const x = jtrOf(tr); jtrEnsureFx();
+  const rs = x.receipts;
+  const taxSum = rs.filter(r=>r.status!=='lost').reduce((s,r)=>s+jtrTax(r),0);
+  const estSum = rs.filter(r=>r.status!=='lost').reduce((s,r)=>s+(r.status==='paid' && r.received!=null && r.received!=='' ? Number(r.received) : jtrEst(r)),0);
+  const gotSum = rs.filter(r=>r.status==='paid').reduce((s,r)=>s+(Number(r.received)||jtrEst(r)),0);
+  const ops = [...new Set(rs.map(r=>r.operator||'unknown'))];
+  const cur = jtrCurrentPhase(tr), open = jtrPhaseOpen[tr.id] || cur;
+  const warns = jtrWarnings(tr);
+  const ap = JTR_AIRPORTS[x.airport] || null;
+  const arrive = (x.flightTime && /^\d{2}:\d{2}/.test(x.flightTime)) ? (()=>{ const [h,m] = x.flightTime.split(':').map(Number); const mins = h*60+m - 240; const mm = ((mins%1440)+1440)%1440; return pad2(Math.floor(mm/60))+':'+pad2(mm%60); })() : '';
+  const groups = ops.map(op=>({op, meta:JTR_OPERATORS[op]||JTR_OPERATORS.other, list:rs.filter(r=>(r.operator||'unknown')===op)}));
+  return `
+  <div class="jtr">
+    <div class="jtr-head">
+      <div><div class="jtr-title">🇯🇵 ขอคืนภาษีญี่ปุ่น <span>ระบบใหม่ จ่ายก่อน-คืนทีหลัง (ซื้อตั้งแต่ 1 พ.ย. 69)</span></div>
+        <div class="jtr-sub">จ่ายเต็มราคา → ศุลกากรเช็กพาสปอร์ต 1 ครั้งตอนบินกลับ (ภายใน 90 วัน ก่อนโหลดกระเป๋า) → เงินคืนมาจาก "บริษัทที่แต่ละร้านเลือกใช้"</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="jtrToggle('${tr.id}')">ย่อ ▲</button>
+    </div>
+    <div class="jtr-stats">
+      <div><span>ใบเสร็จ</span><b>${rs.length}</b></div>
+      <div><span>ต้องสมัคร</span><b>${ops.filter(o=>o!=='store'&&o!=='unknown').length} เจ้า</b></div>
+      <div><span>ภาษีสูงสุดที่ขอคืนได้</span><b>${jtrYen(taxSum)}</b><em>${jtrThb(taxSum)}</em></div>
+      <div><span>คาดว่าได้จริง (หักค่าธรรมเนียม)</span><b>${jtrYen(estSum)}</b><em>${jtrThb(estSum)}</em></div>
+      <div><span>ได้เงินแล้ว</span><b style="color:#27AE60">${jtrYen(gotSum)}</b><em>${jtrThb(gotSum)}</em></div>
+    </div>
+
+    <div class="jtr-steps">${JTR_PHASES.map((ph,i)=>{ const done = ph.items.filter(it=>x.checks[ph.key+'.'+it[0]]).length;
+      return `<button class="jtr-step ${open===ph.key?'on':''} ${cur===ph.key?'now':''}" onclick="jtrSetPhase('${tr.id}','${ph.key}')"><i>${ph.icon}</i><b>${i+1}. ${ph.title}</b><small>${done}/${ph.items.length}${cur===ph.key?' · ตอนนี้':''}</small></button>`; }).join('')}</div>
+    ${(()=>{ const ph = JTR_PHASES.find(p=>p.key===open) || JTR_PHASES[0];
+      return `<div class="jtr-check">${ph.items.map(it=>{ const k = ph.key+'.'+it[0]; return `<label class="${x.checks[k]?'done':''}"><input type="checkbox" ${x.checks[k]?'checked':''} onchange="jtrCheck('${tr.id}','${k}',this.checked)"> ${escapeHtml(it[1])}</label>`; }).join('')}
+      ${ph.key==='depart' ? jtrDepartBox(tr, x, ap, arrive) : ''}</div>`; })()}
+
+    ${warns.length ? `<div class="jtr-warns">${warns.slice(0,8).map(w=>`<div class="hp-al ${w.tone}"><i>${w.tone==='bad'?'⚠':w.tone==='warn'?'!':'i'}</i><span>${escapeHtml(w.text)}</span></div>`).join('')}</div>` : ''}
+
+    <div class="jtr-sec">🧾 ใบเสร็จ — แยกตามบริษัทคืนภาษี</div>
+    ${groups.length ? groups.map(g=>`
+      <div class="jtr-group" style="--oc:${g.meta.color}">
+        <div class="jtr-ghead"><b>${escapeHtml(g.meta.name)}</b> <span class="muted">${g.list.length} ใบ · ภาษี ${jtrYen(g.list.reduce((s,r)=>s+jtrTax(r),0))}</span>
+          ${g.meta.url ? `<a class="btn btn-ghost btn-sm" href="${g.meta.url}" target="_blank" rel="noopener">เปิดเว็บ ↗</a>` : ''}</div>
+        <div class="jtr-how">${escapeHtml(g.meta.how)}${g.meta.claimDays?` · ขอคืนภายใน ${g.meta.claimDays} วัน`:''}${g.meta.postClaim?' · <b>ต้องกดขอคืนเองหลังออกจากญี่ปุ่น</b>':''}</div>
+        ${g.meta.tips.length ? `<ul class="jtr-tips">${g.meta.tips.map(t=>`<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+        ${g.list.map(r=>jtrRow(tr, r)).join('')}
+      </div>`).join('') : '<div class="muted" style="margin:6px 0 10px">ยังไม่มีใบเสร็จ — เพิ่มด้านล่าง หรือให้ Claude อ่านรูปใบเสร็จให้</div>'}
+
+    <div class="jtr-add">
+      <div class="jtr-sec" style="margin-top:0">+ เพิ่มใบเสร็จ</div>
+      <div class="form-row">
+        <input type="date" id="jtrDate_${tr.id}" value="${todayISO()}" style="max-width:150px">
+        <input type="text" id="jtrShop_${tr.id}" placeholder="ร้าน เช่น Uniqlo Ginza">
+        <input type="number" id="jtrTotal_${tr.id}" placeholder="ยอดรวมภาษี ¥" style="max-width:130px">
+        <input type="number" id="jtrTaxIn_${tr.id}" placeholder="ภาษีในบิล ¥ (ถ้ามี)" style="max-width:140px">
+        <select id="jtrRate_${tr.id}" style="max-width:110px"><option value="10">ภาษี 10%</option><option value="8">8% (อาหาร)</option></select>
+        <select id="jtrOp_${tr.id}" style="max-width:170px">${Object.entries(JTR_OPERATORS).map(([k,o])=>`<option value="${k}" ${k==='unknown'?'selected':''}>${escapeHtml(o.name)}</option>`).join('')}</select>
+        <label class="muted" style="display:flex; gap:5px; align-items:center"><input type="checkbox" id="jtrCons_${tr.id}"> ของกิน/เครื่องสำอาง</label>
+        <button class="btn btn-sm" onclick="jtrAdd('${tr.id}')">+ เพิ่ม</button>
+      </div>${jtrMsg[tr.id] && !jtrAiOpen[tr.id] ? `<div class="muted">${jtrMsg[tr.id]}</div>`:''}
+      <details class="hb-more" ${jtrAiOpen[tr.id]?'open':''} ontoggle="jtrAiOpen['${tr.id}']=this.open"><summary>📸 ให้ Claude อ่านรูปใบเสร็จแล้วนำเข้าทีเดียว</summary>
+        <ol class="hp-steps"><li>กด "คัดลอกคำสั่ง" แล้ววางในแชท Claude พร้อมแนบรูปใบเสร็จทุกใบ (ถ่ายให้เห็นถึงล่างสุด)</li><li>คัดลอกผล JSON ที่ Claude ตอบ มาวางในช่องด้านล่าง → นำเข้า</li></ol>
+        <button class="btn btn-ghost btn-sm" onclick="jtrCopyPrompt('${tr.id}')">📋 คัดลอกคำสั่งสำหรับ Claude</button>
+        <textarea id="jtrJson_${tr.id}" class="jtr-ta" placeholder='[{"date":"2026-11-20","shop":"Merrell Shibuya","total":16500,"tax":1500,"rate":10,"operator":"smaregi","consumable":false,"note":"QR ล่างสุด"}]'></textarea>
+        <button class="btn btn-sm" onclick="jtrImport('${tr.id}')">⬇ นำเข้า</button> <span class="muted">${jtrMsg[tr.id]||''}</span>
+      </details>
+    </div>
+    <div class="muted" style="font-size:10.5px; margin-top:10px">ข้อมูลกติกาแต่ละเจ้า ณ 25 พ.ย. 69 อาจเปลี่ยนได้ — ภาษีบนใบเสร็จคือยอด "สูงสุด" ที่ได้คืน ไม่ใช่ยอดเข้าบัญชี · อ้างอิง: กรมศุลกากรญี่ปุ่น, Japan Tourism Agency</div>
+  </div>`;
+}
+function jtrDepartBox(tr, x, ap, arrive){
+  return `<div class="jtr-depart">
+    <div class="form-row" style="margin-bottom:6px">
+      <select onchange="jtrSet('${tr.id}','airport',this.value)" style="max-width:220px"><option value="">— สนามบินขาออก —</option>${Object.entries(JTR_AIRPORTS).map(([k,a])=>`<option value="${k}" ${x.airport===k?'selected':''}>${a.name}</option>`).join('')}</select>
+      <input type="date" value="${x.flightDate||''}" onchange="jtrSet('${tr.id}','flightDate',this.value)" style="max-width:150px" title="วันบินกลับ">
+      <input type="time" value="${x.flightTime||''}" onchange="jtrSet('${tr.id}','flightTime',this.value)" style="max-width:110px" title="เวลาเครื่องออก">
+      <button class="btn btn-ghost btn-sm" onclick="jtrToCalendar('${tr.id}')">📅 ลงปฏิทิน + เตือนหลังกลับ</button>
+    </div>${jtrMsg[tr.id]?`<div class="muted" style="margin-bottom:6px">${jtrMsg[tr.id]}</div>`:''}
+    ${ap ? `<div class="jtr-ap"><b>📍 ${ap.name}</b> — ${escapeHtml(ap.kiosk)}${ap.vjw?' · ทำผ่าน Visit Japan Web บน Wi‑Fi ศุลกากรแทนตู้ได้':''}${ap.tip?'<br>💡 '+escapeHtml(ap.tip):''}${arrive?`<br>⏰ แนะนำถึงสนามบินไม่เกิน <b>${arrive} น.</b> (ก่อนเครื่องออก 4 ชม. = ปกติ 3 ชม. + tax refund 1 ชม.)`:''}</div>` : ''}
+    <label class="jtr-customs ${x.customsDone?'done':''}"><input type="checkbox" ${x.customsDone?'checked':''} onchange="jtrSet('${tr.id}','customsDone',this.checked)"> ✅ ผ่านศุลกากรแล้ว (ขึ้นสีเขียว หรือเจ้าหน้าที่ตรวจแล้ว)${x.customsDate?' · '+fmtDateShort(x.customsDate):''}</label>
+  </div>`;
+}
+function jtrRow(tr, r){
+  const st = jtrStatusMeta(r.status), dl = jtrDeadline(r), cd = jtrClaimDeadline(r);
+  return `<div class="jtr-row">
+    <div class="d">${fmtDateShort(r.date)}</div>
+    <div class="s"><b>${escapeHtml(r.shop||'(ไม่ระบุร้าน)')}</b>${r.consumable?' <span class="tag" style="font-size:9.5px">ห้ามแกะ</span>':''}<div class="muted" style="font-size:10.5px">${jtrYen(r.total)} รวมภาษี · ศุลกากรภายใน ${dl?fmtDateShort(dl):'—'}${cd?' · ขอคืนภายใน '+fmtDateShort(cd):''}${r.note?' · '+escapeHtml(r.note):''}</div></div>
+    <div class="t"><b>${jtrYen(jtrTax(r))}</b><small>${Number(r.feePct)>0?'หัก '+r.feePct+'% → '+jtrYen(jtrEst(r)):'ภาษีสูงสุด'}</small></div>
+    <select class="st" style="--sc:${st.color}" onchange="jtrUpd('${tr.id}','${r.id}','status',this.value)">${JTR_STATUS.map(s=>`<option value="${s.key}" ${s.key===r.status?'selected':''}>${s.label}</option>`).join('')}</select>
+    <select class="op" onchange="jtrUpd('${tr.id}','${r.id}','operator',this.value)" title="บริษัทคืนภาษี">${Object.entries(JTR_OPERATORS).map(([k,o])=>`<option value="${k}" ${k===(r.operator||'unknown')?'selected':''}>${escapeHtml(o.name)}</option>`).join('')}</select>
+    <input class="fee" type="number" step="0.1" placeholder="ค่าธรรมเนียม %" value="${r.feePct||''}" onchange="jtrUpd('${tr.id}','${r.id}','feePct',this.value)" title="ค่าธรรมเนียมที่ถูกหัก (% ของภาษี)">
+    ${r.status==='paid' ? `<input class="fee" type="number" placeholder="ได้จริง ¥" value="${r.received||''}" onchange="jtrUpd('${tr.id}','${r.id}','received',this.value)" title="ยอดที่เข้าบัญชีจริง (เยน)">` : ''}
+    <button class="task-del" onclick="jtrDel('${tr.id}','${r.id}')">✕</button>
+  </div>`;
+}
+function jtrFind(id){ return state.trips.list.find(t=>t.id===id); }
+function jtrToggle(id){ const tr = jtrFind(id); if(!tr) return; const x = jtrOf(tr); x.open = !x.open; saveState(); render(); }
+function jtrSetPhase(id, k){ jtrPhaseOpen[id] = k; render(); }
+function jtrCheck(id, k, v){ const x = jtrOf(jtrFind(id)); x.checks[k] = !!v; saveState(); render(); }
+function jtrSet(id, k, v){ const x = jtrOf(jtrFind(id)); x[k] = v;
+  if(k==='customsDone'){ x.customsDate = v ? todayISO() : ''; if(v) x.checks['depart.kiosk'] = true; }
+  saveState(); render(); }
+function jtrAdd(id){
+  const tr = jtrFind(id); const x = jtrOf(tr); const g = k=>(document.getElementById(k+'_'+id)||{}).value;
+  const total = parseFloat(g('jtrTotal')); if(!(total>0)){ jtrMsg[id] = '<span style="color:var(--coral)">ใส่ยอดรวมภาษี (เยน) ก่อน</span>'; render(); return; }
+  x.receipts.push({id:uid(), date:g('jtrDate')||todayISO(), shop:(g('jtrShop')||'').trim(), total, tax:parseFloat(g('jtrTaxIn'))||0, rate:parseInt(g('jtrRate'))||10,
+    operator:g('jtrOp')||'unknown', consumable:!!(document.getElementById('jtrCons_'+id)||{}).checked, status:'bought', received:'', feePct:'', note:''});
+  x.receipts.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  saveState(); render();
+}
+function jtrUpd(id, rid, k, v){ const x = jtrOf(jtrFind(id)); const r = x.receipts.find(z=>z.id===rid); if(!r) return; r[k] = v; saveState(); render(); }
+function jtrDel(id, rid){ const x = jtrOf(jtrFind(id)); x.receipts = x.receipts.filter(z=>z.id!==rid); saveState(); render(); }
+const JTR_PROMPT = `ช่วยอ่านรูปใบเสร็จญี่ปุ่นที่แนบมา (ระบบขอคืนภาษีแบบใหม่ ตั้งแต่ 1 พ.ย. 2026) แล้วตอบเป็น JSON array อย่างเดียว ไม่ต้องมีคำอธิบาย
+แต่ละใบเสร็จที่ "ร้านทำ tax-free ให้แล้ว" = 1 object (ข้ามใบที่เป็นสำเนาของร้าน/ใบที่ไม่ได้ทำ tax-free):
+{"date":"YYYY-MM-DD","shop":"ชื่อร้าน+สาขา","total":ยอดรวมภาษีเป็นเยน,"tax":ภาษีที่ระบุในบิลเป็นเยน,"rate":10 หรือ 8,"operator":"jtax|smaregi|jprefund|globalblue|pievat|store|other|unknown","consumable":true ถ้าเป็นของกิน/เครื่องสำอาง/ยา,"note":"QR ขอคืนอยู่ตรงไหน / เว็บที่ต้องไป / ข้อสังเกต"}
+operator: J-TaxRefund=jtax, Smaregi=smaregi, JPrefund/Smart Detax=jprefund, Global Blue=globalblue, PIE VAT/Square=pievat, ร้านคืนเอง=store
+ถ้าใบเสร็จมี QR หลายอัน บอกใน note ว่าอันไหนคือ QR ขอคืนภาษี (มักอยู่ล่างสุด ไม่ใช่ QR สะสมแต้ม)`;
+function jtrCopyPrompt(id){ try{ navigator.clipboard.writeText(JTR_PROMPT); jtrMsg[id] = '<span style="color:var(--green-deep)">คัดลอกแล้ว ✓</span>'; }catch(e){ jtrMsg[id] = 'คัดลอกไม่ได้ — กดค้างที่ข้อความแล้วคัดลอกเอง'; } jtrAiOpen[id] = true; render(); }
+function jtrImport(id){
+  const x = jtrOf(jtrFind(id)); const raw = ((document.getElementById('jtrJson_'+id)||{}).value||'').trim();
+  try{
+    const m = raw.match(/\[[\s\S]*\]/); const arr = JSON.parse(m ? m[0] : raw); if(!Array.isArray(arr)) throw new Error('ต้องเป็น JSON array');
+    let n = 0;
+    arr.forEach(o=>{ const total = Number(o.total)||0; if(!total) return;
+      const op = JTR_OPERATORS[o.operator] ? o.operator : 'unknown';
+      const dup = x.receipts.some(r=>r.date===o.date && Number(r.total)===total && (r.shop||'')===(o.shop||''));
+      if(dup) return;
+      x.receipts.push({id:uid(), date:/^\d{4}-\d{2}-\d{2}$/.test(o.date||'')?o.date:todayISO(), shop:String(o.shop||''), total, tax:Number(o.tax)||0, rate:Number(o.rate)===8?8:10, operator:op, consumable:!!o.consumable, status:'bought', received:'', feePct:'', note:String(o.note||'')}); n++; });
+    x.receipts.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    jtrMsg[id] = `<span style="color:var(--green-deep)">นำเข้า ${n} ใบ ✓</span>`; saveState();
+  }catch(e){ jtrMsg[id] = '<span style="color:var(--coral)">อ่าน JSON ไม่ได้: '+escapeHtml(e.message)+'</span>'; }
+  jtrAiOpen[id] = true; render();
+}
+// ลงปฏิทิน Life OS: วันบินกลับ (ไป tax refund ก่อนเช็คอิน) + วันถัดไป (กดขอคืนแต่ละเจ้า) + deadline ขอคืน
+function jtrToCalendar(id){
+  const tr = jtrFind(id), x = jtrOf(tr);
+  if(!x.flightDate){ jtrMsg[id] = '<span style="color:var(--coral)">ใส่วันบินกลับก่อน</span>'; jtrPhaseOpen[id]='depart'; render(); return; }
+  const ap = JTR_AIRPORTS[x.airport];
+  const ev = state.calendar.events; const add = (date, time, title)=>{ if(!ev.some(e=>e.date===date && e.title===title)) ev.push({id:uid(), date, time, title, category:'other'}); };
+  const arrive = x.flightTime ? (()=>{ const [h,m] = x.flightTime.split(':').map(Number); const mm = ((h*60+m-240)%1440+1440)%1440; return pad2(Math.floor(mm/60))+':'+pad2(mm%60); })() : '';
+  add(x.flightDate, arrive, '🇯🇵 Tax refund: สแกนพาสปอร์ตที่ตู้ศุลกากรก่อนโหลดกระเป๋า'+(ap?' · '+ap.name:''));
+  const opsPost = [...new Set(x.receipts.filter(r=>(JTR_OPERATORS[r.operator]||{}).postClaim).map(r=>JTR_OPERATORS[r.operator].name))];
+  add(addDays(x.flightDate,1), '', '🇯🇵 กดขอคืนภาษี: '+(opsPost.length?opsPost.join(', '):'เช็กทุกเจ้า'));
+  add(addDays(x.flightDate,14), '', '🇯🇵 เช็กเงินคืนภาษีญี่ปุ่นเข้าแล้วหรือยัง');
+  x.receipts.forEach(r=>{ const cd = jtrClaimDeadline(r); if(cd) add(addDays(cd,-14), '', `🇯🇵 อีก 14 วันหมดเขตขอคืน ${JTR_OPERATORS[r.operator].name} (${r.shop||''})`); });
+  jtrMsg[id] = '<span style="color:var(--green-deep)">ลงปฏิทินแล้ว ✓ จะขึ้นในกระดิ่ง/ปฏิทินหน้า "วันนี้"</span>'; saveState(); render();
+}
+
 function renderTripCard(tr){
   const totalExpense = tripTotalExpense(tr);
   const catTotals = tripCategoryTotals(tr);
@@ -6898,11 +7202,13 @@ function renderTripCard(tr){
         ${tr.vehicle ? `<span class="muted" style="flex-shrink:0">· ${escapeHtml(tr.vehicle)}</span>` : ''}
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+        <button class="btn btn-sm ${jtrOf(tr).open?'':'btn-ghost'} jtr-btn" onclick="jtrToggle('${tr.id}')" title="ขอคืนภาษีญี่ปุ่น">🇯🇵 Tax refund${jtrOf(tr).receipts.length?' · '+jtrOf(tr).receipts.length:''}</button>
         <button class="btn btn-ghost btn-sm" onclick="exportTripIcs('${tr.id}')">⬇ Export .ics</button>
         <button class="btn btn-ghost btn-sm" onclick="exportTripJson('${tr.id}')">⬇ Export JSON</button>
         <button class="task-del" onclick="delTrip('${tr.id}')">✕</button>
       </div>
     </div>
+    ${jtrOf(tr).open ? renderJtrPanel(tr) : (jtrIsJapan(tr) && !jtrOf(tr).receipts.length ? `<div class="jtr-hint" onclick="jtrToggle('${tr.id}')">🇯🇵 ไปญี่ปุ่น? ตั้งแต่ 1 พ.ย. 69 ต้องขอคืนภาษีแบบใหม่ (จ่ายก่อน-คืนทีหลัง) — กดเพื่อเปิดตัวช่วยติดตามใบเสร็จ/ขั้นตอน →</div>` : '')}
     <div class="two-col">
       <div>
         <h3 style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px">แผนแต่ละวัน</h3>
