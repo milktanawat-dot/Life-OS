@@ -6966,12 +6966,12 @@ const JTR_AIRPORTS = {
   OTHER:{name:'สนามบินอื่น (เช่น ฮิโรชิม่า)', vjw:false, kiosk:'ตู้ kiosk ในล็อบบี้ขาออก ก่อนเช็คอิน', tip:'สนามบินเล็กอาจไม่มีรับเงินสด'}
 };
 const JTR_PHASES = [
-  {key:'before', icon:'🧳', title:'ก่อนบิน', items:[
+  {key:'before', icon:'📋', title:'ก่อนบิน', items:[
     ['vjw','ลงทะเบียน Visit Japan Web (ใช้ QR แทนพาสปอร์ตที่ร้านได้ + ทำศุลกากรออนไลน์ที่ 7 สนามบิน)'],
     ['card','เตรียมบัตรเครดิตไว้รับเงินคืน (ชื่อตรงกับพาสปอร์ต)'],
     ['phone','ซิม/eSIM ใช้ได้ — ต้องรับรหัสยืนยันตอนสมัครแต่ละเจ้า'],
     ['plan','ซื้อของชิ้นใหญ่ให้ภายใน 90 วันก่อนบินกลับ']]},
-  {key:'shop', icon:'🛍', title:'ตอนช้อป', items:[
+  {key:'shop', icon:'💴', title:'ตอนช้อป', items:[
     ['passport','ยื่นพาสปอร์ต (หรือ QR VJW) ทุกครั้งที่จ่าย — จ่ายเต็มราคารวมภาษี'],
     ['min','ร้านเดียวกัน วันเดียวกัน ยอดก่อนภาษี ≥ ¥5,000'],
     ['ask','ถามร้าน: ใช้เจ้าไหน / หักค่าธรรมเนียมเท่าไร / คืนทางไหน'],
@@ -7079,7 +7079,7 @@ function renderJtrPanel(tr){
 
     ${warns.length ? `<div class="jtr-warns">${warns.slice(0,8).map(w=>`<div class="hp-al ${w.tone}"><i>${w.tone==='bad'?'⚠':w.tone==='warn'?'!':'i'}</i><span>${escapeHtml(w.text)}</span></div>`).join('')}</div>` : ''}
 
-    <div class="jtr-sec">🧾 ใบเสร็จ — แยกตามบริษัทคืนภาษี</div>
+    <div class="jtr-sec">📄 ใบเสร็จ — แยกตามบริษัทคืนภาษี</div>
     ${groups.length ? groups.map(g=>`
       <div class="jtr-group" style="--oc:${g.meta.color}">
         <div class="jtr-ghead"><b>${escapeHtml(g.meta.name)}</b> <span class="muted">${g.list.length} ใบ · ภาษี ${jtrYen(g.list.reduce((s,r)=>s+jtrTax(r),0))}</span>
